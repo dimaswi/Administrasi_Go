@@ -9,8 +9,11 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import api from '@/lib/api';
-
 import { useParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import EmployeeFamilyTab from './components/EmployeeFamilyTab';
+import EmployeeEducationTab from './components/EmployeeEducationTab';
+import EmployeeWorkHistoryTab from './components/EmployeeWorkHistoryTab';
 
 export default function EmployeeEdit() {
     const { id } = useParams();
@@ -39,6 +42,7 @@ export default function EmployeeEdit() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
+        employee_id: '',
         first_name: '',
         last_name: '',
         nik: '',
@@ -175,7 +179,7 @@ export default function EmployeeEdit() {
                     </Button>
                     <div className="space-y-0.5">
                         <h2 className="text-xl font-semibold">Edit Data Karyawan</h2>
-                        <p className="text-sm text-muted-foreground">NIK akan digenerate otomatis berdasarkan tahun masuk dan kategori pekerjaan</p>
+                        <p className="text-sm text-muted-foreground">Perbarui data karyawan</p>
                     </div>
                 </div>
 
@@ -185,8 +189,18 @@ export default function EmployeeEdit() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="space-y-6">
+                <Tabs defaultValue="personal" className="w-full">
+                    <TabsList className="mb-4">
+                        <TabsTrigger value="personal">Data Kepegawaian</TabsTrigger>
+                        <TabsTrigger value="family">Keluarga</TabsTrigger>
+                        <TabsTrigger value="education">Pendidikan</TabsTrigger>
+                        <TabsTrigger value="work">Riwayat Pekerjaan</TabsTrigger>
+                    </TabsList>
+
+                    {/* TAB DATA KEPEGAWAIAN (FORM LAMA) */}
+                    <TabsContent value="personal">
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                            <div className="space-y-6">
 
                         {/* Data Pribadi */}
                         <Card>
@@ -210,9 +224,16 @@ export default function EmployeeEdit() {
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
+                                        <Label htmlFor="employee_id">NIP Karyawan *</Label>
+                                        <Input id="employee_id" name="employee_id" value={formData.employee_id} onChange={handleChange} required placeholder="2026-X-XXX" />
+                                    </div>
+                                    <div className="space-y-2">
                                         <Label htmlFor="nik">NIK KTP *</Label>
                                         <Input id="nik" name="nik" value={formData.nik} onChange={handleChange} required maxLength={16} placeholder="3201234567890001" />
                                     </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="gender">Jenis Kelamin *</Label>
                                         <SearchableSelect
@@ -220,8 +241,8 @@ export default function EmployeeEdit() {
                                             onValueChange={(val) => handleSelectChange('gender', val)}
                                             placeholder="Pilih jenis kelamin"
                                             options={[
-                                                { value: "M", label: "Laki-laki" },
-                                                { value: "F", label: "Perempuan" }
+                                                { value: "male", label: "Laki-laki" },
+                                                { value: "female", label: "Perempuan" }
                                             ]}
                                         />
                                     </div>
@@ -482,7 +503,45 @@ export default function EmployeeEdit() {
                         </Button>
                     </div>
                 </form>
-            </div>
-        </HrLayout>
+            </TabsContent>
+
+            <TabsContent value="family">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Data Keluarga</CardTitle>
+                        <CardDescription>Daftar anggota keluarga (suami/istri, anak, orang tua, dll)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {id && <EmployeeFamilyTab employeeId={id} />}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="education">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Riwayat Pendidikan</CardTitle>
+                        <CardDescription>Riwayat pendidikan formal dari awal hingga akhir</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {id && <EmployeeEducationTab employeeId={id} />}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="work">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Riwayat Pekerjaan</CardTitle>
+                        <CardDescription>Pengalaman kerja di perusahaan / instansi sebelumnya</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {id && <EmployeeWorkHistoryTab employeeId={id} />}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
+    </div>
+</HrLayout>
     );
 }

@@ -1,0 +1,41 @@
+# Air — Live reload untuk Go development
+# Docs: https://github.com/air-verse/air
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Command build
+  cmd = "go build -o ./tmp/main ./main.go"
+  # Binary yang dijalankan setelah build
+  bin = "./tmp/main"
+  # Delay sebelum rebuild (ms)
+  delay = 500
+  # File yang di-exclude dari watch
+  exclude_dir = ["tmp", "vendor", "uploads"]
+  # Extension yang ditrigger rebuild
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  # Exclude file tertentu
+  exclude_file = []
+  # Exclude regex
+  exclude_regex = ["_test.go"]
+  # Log error saat build gagal
+  log = "build-errors.log"
+  # Kill proses lama sebelum start baru
+  kill_delay = "0s"
+  # Rerun jika proses exit
+  rerun = false
+
+[log]
+  # Level log
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  # Hapus tmp dir saat exit
+  clean_on_exit = true

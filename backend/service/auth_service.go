@@ -33,9 +33,15 @@ func (s *AuthService) Login(nip, password string) (string, error) {
 		return "", errors.New("invalid credentials")
 	}
 
+	var roleID int = 0
+	if user.RoleID != nil {
+		roleID = *user.RoleID
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
 		"nip":     user.Nip,
+		"role_id": roleID,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	})
 

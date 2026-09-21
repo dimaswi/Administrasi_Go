@@ -31,7 +31,7 @@ export default function JobCategoryIndex() {
         setLoading(true);
         try {
             const res = await api.get('/job-categories');
-            setData(res.data);
+            setData(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error(error);
         } finally {

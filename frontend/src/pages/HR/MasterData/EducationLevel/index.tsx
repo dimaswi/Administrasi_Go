@@ -31,7 +31,7 @@ export default function EducationLevelIndex() {
         setLoading(true);
         try {
             const res = await api.get('/education-levels');
-            setData(res.data);
+            setData(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error(error);
         } finally {

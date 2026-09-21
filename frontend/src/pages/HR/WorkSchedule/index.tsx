@@ -36,7 +36,7 @@ export default function WorkScheduleIndex() {
         setLoading(true);
         try {
             const res = await api.get(`/work-schedules`);
-            setData(res.data);
+            setData(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error(error);
         } finally {

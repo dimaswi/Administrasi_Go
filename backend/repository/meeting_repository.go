@@ -32,7 +32,7 @@ func (r *MeetingRepository) GetByID(id int) (*models.Meeting, error) {
 		}
 		if meeting.OrganizerID != nil {
 			var org models.User
-			r.db.Get(&org, "SELECT * FROM users WHERE id = $1", *meeting.OrganizerID)
+			r.db.Get(&org, "SELECT id, name, nip, password, role_id, remember_token, created_at, updated_at FROM users WHERE id = $1", *meeting.OrganizerID)
 			meeting.Organizer = &org
 		}
 		if meeting.OrganizationUnitID != nil {
@@ -95,12 +95,16 @@ func (r *MeetingRepository) GetParticipants(meetingID int) ([]models.MeetingPart
 	if err == nil {
 		for i := range participants {
 			var u models.User
-			r.db.Get(&u, "SELECT * FROM users WHERE id = $1", participants[i].UserID)
-			if u.OrganizationUnitID != nil {
+			r.db.Get(&u, "SELECT id, name, nip, password, role_id, remember_token, created_at, updated_at FROM users WHERE id = $1", participants[i].UserID)
+			
+			var emp models.Employee
+			errEmp := r.db.Get(&emp, "SELECT * FROM employees WHERE user_id = $1 LIMIT 1", u.ID)
+			if errEmp == nil && emp.OrganizationUnitID != nil {
 				var ou models.OrganizationUnit
-				r.db.Get(&ou, "SELECT * FROM organization_units WHERE id = $1", *u.OrganizationUnitID)
+				r.db.Get(&ou, "SELECT * FROM organization_units WHERE id = $1", *emp.OrganizationUnitID)
 				u.OrganizationUnit = &ou
 			}
+			
 			participants[i].User = &u
 		}
 	}

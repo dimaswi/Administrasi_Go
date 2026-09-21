@@ -32,7 +32,7 @@ export default function LeaveTypeIndex() {
         setLoading(true);
         try {
             const res = await api.get('/leave-types');
-            setData(res.data);
+            setData(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error(error);
         } finally {

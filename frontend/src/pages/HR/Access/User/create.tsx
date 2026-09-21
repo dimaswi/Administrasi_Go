@@ -13,27 +13,19 @@ export default function UserCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [roles, setRoles] = useState<any[]>([]);
-    const [orgUnits, setOrgUnits] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
         name: '',
         nip: '',
         password: '',
-        role_id: 0,
-        organization_unit_id: 0,
-        position: '',
-        phone: ''
+        role_id: 0
     });
 
     useEffect(() => {
         const fetchOptions = async () => {
             try {
-                const [roleRes, orgRes] = await Promise.all([
-                    api.get('/roles'),
-                    api.get('/org-units')
-                ]);
+                const roleRes = await api.get('/roles');
                 setRoles(roleRes.data.data || []);
-                setOrgUnits(orgRes.data.data || []);
             } catch (err) {
                 console.error(err);
             }
@@ -107,29 +99,6 @@ export default function UserCreate() {
                                         value={formData.role_id ? String(formData.role_id) : ""}
                                         onValueChange={(val) => setFormData({ ...formData, role_id: Number(val) })}
                                         placeholder="-- Pilih Role --"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Unit Organisasi</Label>
-                                    <SearchableSelect
-                                        options={orgUnits.map(o => ({ value: String(o.id), label: o.name }))}
-                                        value={formData.organization_unit_id ? String(formData.organization_unit_id) : ""}
-                                        onValueChange={(val) => setFormData({ ...formData, organization_unit_id: Number(val) })}
-                                        placeholder="-- Pilih Unit --"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Jabatan</Label>
-                                    <Input
-                                        value={formData.position}
-                                        onChange={e => setFormData({ ...formData, position: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>No HP / Telepon</Label>
-                                    <Input
-                                        value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                     />
                                 </div>
                             </div>

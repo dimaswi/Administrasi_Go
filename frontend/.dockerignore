@@ -1,0 +1,41 @@
+# ============================================================
+# .dockerignore — Frontend (React/Vite)
+# File ini ada di frontend/ directory
+# ============================================================
+
+# Dependencies (akan di-install oleh Docker)
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Cache
+.vite/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker/

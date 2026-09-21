@@ -1,0 +1,153 @@
+# ============================================================
+# docker-compose.yml — Production
+# Menjalankan: PostgreSQL + Go Backend + React Frontend
+#
+# Cara pakai:
+#   1. Copy .env.example ke .env dan isi nilai variabelnya
+#   2. Letakkan dump file: docker/postgres/dump.sql
+#      (copy dari dump-administrasi-*.sql yang ada di root)
+#   3. docker compose up -d --build
+# ============================================================
+
+services:
+
+  # ─────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────
+  postgres:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: administrasi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-administrasi}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?error: POSTGRES_PASSWORD wajib diisi di .env}
+    volumes:
+      # Data PostgreSQL persisten
+      - postgres_data:/var/lib/postgresql/data
+      # Mount dump file untuk restore (format pg_dump custom)
+      - ./docker/postgres/dump.sql:/docker-entrypoint-initdb.d/dump.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-administrasi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - administrasi_net
+
+  # ─────────────────────────────────────────
+  # Database Restore (run sekali, lalu exit)
+  # ─────────────────────────────────────────
+  db-restore:
+    image: postgres:17-alpine
+    container_name: administrasi_db_restore
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?error: POSTGRES_PASSWORD wajib diisi di .env}
+    volumes:
+      - ./docker/postgres/dump.sql:/tmp/dump.sql:ro
+      - db_restored_flag:/tmp/flags
+    entrypoint: |
+      sh -c "
+        FLAG=/tmp/flags/.restored
+        if [ -f $$FLAG ]; then
+          echo 'ℹ️  Database sudah pernah di-restore, skip.'
+          exit 0
+        fi
+        if [ ! -f /tmp/dump.sql ]; then
+          echo 'ℹ️  Tidak ada dump file, skip restore.'
+          touch $$FLAG
+          exit 0
+        fi
+        echo '📦 Memulai restore database...'
+        pg_restore \
+          --host=postgres \
+          --port=5432 \
+          --username=${POSTGRES_USER:-postgres} \
+          --dbname=${POSTGRES_DB:-administrasi} \
+          --no-owner \
+          --no-privileges \
+          --verbose \
+          /tmp/dump.sql && touch $$FLAG && echo '✅ Restore berhasil!' || echo '⚠️  Restore selesai dengan warning.'
+      "
+    networks:
+      - administrasi_net
+    restart: "no"
+
+  # ─────────────────────────────────────────
+  # Backend — Go/Gin API
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: administrasi_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?error: POSTGRES_PASSWORD wajib diisi di .env}
+      DB_NAME: ${POSTGRES_DB:-administrasi}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET:?error: JWT_SECRET wajib diisi di .env}
+      PORT: 8080
+    volumes:
+      # Persisten uploads (foto, dokumen, dll)
+      - uploads_data:/app/uploads
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/settings || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - administrasi_net
+
+  # ─────────────────────────────────────────
+  # Frontend — React + Vite (via Nginx)
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: administrasi_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      - administrasi_net
+
+# ─────────────────────────────────────────
+# Volumes
+# ─────────────────────────────────────────
+volumes:
+  postgres_data:
+    name: administrasi_postgres_data
+  uploads_data:
+    name: administrasi_uploads_data
+  db_restored_flag:
+    name: administrasi_db_restored_flag
+
+# ─────────────────────────────────────────
+# Networks
+# ─────────────────────────────────────────
+networks:
+  administrasi_net:
+    name: administrasi_network
+    driver: bridge

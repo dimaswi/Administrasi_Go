@@ -14,38 +14,29 @@ export default function UserEdit() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [roles, setRoles] = useState<any[]>([]);
-    const [orgUnits, setOrgUnits] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
         name: '',
         nip: '',
         password: '',
-        role_id: 0,
-        organization_unit_id: 0,
-        position: '',
-        phone: ''
+        role_id: 0
     });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [roleRes, orgRes, userRes] = await Promise.all([
+                const [roleRes, userRes] = await Promise.all([
                     api.get('/roles'),
-                    api.get('/org-units'),
                     api.get(`/users/${id}`)
                 ]);
                 setRoles(roleRes.data.data || []);
-                setOrgUnits(orgRes.data.data || []);
 
                 const user = userRes.data.data;
                 setFormData({
                     name: user.name || '',
                     nip: user.nip || '',
                     password: '', // Don't show existing password
-                    role_id: user.role_id || 0,
-                    organization_unit_id: user.organization_unit_id || 0,
-                    position: user.position || '',
-                    phone: user.phone || ''
+                    role_id: user.role_id || 0
                 });
             } catch (err) {
                 console.error(err);
@@ -119,29 +110,6 @@ export default function UserEdit() {
                                         value={formData.role_id ? String(formData.role_id) : ""}
                                         onValueChange={(val) => setFormData({ ...formData, role_id: Number(val) })}
                                         placeholder="-- Pilih Role --"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Unit Organisasi</Label>
-                                    <SearchableSelect
-                                        options={orgUnits.map(o => ({ value: String(o.id), label: o.name }))}
-                                        value={formData.organization_unit_id ? String(formData.organization_unit_id) : ""}
-                                        onValueChange={(val) => setFormData({ ...formData, organization_unit_id: Number(val) })}
-                                        placeholder="-- Pilih Unit --"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Jabatan</Label>
-                                    <Input
-                                        value={formData.position}
-                                        onChange={e => setFormData({ ...formData, position: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>No HP / Telepon</Label>
-                                    <Input
-                                        value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                     />
                                 </div>
                             </div>

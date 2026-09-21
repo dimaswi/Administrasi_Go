@@ -10,7 +10,7 @@ import { id as indonesianLocale } from 'date-fns/locale';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import ReactQuill from 'react-quill-new';
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function MeetingMemo() {
     const { id } = useParams();

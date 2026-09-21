@@ -8,6 +8,9 @@ import IncomingLetterIndex from './pages/HR/IncomingLetter/index';
 import IncomingLetterCreate from './pages/HR/IncomingLetter/create';
 import IncomingLetterShow from './pages/HR/IncomingLetter/show';
 import IncomingLetterEdit from './pages/HR/IncomingLetter/edit';
+import OutgoingLetterIndex from './pages/HR/OutgoingLetter';
+import OutgoingLetterCreate from './pages/HR/OutgoingLetter/create';
+import OutgoingLetterShow from './pages/HR/OutgoingLetter/show';
 import EmployeeCreate from './pages/HR/Employee/create';
 import EmployeeEdit from './pages/HR/Employee/edit';
 import EmployeeShow from './pages/HR/Employee/show';
@@ -17,10 +20,10 @@ import WorkScheduleEdit from './pages/HR/WorkSchedule/edit';
 import WorkScheduleShow from './pages/HR/WorkSchedule/show';
 import EmployeeScheduleIndex from './pages/HR/EmployeeSchedule/index';
 import EmployeeScheduleCreate from './pages/HR/EmployeeSchedule/create';
-import RosterScheduleIndex from './pages/HR/RosterSchedule/index';
 import RosterScheduleCreate from './pages/HR/RosterSchedule/create';
 import RosterPlanner from './pages/HR/RosterSchedule/planner';
 import ShiftExchangeIndex from './pages/HR/ShiftExchange/index';
+import ShiftExchangeCreate from './pages/HR/ShiftExchange/create';
 import OrganizationCreate from './pages/HR/Organization/create';
 import OrganizationEdit from './pages/HR/Organization/edit';
 import OrganizationShow from './pages/HR/Organization/show';
@@ -143,16 +146,21 @@ function App() {
         <Route path="/hr/work-schedules/:id/edit" element={<ProtectedRoute><WorkScheduleEdit /></ProtectedRoute>} />
         <Route path="/hr/employee-schedules" element={<ProtectedRoute><EmployeeScheduleIndex /></ProtectedRoute>} />
         <Route path="/hr/employee-schedules/create" element={<ProtectedRoute><EmployeeScheduleCreate /></ProtectedRoute>} />
-        <Route path="/hr/rosters" element={<ProtectedRoute><RosterScheduleIndex /></ProtectedRoute>} />
+        <Route path="/hr/rosters" element={<Navigate to="/hr/rosters/planner" replace />} />
         <Route path="/hr/rosters/create" element={<ProtectedRoute><RosterScheduleCreate /></ProtectedRoute>} />
         <Route path="/hr/rosters/planner" element={<ProtectedRoute><RosterPlanner /></ProtectedRoute>} />
         <Route path="/hr/shift-exchanges" element={<ProtectedRoute><ShiftExchangeIndex /></ProtectedRoute>} />
+        <Route path="/hr/shift-exchanges/create" element={<ProtectedRoute><ShiftExchangeCreate /></ProtectedRoute>} />
         <Route path="/hr/attendances" element={<ProtectedRoute><AttendanceIndex /></ProtectedRoute>} />
         
         <Route path="/admin/incoming-letters" element={<ProtectedRoute><IncomingLetterIndex /></ProtectedRoute>} />
         <Route path="/admin/incoming-letters/create" element={<ProtectedRoute><IncomingLetterCreate /></ProtectedRoute>} />
         <Route path="/admin/incoming-letters/:id" element={<ProtectedRoute><IncomingLetterShow /></ProtectedRoute>} />
         <Route path="/admin/incoming-letters/:id/edit" element={<ProtectedRoute><IncomingLetterEdit /></ProtectedRoute>} />
+
+        <Route path="/admin/outgoing-letters" element={<ProtectedRoute><OutgoingLetterIndex /></ProtectedRoute>} />
+        <Route path="/admin/outgoing-letters/create" element={<ProtectedRoute><OutgoingLetterCreate /></ProtectedRoute>} />
+        <Route path="/admin/outgoing-letters/:id" element={<ProtectedRoute><OutgoingLetterShow /></ProtectedRoute>} />
 
         {/* Master Data */}
         <Route path="/hr/master-data/jobcategory" element={<ProtectedRoute><JobCategoryIndex /></ProtectedRoute>} />

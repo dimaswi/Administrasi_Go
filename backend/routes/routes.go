@@ -46,6 +46,9 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	roomRepo := repository.NewRoomRepository(db)
 	meetingRepo := repository.NewMeetingRepository(db)
 	settingRepo := repository.NewSettingRepository(db)
+	shiftExchangeRepo := repository.NewShiftExchangeRepository(db)
+	documentTemplateRepo := repository.NewDocumentTemplateRepository(db)
+	outgoingLetterRepo := repository.NewOutgoingLetterRepository(db)
 
 	// Setup Services
 	authService := service.NewAuthService(userRepo, jwtSecret)
@@ -53,10 +56,12 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	// Setup Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	orgUnitHandler := handler.NewOrgUnitHandler(orgUnitRepo)
-	employeeHandler := handler.NewEmployeeHandler(employeeRepo)
+	employeeHandler := handler.NewEmployeeHandler(employeeRepo, userRepo)
 	workScheduleHandler := handler.NewWorkScheduleHandler(workScheduleRepo)
 	incomingLetterHandler := handler.NewIncomingLetterHandler(incomingLetterRepo)
 	dispositionHandler := handler.NewDispositionHandler(dispositionRepo, incomingLetterRepo)
+	documentTemplateHandler := handler.NewDocumentTemplateHandler(documentTemplateRepo)
+	outgoingLetterHandler := handler.NewOutgoingLetterHandler(outgoingLetterRepo)
 	employeeScheduleRepo := repository.NewEmployeeScheduleRepository(db)
 	employeeScheduleHandler := handler.NewEmployeeScheduleHandler(employeeScheduleRepo)
 	rosterScheduleRepo := repository.NewRosterScheduleRepository(db)
@@ -73,6 +78,10 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	roomHandler := handler.NewRoomHandler(roomRepo)
 	meetingHandler := handler.NewMeetingHandler(meetingRepo)
 	settingHandler := handler.NewSettingHandler(settingRepo)
+	shiftExchangeHandler := handler.NewShiftExchangeHandler(shiftExchangeRepo, rosterScheduleRepo)
+
+	employeeDetailRepo := repository.NewEmployeeDetailRepository(db)
+	employeeDetailHandler := handler.NewEmployeeDetailHandler(employeeDetailRepo)
 
 	api := r.Group("/api")
 	{
@@ -173,6 +182,26 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				employees.GET("", employeeHandler.GetAll)
 				employees.GET("/:id", employeeHandler.GetByID)
 				employees.POST("", employeeHandler.Create)
+				employees.PUT("/:id", employeeHandler.Update)
+				employees.POST("/:id/account", employeeHandler.ManageAccount)
+
+				// Employee Details - Family
+				employees.GET("/:id/families", employeeDetailHandler.GetFamilies)
+				employees.POST("/:id/families", employeeDetailHandler.CreateFamily)
+				employees.PUT("/:id/families/:detailId", employeeDetailHandler.UpdateFamily)
+				employees.DELETE("/:id/families/:detailId", employeeDetailHandler.DeleteFamily)
+
+				// Employee Details - Education
+				employees.GET("/:id/educations", employeeDetailHandler.GetEducations)
+				employees.POST("/:id/educations", employeeDetailHandler.CreateEducation)
+				employees.PUT("/:id/educations/:detailId", employeeDetailHandler.UpdateEducation)
+				employees.DELETE("/:id/educations/:detailId", employeeDetailHandler.DeleteEducation)
+
+				// Employee Details - Work History
+				employees.GET("/:id/work-histories", employeeDetailHandler.GetWorkHistories)
+				employees.POST("/:id/work-histories", employeeDetailHandler.CreateWorkHistory)
+				employees.PUT("/:id/work-histories/:detailId", employeeDetailHandler.UpdateWorkHistory)
+				employees.DELETE("/:id/work-histories/:detailId", employeeDetailHandler.DeleteWorkHistory)
 			}
 
 			// Work Schedules
@@ -199,6 +228,15 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				rosterSchedules.POST("", rosterScheduleHandler.Create)
 				rosterSchedules.GET("/unit/:unit_id/:year_month", rosterScheduleHandler.GetByUnitAndMonth)
 				rosterSchedules.POST("/assign", rosterScheduleHandler.AssignShift)
+				rosterSchedules.POST("/auto-generate", rosterScheduleHandler.AutoGenerate)
+			}
+
+			// Shift Exchanges
+			shiftExchanges := protected.Group("/shift-exchanges")
+			{
+				shiftExchanges.GET("", shiftExchangeHandler.GetAll)
+				shiftExchanges.POST("", shiftExchangeHandler.Create)
+				shiftExchanges.PUT("/:id/status", shiftExchangeHandler.UpdateStatus)
 			}
 
 			// Attendances
@@ -207,6 +245,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				attendances.GET("", attendanceHandler.GetAll)
 				attendances.POST("/check-in", attendanceHandler.CheckIn)
 				attendances.POST("/check-out", attendanceHandler.CheckOut)
+				attendances.PUT("/:id", attendanceHandler.Update)
 			}
 
 			// Incoming Letters
@@ -218,6 +257,21 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				
 				// Dispositions for a specific letter
 				incomingLetters.GET("/:id/dispositions", dispositionHandler.GetByLetter)
+			}
+
+			// Document Templates
+			documentTemplates := protected.Group("/document-templates")
+			{
+				documentTemplates.GET("", documentTemplateHandler.GetAll)
+				documentTemplates.GET("/:id", documentTemplateHandler.GetByID)
+			}
+
+			// Outgoing Letters
+			outgoingLetters := protected.Group("/outgoing-letters")
+			{
+				outgoingLetters.GET("", outgoingLetterHandler.GetAll)
+				outgoingLetters.GET("/:id", outgoingLetterHandler.GetByID)
+				outgoingLetters.POST("", outgoingLetterHandler.Create)
 			}
 
 			// Dispositions

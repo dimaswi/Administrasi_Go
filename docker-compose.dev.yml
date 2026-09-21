@@ -1,0 +1,33 @@
+# ============================================================
+# docker-compose.dev.yml — Development
+# Hanya menjalankan PostgreSQL.
+# Backend & Frontend dijalankan langsung di host (lokal).
+#
+# Cara pakai:
+#   docker compose -f docker-compose.dev.yml up -d
+# ============================================================
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: administrasi_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-administrasi}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    volumes:
+      - postgres_go_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-administrasi}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  # Nama volume baru — tidak konflik dengan volume project lama
+  postgres_go_dev_data:
+    name: administrasi_go_postgres_dev_data

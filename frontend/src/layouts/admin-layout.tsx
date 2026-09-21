@@ -156,6 +156,8 @@ const navItems = [
     icon: Mail,
     children: [
       { title: 'Surat Masuk', href: '/admin/incoming-letters' },
+      { title: 'Surat Keluar', href: '/admin/outgoing-letters' },
+      { title: 'Template Surat', href: '/admin/document-templates' },
     ],
   },
   {
@@ -172,6 +174,19 @@ const navItems = [
 function NavMain() {
   const location = useLocation();
   const url = location.pathname;
+  const [openMenu, setOpenMenu] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // Set initial open menu based on active URL
+    const activeItem = navItems.find(item => 
+      (url.startsWith(item.href) && item.href !== '/dashboard') || 
+      (item.href === '/dashboard' && url === '/dashboard') ||
+      (item.children && item.children.some((c: any) => url === c.href || url.startsWith(c.href + '/')))
+    );
+    if (activeItem && activeItem.children) {
+      setOpenMenu(activeItem.title);
+    }
+  }, [url]);
 
   return (
     <SidebarGroup className="px-2 py-0">
@@ -194,7 +209,8 @@ function NavMain() {
           return (
             <SidebarMenuItem key={item.title}>
               <Collapsible
-                defaultOpen={isActive}
+                open={openMenu === item.title}
+                onOpenChange={(isOpen) => setOpenMenu(isOpen ? item.title : null)}
                 className="group/collapsible w-full"
               >
                 <CollapsibleTrigger render={<SidebarMenuButton

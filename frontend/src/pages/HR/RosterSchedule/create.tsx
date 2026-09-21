@@ -4,6 +4,7 @@ import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Save, CalendarRange } from 'lucide-react';
 import api from '@/lib/api';
@@ -11,7 +12,7 @@ import api from '@/lib/api';
 export default function RosterScheduleCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [shifts, setShifts] = useState([]);
+    const [shifts, setShifts] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         user_id: '',
         work_schedule_id: '',
@@ -20,7 +21,7 @@ export default function RosterScheduleCreate() {
     });
 
     useEffect(() => {
-        api.get('/work-schedules').then(res => setShifts(res.data)).catch(console.error);
+        api.get('/work-schedules').then(res => setShifts(Array.isArray(res.data) ? res.data : [])).catch(console.error);
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -70,16 +71,12 @@ export default function RosterScheduleCreate() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Pilih Shift</Label>
-                                <select 
-                                    name="work_schedule_id" 
-                                    required
-                                    value={formData.work_schedule_id} 
-                                    onChange={handleChange}
-                                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    <option value="">-- Pilih Shift --</option>
-                                    {shifts.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({s.clock_in_time.substring(0,5)} - {s.clock_out_time.substring(0,5)})</option>)}
-                                </select>
+                                <SearchableSelect
+                                    value={formData.work_schedule_id}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, work_schedule_id: val }))}
+                                    placeholder="-- Pilih Shift --"
+                                    options={shifts.map((s: any) => ({ value: s.id.toString(), label: `${s.name} (${s.clock_in_time.substring(0,5)} - ${s.clock_out_time.substring(0,5)})` }))}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>Keterangan Tambahan</Label>

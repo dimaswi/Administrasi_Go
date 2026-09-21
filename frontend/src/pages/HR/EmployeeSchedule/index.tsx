@@ -9,7 +9,7 @@ import api from '@/lib/api';
 export default function EmployeeScheduleIndex() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const [data, setData] = useState([]);
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -20,7 +20,7 @@ export default function EmployeeScheduleIndex() {
         setLoading(true);
         try {
             const res = await api.get('/employee-schedules');
-            setData(res.data);
+            setData(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error(error);
         } finally {

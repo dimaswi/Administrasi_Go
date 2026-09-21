@@ -30,7 +30,7 @@ export default function EmploymentStatusIndex() {
         setLoading(true);
         try {
             const res = await api.get('/employment-statuses');
-            setData(res.data);
+            setData(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error(error);
         } finally {

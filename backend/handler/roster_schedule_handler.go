@@ -19,12 +19,23 @@ func NewRosterScheduleHandler(repo *repository.RosterScheduleRepository) *Roster
 }
 
 func (h *RosterScheduleHandler) GetAll(c *gin.Context) {
-	schedules, err := h.repo.GetAll()
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	search := c.Query("search")
+
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 10
+	}
+
+	response, err := h.repo.GetAll(page, perPage, search)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch rosters"})
 		return
 	}
-	c.JSON(http.StatusOK, schedules)
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *RosterScheduleHandler) Create(c *gin.Context) {
@@ -65,7 +76,7 @@ func (h *RosterScheduleHandler) GetByUnitAndMonth(c *gin.Context) {
 
 func (h *RosterScheduleHandler) AssignShift(c *gin.Context) {
 	var payload struct {
-		UserID         int    `json:"user_id"`
+		EmployeeID     int    `json:"employee_id"`
 		WorkScheduleID int    `json:"work_schedule_id"` // 0 means delete
 		Date           string `json:"date"`             // YYYY-MM-DD
 	}
@@ -75,10 +86,46 @@ func (h *RosterScheduleHandler) AssignShift(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.AssignShift(payload.UserID, payload.Date, payload.WorkScheduleID); err != nil {
+	if err := h.repo.AssignShift(payload.EmployeeID, payload.Date, payload.WorkScheduleID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign shift"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Shift assigned successfully"})
+}
+
+func (h *RosterScheduleHandler) AutoGenerate(c *gin.Context) {
+	var payload struct {
+		EmployeeID      int    `json:"employee_id"`
+		UnitID          int    `json:"unit_id"`
+		StartDate       string `json:"start_date"`
+		EndDate         string `json:"end_date"`
+		WorkDaysPattern string `json:"work_days_pattern"`
+		WorkScheduleIDs []int  `json:"work_schedule_ids"`
+		Overwrite       bool   `json:"overwrite"`
+		CheckOnly       bool   `json:"check_only"`
+	}
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if payload.CheckOnly {
+		conflicts, err := h.repo.CheckConflicts(payload.EmployeeID, payload.UnitID, payload.StartDate, payload.EndDate)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check conflicts"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"conflicts": conflicts})
+		return
+	}
+
+	err := h.repo.AutoGenerate(payload.EmployeeID, payload.UnitID, payload.StartDate, payload.EndDate, payload.WorkDaysPattern, payload.WorkScheduleIDs, payload.Overwrite)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate schedule"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Schedule generated successfully"})
 }

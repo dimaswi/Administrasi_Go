@@ -115,3 +115,32 @@ func (r *EmployeeRepository) Create(emp *models.Employee) error {
 	}
 	return nil
 }
+
+func (r *EmployeeRepository) UpdateUserID(employeeID int, userID int) error {
+	_, err := r.db.Exec("UPDATE employees SET user_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", userID, employeeID)
+	return err
+}
+
+func (r *EmployeeRepository) Update(emp *models.Employee) error {
+	query := `
+		UPDATE employees SET
+			employee_id = :employee_id, first_name = :first_name, last_name = :last_name, nik = :nik, gender = :gender, 
+			place_of_birth = :place_of_birth, date_of_birth = :date_of_birth, religion = :religion,
+			marital_status = :marital_status, blood_type = :blood_type, address = :address, city = :city, 
+			province = :province, postal_code = :postal_code, phone = :phone, phone_secondary = :phone_secondary, 
+			email = :email, emergency_contact_name = :emergency_contact_name, emergency_contact_phone = :emergency_contact_phone, 
+			emergency_contact_relation = :emergency_contact_relation, job_category_id = :job_category_id,
+			employment_status_id = :employment_status_id, organization_unit_id = :organization_unit_id, 
+			position = :position, join_date = :join_date, contract_start_date = :contract_start_date, 
+			contract_end_date = :contract_end_date, permanent_date = :permanent_date, resign_date = :resign_date, 
+			resign_reason = :resign_reason, education_level_id = :education_level_id, education_institution = :education_institution, 
+			education_major = :education_major, education_year = :education_year, photo = :photo, ktp_file = :ktp_file, 
+			npwp_number = :npwp_number, npwp_file = :npwp_file, bpjs_kesehatan_number = :bpjs_kesehatan_number, 
+			bpjs_ketenagakerjaan_number = :bpjs_ketenagakerjaan_number, bank_name = :bank_name, 
+			bank_account_number = :bank_account_number, bank_account_name = :bank_account_name, status = :status, 
+			notes = :notes, updated_at = :updated_at
+		WHERE id = :id
+	`
+	_, err := r.db.NamedExec(query, emp)
+	return err
+}

@@ -14,10 +14,12 @@ export default function EmployeeCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<any>({
+        employee_id: '',
         first_name: '',
         last_name: '',
         nik: '',
+        user_id: '',
         gender: 'M',
         place_of_birth: '',
         date_of_birth: '',
@@ -64,15 +66,17 @@ export default function EmployeeCreate() {
     const [orgUnits, setOrgUnits] = useState<{ value: string, label: string }[]>([]);
     const [jobCategories, setJobCategories] = useState<{ value: string, label: string }[]>([]);
     const [employmentStatuses, setEmploymentStatuses] = useState<{ value: string, label: string }[]>([]);
+    const [systemUsers, setSystemUsers] = useState<{ value: string, label: string }[]>([]);
 
     React.useEffect(() => {
         // Fetch Master Data from backend
         const fetchMasterData = async () => {
             try {
-                const [resOrg, resJob, resEmp] = await Promise.all([
+                const [resOrg, resJob, resEmp, resUsers] = await Promise.all([
                     api.get('/org-units?perPage=100'),
                     api.get('/job-categories'),
-                    api.get('/employment-statuses')
+                    api.get('/employment-statuses'),
+                    api.get('/users?perPage=1000')
                 ]);
 
                 if (resOrg.data && resOrg.data.data) {
@@ -98,6 +102,15 @@ export default function EmployeeCreate() {
                     }));
                     setEmploymentStatuses(options);
                 }
+
+                if (resUsers.data && resUsers.data.data) {
+                    const options = resUsers.data.data.map((u: any) => ({
+                        value: u.id.toString(),
+                        label: `${u.name} ${u.nip ? `(${u.nip})` : ''}`
+                    }));
+                    // Tambahkan opsi kosong
+                    setSystemUsers([{ value: '', label: '-- Tanpa Akun User --' }, ...options]);
+                }
             } catch (err) {
                 console.error("Gagal mengambil data master:", err);
             }
@@ -108,11 +121,11 @@ export default function EmployeeCreate() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev: any) => ({ ...prev, [name]: value }));
     };
 
     const handleSelectChange = (name: string, value: string) => {
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev: any) => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -124,6 +137,7 @@ export default function EmployeeCreate() {
             // Konversi ID ke number jika diperlukan sebelum di-post
             const payload = {
                 ...formData,
+                user_id: formData.user_id ? parseInt(formData.user_id) : null,
                 job_category_id: formData.job_category_id ? parseInt(formData.job_category_id) : 1, // Defaulting for now
                 employment_status_id: formData.employment_status_id ? parseInt(formData.employment_status_id) : 1,
                 organization_unit_id: formData.organization_unit_id ? parseInt(formData.organization_unit_id) : null,
@@ -151,7 +165,7 @@ export default function EmployeeCreate() {
                     </Button>
                     <div className="space-y-0.5">
                         <h2 className="text-xl font-semibold">Tambah Karyawan Baru</h2>
-                        <p className="text-sm text-muted-foreground">NIK akan digenerate otomatis berdasarkan tahun masuk dan kategori pekerjaan</p>
+                        <p className="text-sm text-muted-foreground">Silakan lengkapi data karyawan baru</p>
                     </div>
                 </div>
 
@@ -186,9 +200,26 @@ export default function EmployeeCreate() {
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
+                                        <Label htmlFor="employee_id">NIP Karyawan *</Label>
+                                        <Input id="employee_id" name="employee_id" value={formData.employee_id} onChange={handleChange} required placeholder="2026-X-XXX" />
+                                    </div>
+                                    <div className="space-y-2">
                                         <Label htmlFor="nik">NIK KTP *</Label>
                                         <Input id="nik" name="nik" value={formData.nik} onChange={handleChange} required maxLength={16} placeholder="3201234567890001" />
                                     </div>
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <Label htmlFor="user_id">Akun Login (User)</Label>
+                                        <SearchableSelect
+                                            options={systemUsers}
+                                            value={formData.user_id}
+                                            onValueChange={(val) => handleSelectChange('user_id', val === '' ? '' : val)}
+                                            placeholder="Pilih Akun User untuk karyawan ini..."
+                                        />
+                                        <p className="text-xs text-muted-foreground">Pilih akun pengguna jika Karyawan ini akan diberi akses login ke sistem.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="gender">Jenis Kelamin *</Label>
                                         <SearchableSelect
@@ -196,8 +227,8 @@ export default function EmployeeCreate() {
                                             onValueChange={(val) => handleSelectChange('gender', val)}
                                             placeholder="Pilih jenis kelamin"
                                             options={[
-                                                { value: "M", label: "Laki-laki" },
-                                                { value: "F", label: "Perempuan" }
+                                                { value: "male", label: "Laki-laki" },
+                                                { value: "female", label: "Perempuan" }
                                             ]}
                                         />
                                     </div>

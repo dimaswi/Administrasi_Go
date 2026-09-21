@@ -1,0 +1,50 @@
+# ============================================================
+# .dockerignore — Backend (Go)
+# File ini ada di backend/ directory
+# ============================================================
+
+# Binary output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+backend.exe
+build_test.exe
+server
+
+# Build temp
+tmp/
+
+# Test files
+*_test.go
+*.test
+
+# Go workspace (jika ada)
+go.work
+go.work.sum
+
+# Environment (jangan commit ke image!)
+.env
+.env.*
+!.env.example
+
+# Air hot reload
+.air.toml
+
+# Uploads (persisted di volume Docker)
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker files sendiri
+Dockerfile*

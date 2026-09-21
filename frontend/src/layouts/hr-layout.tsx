@@ -157,8 +157,7 @@ const navItems = [
     icon: Users,
     children: [
       { title: 'Data Karyawan', href: '/hr/employees' },
-      { title: 'Jadwal Mingguan', href: '/hr/employee-schedules' },
-      { title: 'Roster Planner (Unit)', href: '/hr/rosters/planner' },
+      { title: 'Jadwal Karyawan', href: '/hr/rosters/planner' },
       { title: 'Tukar Shift', href: '/hr/shift-exchanges' },
       { title: 'Riwayat Absensi', href: '/hr/attendances' },
     ],
@@ -184,18 +183,42 @@ const navItems = [
 function NavMain() {
   const location = useLocation();
   const url = location.pathname;
+  const [openMenu, setOpenMenu] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // Set initial open menu based on active URL
+    const activeItem = navItems.find(item => {
+      if (item.children && item.children.length > 0) {
+        return item.children.some((c: any) => url === c.href || url.startsWith(c.href + '/'));
+      }
+      return url === item.href || url.startsWith(item.href + '/');
+    });
+    if (activeItem && activeItem.children) {
+      setOpenMenu(activeItem.title);
+    }
+  }, [url]);
 
   return (
     <SidebarGroup className="px-2 py-0">
       <SidebarMenu>
         {navItems.map((item) => {
           const hasChildren = item.children && item.children.length > 0;
-          const isActive = url.startsWith(item.href) || (hasChildren && item.children.some((c: any) => url.startsWith(c.href)));
+          let isActive = false;
+          if (hasChildren) {
+            isActive = item.children!.some((c: any) => url === c.href || url.startsWith(c.href + '/'));
+          } else {
+            isActive = url === item.href || url.startsWith(item.href + '/');
+          }
 
           if (!hasChildren) {
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton render={<Link to={item.href} />} isActive={isActive} tooltip={{ children: item.title }}>
+                <SidebarMenuButton 
+                  render={<Link to={item.href} />} 
+                  isActive={isActive} 
+                  tooltip={{ children: item.title }}
+                  className={isActive ? "bg-primary/10 text-primary font-semibold" : ""}
+                >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                 </SidebarMenuButton>
@@ -206,13 +229,14 @@ function NavMain() {
           return (
             <SidebarMenuItem key={item.title}>
               <Collapsible
-                defaultOpen={isActive}
+                open={openMenu === item.title}
+                onOpenChange={(isOpen) => setOpenMenu(isOpen ? item.title : null)}
                 className="group/collapsible w-full"
               >
                 <CollapsibleTrigger render={<SidebarMenuButton
                   tooltip={{ children: item.title }}
                   isActive={isActive}
-                  className="w-full"
+                  className={cn("w-full", isActive ? "text-primary font-semibold" : "")}
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -227,6 +251,7 @@ function NavMain() {
                           <SidebarMenuSubButton
                             render={<Link to={child.href} />}
                             isActive={childActive}
+                            className={childActive ? "bg-primary/10 text-primary font-semibold" : ""}
                           >
                             <span>{child.title}</span>
                           </SidebarMenuSubButton>

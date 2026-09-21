@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Save, CalendarDays, Check, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 
@@ -51,7 +52,7 @@ export default function EmployeeScheduleCreate() {
             return;
         }
         try {
-            const payload = { ...formData };
+            const payload: Record<string, any> = { ...formData };
             Object.keys(payload).forEach(k => {
                 if (k.includes('id') && payload[k] === '') payload[k] = null;
                 if (payload[k] !== null && k.includes('id')) payload[k] = parseInt(payload[k]);
@@ -132,15 +133,12 @@ export default function EmployeeScheduleCreate() {
                                     {days.map((d, i) => (
                                         <div key={d} className="space-y-2">
                                             <Label>{dayNames[i]}</Label>
-                                            <select 
-                                                name={`${d}_shift_id`} 
-                                                value={formData[`${d}_shift_id`]} 
-                                                onChange={handleChange}
-                                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                            >
-                                                <option value="">-- Libur / Tidak ada shift --</option>
-                                                {shifts.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({formatTime(s.clock_in_time)} - {formatTime(s.clock_out_time)})</option>)}
-                                            </select>
+                                            <SearchableSelect
+                                                value={(formData as any)[`${d}_shift_id`]}
+                                                onValueChange={(val) => setFormData(prev => ({ ...prev, [`${d}_shift_id`]: val }))}
+                                                placeholder="-- Libur / Tidak ada shift --"
+                                                options={shifts.map((s: any) => ({ value: s.id.toString(), label: `${s.name} (${formatTime(s.clock_in_time)} - ${formatTime(s.clock_out_time)})` }))}
+                                            />
                                         </div>
                                     ))}
                                 </div>
