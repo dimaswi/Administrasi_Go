@@ -129,11 +129,26 @@ export default function OutgoingLetterCreate() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
+            
+            // Populate auto variables before submit
+            const finalVars = { ...formData.variable_values };
+            if (selectedTemplate?.parsedVars) {
+                selectedTemplate.parsedVars.forEach((v: any) => {
+                    if (v.source && v.source !== 'manual') {
+                        const key = v.name || v.key;
+                        if (v.source === 'auto_number') finalVars[key] = '[Diisi Otomatis oleh Sistem]';
+                        else if (v.source === 'auto_date') finalVars[key] = formData.letter_date;
+                        else if (v.source === 'auto_user') finalVars[key] = '[Pengguna Aktif]';
+                        else if (v.source === 'auto_unit') finalVars[key] = '[Unit Kerja]';
+                    }
+                });
+            }
+
             const payload = {
                 template_id: parseInt(formData.template_id),
                 subject: formData.subject,
                 letter_date: formData.letter_date,
-                variable_values: JSON.stringify(formData.variable_values),
+                variable_values: JSON.stringify(finalVars),
                 signatories: validSignatories.map(s => ({
                     user_id: parseInt(s.user_id),
                     slot_id: s.slot_id,
@@ -164,6 +179,22 @@ export default function OutgoingLetterCreate() {
             setLoading(false);
         }
     };
+
+    const previewVariableValues = { ...formData.variable_values };
+    if (selectedTemplate?.parsedVars) {
+        selectedTemplate.parsedVars.forEach((v: any) => {
+            if (v.source && v.source !== 'manual') {
+                const key = v.key || v.name;
+                if (!previewVariableValues[key]) {
+                    if (v.source === 'auto_number') previewVariableValues[key] = '[Nomor Otomatis]';
+                    else if (v.source === 'auto_date') previewVariableValues[key] = formData.letter_date || new Date().toISOString().split('T')[0];
+                    else if (v.source === 'auto_user') previewVariableValues[key] = '[Nama Penandatangan]';
+                    else if (v.source === 'auto_unit') previewVariableValues[key] = '[Unit Kerja]';
+                    else previewVariableValues[key] = '[Diisi Otomatis]';
+                }
+            }
+        });
+    }
 
     return (
         <AdminLayout>
@@ -278,8 +309,16 @@ export default function OutgoingLetterCreate() {
                                                         <FileText className="h-5 w-5" />
                                                         Isi Variabel Dokumen
                                                     </div>
+                                                    
+                                                    {selectedTemplate.parsedVars.filter((v: any) => !v.source || v.source === 'manual').length === 0 ? (
+                                                        <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg text-center border border-dashed">
+                                                            Semua variabel pada template ini akan diisi secara otomatis oleh sistem saat surat dicetak.
+                                                        </div>
+                                                    ) : (
                                                     <div className="grid grid-cols-1 gap-6">
-                                                        {selectedTemplate.parsedVars.map((v: any) => (
+                                                        {selectedTemplate.parsedVars
+                                                            .filter((v: any) => !v.source || v.source === 'manual')
+                                                            .map((v: any) => (
                                                             <div key={v.key || v.name} className="space-y-2">
                                                                 <Label>{v.label || v.name || v.key}</Label>
                                                                 {v.type === 'textarea' ? (
@@ -316,6 +355,7 @@ export default function OutgoingLetterCreate() {
                                                             </div>
                                                         ))}
                                                     </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </TabsContent>
@@ -404,14 +444,13 @@ export default function OutgoingLetterCreate() {
                                         contentBlocks={selectedTemplate.parsedContent}
                                         signatureSettings={selectedTemplate.parsedSig}
                                         footerSettings={selectedTemplate.parsedFooter || null}
-                                        variableValues={formData.variable_values}
+                                        variableValues={previewVariableValues}
                                         signatoriesData={signatories.map(s => ({
                                             slot_id: s.slot_id,
                                             name: users.find(u => u.id.toString() === s.user_id)?.name || users.find(u => u.id.toString() === s.user_id)?.first_name || '(Nama Penandatangan)',
                                             nip: users.find(u => u.id.toString() === s.user_id)?.nip || ''
                                         }))}
                                         scale={previewScale}
-                                        hideSignature={true}
                                     />
                                 ) : (
                                     <div className="text-muted-foreground flex items-center justify-center h-full">

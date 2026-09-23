@@ -23,7 +23,12 @@ func (r *OutgoingLetterRepository) GetAll(page, perPage int, search string, stat
 
 	offset := (page - 1) * perPage
 
-	queryCount := "SELECT COUNT(*) FROM outgoing_letters ol WHERE ol.deleted_at IS NULL"
+	queryCount := `
+		SELECT COUNT(*) FROM outgoing_letters ol
+		LEFT JOIN document_templates dt ON ol.template_id = dt.id
+		LEFT JOIN users u ON ol.created_by = u.id
+		WHERE ol.deleted_at IS NULL
+	`
 	querySelect := `
 		SELECT ol.*, dt.name as template_name, u.name as creator_name
 		FROM outgoing_letters ol
@@ -45,11 +50,11 @@ func (r *OutgoingLetterRepository) GetAll(page, perPage int, search string, stat
 		searchTerm := "%" + search + "%"
 		var whereClause string
 		if len(args) == 0 {
-			whereClause = " AND (ol.subject ILIKE $1 OR ol.letter_number ILIKE $2)"
-			args = append(args, searchTerm, searchTerm)
+			whereClause = " AND (ol.subject ILIKE $1 OR ol.letter_number ILIKE $2 OR dt.name ILIKE $3 OR u.name ILIKE $4)"
+			args = append(args, searchTerm, searchTerm, searchTerm, searchTerm)
 		} else {
-			whereClause = fmt.Sprintf(" AND (ol.subject ILIKE $%d OR ol.letter_number ILIKE $%d)", len(args)+1, len(args)+2)
-			args = append(args, searchTerm, searchTerm)
+			whereClause = fmt.Sprintf(" AND (ol.subject ILIKE $%d OR ol.letter_number ILIKE $%d OR dt.name ILIKE $%d OR u.name ILIKE $%d)", len(args)+1, len(args)+2, len(args)+3, len(args)+4)
+			args = append(args, searchTerm, searchTerm, searchTerm, searchTerm)
 		}
 		queryCount += whereClause
 		querySelect += whereClause
@@ -123,7 +128,7 @@ func (r *OutgoingLetterRepository) Create(letter *models.OutgoingLetter, signato
 	err = tx.Get(&template, "SELECT code, numbering_format FROM document_templates WHERE id = $1", letter.TemplateID)
 	if err == nil && template.Code != "" {
 		var count int
-		tx.Get(&count, "SELECT COUNT(*) FROM outgoing_letters WHERE extract(year from created_at) = extract(year from current_date)")
+		tx.Get(&count, "SELECT COUNT(*) FROM outgoing_letters WHERE extract(year from created_at) = extract(year from current_date) AND template_id = $1", letter.TemplateID)
 		
 		nomorSurat := fmt.Sprintf("%03d", count+1)
 		kodeSurat := template.Code
@@ -139,6 +144,7 @@ func (r *OutgoingLetterRepository) Create(letter *models.OutgoingLetter, signato
 			// Support bracket styles: [nomor] or {nomor}
 			replacer := strings.NewReplacer(
 				"[nomor]", nomorSurat, "{nomor}", nomorSurat,
+				"[no]", nomorSurat, "{no}", nomorSurat,
 				"[kode]", kodeSurat, "{kode}", kodeSurat,
 				"[bulan]", bulanStr, "{bulan}", bulanStr,
 				"[romawi_bulan]", romawiBulan, "{romawi_bulan}", romawiBulan,
@@ -191,6 +197,171 @@ func (r *OutgoingLetterRepository) Create(letter *models.OutgoingLetter, signato
 				return err
 			}
 		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *OutgoingLetterRepository) Update(id int, letter *models.OutgoingLetter, signatories []models.LetterSignatory) error {
+	tx, err := r.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Get current letter
+	var currentLetter models.OutgoingLetter
+	err = tx.Get(&currentLetter, "SELECT letter_number, template_id FROM outgoing_letters WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+
+	newLetterNumber := currentLetter.LetterNumber
+
+	// Check if letter_number is missing or contains {no}, [no], {nomor}, [nomor]
+	if newLetterNumber == nil || *newLetterNumber == "" || strings.Contains(*newLetterNumber, "{no}") || strings.Contains(*newLetterNumber, "[no]") || strings.Contains(*newLetterNumber, "{nomor}") || strings.Contains(*newLetterNumber, "[nomor]") {
+		// Regenerate letter number
+		var template struct {
+			Code            string  `db:"code"`
+			NumberingFormat *string `db:"numbering_format"`
+		}
+		err = tx.Get(&template, "SELECT code, numbering_format FROM document_templates WHERE id = $1", currentLetter.TemplateID)
+		if err == nil && template.Code != "" {
+			var seq int
+			tx.Get(&seq, "SELECT count(*) FROM outgoing_letters WHERE extract(year from created_at) = extract(year from current_date) AND template_id = $2 AND created_at <= (SELECT created_at FROM outgoing_letters WHERE id = $1)", id, currentLetter.TemplateID)
+			
+			nomorSuratStr := fmt.Sprintf("%03d", seq)
+			kodeSurat := template.Code
+			bulanInt := int(time.Now().Month())
+			bulanStr := fmt.Sprintf("%02d", bulanInt)
+			tahunStr := fmt.Sprintf("%d", time.Now().Year())
+			romawiBulan := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}[bulanInt]
+
+			var num string
+			if template.NumberingFormat != nil && *template.NumberingFormat != "" {
+				format := *template.NumberingFormat
+				replacer := strings.NewReplacer(
+					"[nomor]", nomorSuratStr, "{nomor}", nomorSuratStr,
+					"[no]", nomorSuratStr, "{no}", nomorSuratStr,
+					"[kode]", kodeSurat, "{kode}", kodeSurat,
+					"[bulan]", bulanStr, "{bulan}", bulanStr,
+					"[romawi_bulan]", romawiBulan, "{romawi_bulan}", romawiBulan,
+					"[tahun]", tahunStr, "{tahun}", tahunStr,
+				)
+				num = replacer.Replace(format)
+			} else {
+				num = fmt.Sprintf("%s/%s/%s/%s", nomorSuratStr, kodeSurat, bulanStr, tahunStr)
+			}
+			newLetterNumber = &num
+		}
+	}
+
+	query := `
+		UPDATE outgoing_letters SET
+			letter_number = $1, subject = $2, letter_date = $3, variable_values = $4, updated_at = NOW()
+		WHERE id = $5
+	`
+	_, err = tx.Exec(query,
+		newLetterNumber,
+		letter.Subject,
+		letter.LetterDate,
+		letter.VariableValues,
+		id,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// Delete existing signatories
+	_, err = tx.Exec("DELETE FROM letter_signatories WHERE letter_id = $1", id)
+	if err != nil {
+		return err
+	}
+
+	// Insert Signatories
+	if len(signatories) > 0 {
+		sigQuery := `
+			INSERT INTO letter_signatories (
+				letter_id, user_id, slot_id, sign_order, status, created_at, updated_at
+			) VALUES (
+				$1, $2, $3, $4, $5, NOW(), NOW()
+			)
+		`
+		for _, sig := range signatories {
+			_, err = tx.Exec(sigQuery, id, sig.UserID, sig.SlotID, sig.SignOrder, "pending")
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *OutgoingLetterRepository) UpdateStatus(id int, status string) error {
+	_, err := r.DB.Exec("UPDATE outgoing_letters SET status = $1, updated_at = NOW() WHERE id = $2", status, id)
+	return err
+}
+
+func (r *OutgoingLetterRepository) Sign(letterID int, userID int) error {
+	tx, err := r.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Update signatory
+	res, err := tx.Exec("UPDATE letter_signatories SET status = 'signed', signed_at = NOW(), updated_at = NOW() WHERE letter_id = $1 AND user_id = $2 AND status = 'pending'", letterID, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("signatory not found or not pending")
+	}
+
+	// Check remaining pending
+	var pendingCount int
+	err = tx.Get(&pendingCount, "SELECT COUNT(*) FROM letter_signatories WHERE letter_id = $1 AND status = 'pending'", letterID)
+	if err != nil {
+		return err
+	}
+
+	newStatus := "partially_signed"
+	if pendingCount == 0 {
+		newStatus = "fully_signed"
+	}
+
+	_, err = tx.Exec("UPDATE outgoing_letters SET status = $1, updated_at = NOW() WHERE id = $2", newStatus, letterID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *OutgoingLetterRepository) Reject(letterID int, userID int, reason string) error {
+	tx, err := r.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Update signatory
+	res, err := tx.Exec("UPDATE letter_signatories SET status = 'rejected', updated_at = NOW() WHERE letter_id = $1 AND user_id = $2 AND status = 'pending'", letterID, userID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("signatory not found or not pending")
+	}
+
+	// Update letter
+	_, err = tx.Exec("UPDATE outgoing_letters SET status = 'rejected', revision_requested = true, revision_request_notes = $1, revision_requested_by = $2, updated_at = NOW() WHERE id = $3", reason, userID, letterID)
+	if err != nil {
+		return err
 	}
 
 	return tx.Commit()

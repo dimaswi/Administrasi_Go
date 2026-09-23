@@ -93,6 +93,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 		}
 
 		api.GET("/settings", settingHandler.GetAll)
+		api.GET("/verify/outgoing-letters/:id", outgoingLetterHandler.Verify)
 
 		// Protected routes
 		protected := api.Group("/")
@@ -254,7 +255,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				incomingLetters.GET("", incomingLetterHandler.Index)
 				incomingLetters.GET("/:id", incomingLetterHandler.Show)
 				incomingLetters.POST("", incomingLetterHandler.Create)
-				
+
 				// Dispositions for a specific letter
 				incomingLetters.GET("/:id/dispositions", dispositionHandler.GetByLetter)
 			}
@@ -264,6 +265,9 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 			{
 				documentTemplates.GET("", documentTemplateHandler.GetAll)
 				documentTemplates.GET("/:id", documentTemplateHandler.GetByID)
+				documentTemplates.POST("", documentTemplateHandler.Create)
+				documentTemplates.PUT("/:id", documentTemplateHandler.Update)
+				documentTemplates.DELETE("/:id", documentTemplateHandler.Delete)
 			}
 
 			// Outgoing Letters
@@ -272,6 +276,11 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				outgoingLetters.GET("", outgoingLetterHandler.GetAll)
 				outgoingLetters.GET("/:id", outgoingLetterHandler.GetByID)
 				outgoingLetters.POST("", outgoingLetterHandler.Create)
+				outgoingLetters.PUT("/:id", outgoingLetterHandler.Update)
+				outgoingLetters.PUT("/:id/submit", outgoingLetterHandler.Submit)
+				outgoingLetters.PUT("/:id/sign", outgoingLetterHandler.SignLetter)
+				outgoingLetters.PUT("/:id/reject", outgoingLetterHandler.RejectLetter)
+				outgoingLetters.GET("/:id/pdf", outgoingLetterHandler.GeneratePDF)
 			}
 
 			// Dispositions
@@ -299,29 +308,29 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				meetings.POST("", meetingHandler.Create)
 				meetings.PUT("/:id", meetingHandler.Update)
 				meetings.DELETE("/:id", meetingHandler.Delete)
-				
+
 				// Lifecycle
 				meetings.POST("/:id/start", meetingHandler.StartMeeting)
 				meetings.PUT("/:id/complete", meetingHandler.CompleteMeeting)
 				meetings.POST("/:id/cancel", meetingHandler.CancelMeeting)
-				
+
 				// Participants
 				meetings.GET("/:id/participants", meetingHandler.GetParticipants)
 				meetings.POST("/:id/participants", meetingHandler.AddParticipant)
 				meetings.DELETE("/:id/participants/:participantId", meetingHandler.RemoveParticipant)
 				meetings.PUT("/:id/participants/:participantId/attendance", meetingHandler.UpdateAttendance)
-				
+
 				// Action Items
 				meetings.GET("/:id/action-items", meetingHandler.GetActionItems)
 				meetings.POST("/:id/action-items", meetingHandler.CreateActionItem)
 				meetings.PUT("/:id/action-items/:itemId", meetingHandler.UpdateActionItem)
 				meetings.DELETE("/:id/action-items/:itemId", meetingHandler.DeleteActionItem)
-				
+
 				// Docs
 				meetings.GET("/:id/generate-memo", meetingHandler.GenerateMemo)
 				meetings.GET("/:id/generate-attendance", meetingHandler.GenerateAttendance)
 				meetings.GET("/:id/generate-invitation", meetingHandler.GenerateInvitation)
-				
+
 				// Features
 				meetings.POST("/:id/check-in", meetingHandler.CheckIn)
 				meetings.POST("/check-in-by-token", meetingHandler.CheckInByToken)
@@ -341,4 +350,3 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 
 	return r
 }
-

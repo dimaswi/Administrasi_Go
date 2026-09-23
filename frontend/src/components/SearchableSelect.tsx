@@ -20,6 +20,7 @@ import {
 export interface Option {
   value: string;
   label: string;
+  render?: React.ReactNode;
 }
 
 export interface SearchableSelectProps {
@@ -69,7 +70,7 @@ export function SearchableSelect({
         </span>
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
-      <PopoverContent className="w-(--anchor-width) p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[140px] p-0" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -90,7 +91,7 @@ export function SearchableSelect({
                       value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option.label}
+                  {option.render ? option.render : option.label}
                 </CommandItem>
               ))}
             </CommandGroup>

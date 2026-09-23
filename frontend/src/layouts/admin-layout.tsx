@@ -157,7 +157,7 @@ const navItems = [
     children: [
       { title: 'Surat Masuk', href: '/admin/incoming-letters' },
       { title: 'Surat Keluar', href: '/admin/outgoing-letters' },
-      { title: 'Template Surat', href: '/admin/document-templates' },
+      { title: 'Template Surat', href: '/arsip/document-templates' },
     ],
   },
   {
@@ -323,7 +323,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/50 bg-background px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />

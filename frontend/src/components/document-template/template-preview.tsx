@@ -1,7 +1,15 @@
-import type { PageSettings, HeaderSettings, ContentBlock, SignatureSettings, FooterSettings } from '@/types/document-template';
+import { PageSettings, HeaderSettings, ContentBlock, SignatureSettings, FooterSettings } from '@/types/document-template';
 import { useMemo, useState, useEffect } from 'react';
 
-import QRCode from 'qrcode';
+// Dynamically import QRCode only when needed
+let QRCode: typeof import('qrcode') | null = null;
+if (typeof window !== 'undefined') {
+    import('qrcode').then(module => {
+        QRCode = module;
+    }).catch(() => {
+        // QRCode not available
+    });
+}
 
 interface SignatoryData {
     slot_id: string;
@@ -20,9 +28,10 @@ interface PreviewProps {
     scale?: number;
     variableValues?: Record<string, any>;
     signatoriesData?: SignatoryData[];
-    verificationUrl?: string;  // URL for QR code verification
+    verificationUrl?: string; // URL for QR code
     showQrCode?: boolean;  // Whether to show QR code (for fully signed letters)
-    hideSignature?: boolean;  // Hide signature section (for letter preview before signing)
+    hideSignature?: boolean; // Option to hide signature section entirely
+    isPrintMode?: boolean; // If true, hides placeholders like [Teks] and [tanda tangan]
 }
 
 // Paper sizes in mm
@@ -58,21 +67,30 @@ export function TemplatePreview({
     verificationUrl,
     showQrCode = false,
     hideSignature = false,
+    isPrintMode = false,
 }: PreviewProps) {
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
 
+    // Generate QR code when verificationUrl changes
     useEffect(() => {
         if (showQrCode && verificationUrl) {
-            QRCode.toDataURL(verificationUrl, {
-                width: 150,
-                margin: 0,
-                color: {
-                    dark: '#000000',
-                    light: '#ffffff'
-                }
-            })
-            .then((url: string) => setQrCodeDataUrl(url))
-            .catch((err: any) => console.error('Error generating QR code:', err));
+            import('qrcode').then(QRCode => {
+                QRCode.toDataURL(verificationUrl, {
+                    width: 400,
+                    margin: 1,
+                    errorCorrectionLevel: 'H',
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff',
+                    },
+                }).then(url => {
+                    setQrCodeDataUrl(url);
+                }).catch(() => {
+                    setQrCodeDataUrl(null);
+                });
+            }).catch(() => {
+                setQrCodeDataUrl(null);
+            });
         } else {
             setQrCodeDataUrl(null);
         }
@@ -80,10 +98,10 @@ export function TemplatePreview({
 
     const paperSize = paperSizes[pageSettings.paper_size];
     const isLandscape = pageSettings.orientation === 'landscape';
-
+    
     const pageWidth = isLandscape ? paperSize.height : paperSize.width;
     const pageHeight = isLandscape ? paperSize.width : paperSize.height;
-
+    
     const scaledWidth = mmToPx(pageWidth) * scale;
     const scaledHeight = mmToPx(pageHeight) * scale;
 
@@ -92,15 +110,13 @@ export function TemplatePreview({
     // Helper function to replace variables in text
     const replaceVariables = (text: string): string => {
         if (!text) return text;
-        const replaced = text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-            return variableValues[key] !== undefined && variableValues[key] !== ''
-                ? String(variableValues[key])
+        return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+            return variableValues[key] !== undefined && variableValues[key] !== '' 
+                ? String(variableValues[key]) 
                 : match;
         });
-        // Normalize: sequences of 3+ spaces (from old Input field data) → newline
-        return replaced.replace(/ {3,}/g, '\n');
     };
-
+    
     // Get layout columns count
     const getColumnCount = () => {
         const layout = signatureSettings?.layout || '1-column';
@@ -145,27 +161,29 @@ export function TemplatePreview({
     const shouldShowSignature = (pageNumber: number, totalPages: number) => {
         // If hideSignature is true, never show signature
         if (hideSignature) return false;
-
+        
         const pos = signatureSettings?.page_position;
-
+        
+        if (pos === 'all') return true;
+        
         // Default to last page if not set
         if (pos === undefined || pos === null || pos === 'last') {
             return pageNumber === totalPages;
         }
-
+        
         // Convert to number for comparison
         const posNum = Number(pos);
-
+        
         // If invalid number, default to last page
         if (isNaN(posNum) || posNum < 1) {
             return pageNumber === totalPages;
         }
-
+        
         // If position is greater than total pages, show on last page
         if (posNum > totalPages) {
             return pageNumber === totalPages;
         }
-
+        
         return pageNumber === posNum;
     };
 
@@ -174,12 +192,12 @@ export function TemplatePreview({
         if (!headerSettings.enabled || !showHeader) return null;
 
         return (
-            <div
+            <div 
                 className="relative"
                 style={{
                     minHeight: headerSettings.use_image ? 'auto' : mmToPx(headerSettings.height),
                     marginBottom: mmToPx(headerSettings.margin_bottom),
-                    borderBottom: headerSettings.border_bottom.enabled
+                    borderBottom: headerSettings.border_bottom.enabled 
                         ? `${headerSettings.border_bottom.width}px ${headerSettings.border_bottom.style === 'double' ? 'double' : 'solid'} ${headerSettings.border_bottom.color}`
                         : 'none',
                     paddingBottom: headerSettings.border_bottom.enabled ? 8 : 0,
@@ -195,18 +213,18 @@ export function TemplatePreview({
                                     alt="Kop Surat"
                                     style={{
                                         width: '100%',
-                                        height: headerSettings.header_image.height
-                                            ? mmToPx(headerSettings.header_image.height)
+                                        height: headerSettings.header_image.height 
+                                            ? mmToPx(headerSettings.header_image.height) 
                                             : 'auto',
                                         objectFit: headerSettings.header_image.height ? 'cover' : 'contain',
                                     }}
                                 />
                             </div>
                         ) : (
-                            <div
+                            <div 
                                 className="flex items-center justify-center text-gray-300 border border-dashed border-gray-300 rounded"
-                                style={{
-                                    width: '100%',
+                                style={{ 
+                                    width: '100%', 
                                     height: mmToPx(40),
                                 }}
                             >
@@ -221,11 +239,11 @@ export function TemplatePreview({
                     <>
                         {/* Logo */}
                         {headerSettings.logo.enabled && headerSettings.logo.src && (
-                            <div
+                            <div 
                                 className="absolute top-0"
                                 style={{
-                                    left: headerSettings.logo.position === 'left' ? mmToPx(headerSettings.logo.margin || 0) :
-                                        headerSettings.logo.position === 'center' ? '50%' : 'auto',
+                                    left: headerSettings.logo.position === 'left' ? mmToPx(headerSettings.logo.margin || 0) : 
+                                          headerSettings.logo.position === 'center' ? '50%' : 'auto',
                                     right: headerSettings.logo.position === 'right' ? mmToPx(headerSettings.logo.margin || 0) : 'auto',
                                     transform: headerSettings.logo.position === 'center' ? 'translateX(-50%)' : 'none',
                                 }}
@@ -243,14 +261,14 @@ export function TemplatePreview({
                         )}
 
                         {/* Text Lines */}
-                        <div
+                        <div 
                             className="flex flex-col"
                             style={{
-                                marginLeft: headerSettings.logo.enabled && headerSettings.logo.position === 'left'
-                                    ? mmToPx(headerSettings.logo.width + (headerSettings.logo.margin || 5) + 3)
+                                marginLeft: headerSettings.logo.enabled && headerSettings.logo.position === 'left' 
+                                    ? mmToPx(headerSettings.logo.width + (headerSettings.logo.margin || 5) + 3) 
                                     : 0,
-                                marginRight: headerSettings.logo.enabled && headerSettings.logo.position === 'right'
-                                    ? mmToPx(headerSettings.logo.width + (headerSettings.logo.margin || 5) + 3)
+                                marginRight: headerSettings.logo.enabled && headerSettings.logo.position === 'right' 
+                                    ? mmToPx(headerSettings.logo.width + (headerSettings.logo.margin || 5) + 3) 
                                     : 0,
                             }}
                         >
@@ -267,7 +285,7 @@ export function TemplatePreview({
                                         marginBottom: mmToPx(line.margin_bottom),
                                     }}
                                 >
-                                    {line.content || <span className="text-gray-400 italic text-sm">[Teks baris]</span>}
+                                    {line.content || (!isPrintMode && <span className="text-gray-400 italic text-sm">[Teks baris]</span>)}
                                 </div>
                             ))}
                         </div>
@@ -309,23 +327,23 @@ export function TemplatePreview({
 
             if (block.type === 'spacer') {
                 return (
-                    <div
-                        key={block.id}
-                        style={{
+                    <div 
+                        key={block.id} 
+                        style={{ 
                             height: mmToPx(style.margin_top + style.margin_bottom + 5),
-                        }}
+                        }} 
                     />
                 );
             }
 
             if (block.type === 'paragraph') {
                 return (
-                    <p
+                    <p 
                         key={block.id}
-                        className="whitespace-pre-wrap"
                         style={{
                             ...commonStyle,
                             textIndent: mmToPx(style.indent_first_line),
+                            whiteSpace: 'pre-wrap',
                         }}
                     >
                         {block.content ? replaceVariables(block.content) : <span className="text-gray-400 italic text-sm">[Paragraf]</span>}
@@ -337,7 +355,7 @@ export function TemplatePreview({
             if (block.type === 'letter-opening') {
                 const config = block.letter_opening;
                 const dateConfig = config?.date;
-
+                
                 // Format date to Indonesian format
                 const formatDateIndonesian = (dateStr: string) => {
                     if (!dateStr) return '';
@@ -346,8 +364,8 @@ export function TemplatePreview({
                     // Try to parse from yyyy-mm-dd
                     const parts = dateStr.split('-');
                     if (parts.length === 3) {
-                        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                                       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                         const day = parseInt(parts[2], 10);
                         const month = months[parseInt(parts[1], 10) - 1];
                         const year = parts[0];
@@ -355,7 +373,7 @@ export function TemplatePreview({
                     }
                     return dateStr;
                 };
-
+                
                 // Helper function to get slot text
                 const getSlotText = (slot: { source: string; text: string; prefix?: string }) => {
                     const prefix = slot.prefix || '';
@@ -365,38 +383,38 @@ export function TemplatePreview({
                     }
                     return prefix + slot.text;
                 };
-
+                
                 // Get column slots
                 const getColumnSlots = (column: number) => {
                     return (config?.recipient_slots || [])
                         .filter(s => s.column === column)
                         .sort((a, b) => a.order - b.order);
                 };
-
+                
                 const columnCount = config?.recipient_layout === '2-column' ? 2 : 1;
-
+                
                 return (
-                    <div key={block.id} style={commonStyle}>
+                    <div key={block.id} style={{ ...commonStyle, whiteSpace: 'pre-wrap' }}>
                         {/* Tanggal dan Tempat */}
                         {dateConfig?.enabled && (
-                            <div style={{
+                            <div style={{ 
                                 textAlign: dateConfig.position || 'right',
                                 marginBottom: mmToPx(dateConfig.spacing_bottom || 10),
                             }}>
                                 {dateConfig.show_place && (
                                     <span>
-                                        {dateConfig.place_source === 'variable'
+                                        {dateConfig.place_source === 'variable' 
                                             ? replaceVariables(dateConfig.place_text)
                                             : dateConfig.place_text}
                                     </span>
                                 )}
                                 {dateConfig.show_place && ', '}
-                                {dateConfig.date_source === 'variable'
+                                {dateConfig.date_source === 'variable' 
                                     ? formatDateIndonesian(replaceVariables(dateConfig.date_variable))
                                     : formatDateIndonesian(dateConfig.date_manual) || ''}
                             </div>
                         )}
-
+                        
                         {/* Penerima */}
                         {(config?.recipient_slots?.length || 0) > 0 && (
                             <div style={{ marginBottom: mmToPx(config?.spacing_after_recipient || 10) }}>
@@ -447,37 +465,31 @@ export function TemplatePreview({
                 }
 
                 return (
-                    <div key={block.id} style={commonStyle}>
+                    <div key={block.id} style={{ ...commonStyle, whiteSpace: 'pre-wrap' }}>
                         {items.map((item) => (
-                            <div
-                                key={item.id}
-                                style={{
+                            <div 
+                                key={item.id} 
+                                style={{ 
                                     display: 'flex',
                                     alignItems: 'flex-start',
                                 }}
                             >
-                                <span style={{
+                                <span style={{ 
                                     width: mmToPx(labelWidth),
                                     flexShrink: 0,
                                 }}>
                                     {item.label ? replaceVariables(item.label) : <span className="text-gray-400">[Label]</span>}
                                 </span>
-                                <span style={{
+                                <span style={{ 
                                     width: mmToPx(5),
                                     flexShrink: 0,
                                     textAlign: 'center',
                                 }}>
                                     {separator}
                                 </span>
-                                <div style={{ flex: 1 }}>
-                                    {item.value ? (
-                                        replaceVariables(item.value).split('\n').map((line, i) => (
-                                            <div key={i} style={{ minHeight: '1.2em' }}>{line}</div>
-                                        ))
-                                    ) : (
-                                        <span className="text-gray-400">[Nilai]</span>
-                                    )}
-                                </div>
+                                <span style={{ flex: 1 }}>
+                                    {item.value ? replaceVariables(item.value) : <span className="text-gray-400">[Nilai]</span>}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -496,9 +508,9 @@ export function TemplatePreview({
                 }
 
                 return (
-                    <div key={block.id} style={commonStyle}>
-                        <table
-                            style={{
+                    <div key={block.id} style={{ ...commonStyle, whiteSpace: 'pre-wrap' }}>
+                        <table 
+                            style={{ 
                                 width: '100%',
                                 borderCollapse: 'collapse',
                                 fontSize: style.font_size ? ptToPx(style.font_size) : ptToPx(defaultFont.size),
@@ -513,15 +525,14 @@ export function TemplatePreview({
                                             return (
                                                 <CellTag
                                                     key={colIndex}
-                                                    className="whitespace-pre-wrap"
                                                     style={{
                                                         border: tableConfig.border ? `1px solid ${tableConfig.border_color || '#000'}` : 'none',
                                                         padding: mmToPx(tableConfig.cell_padding || 2),
                                                         textAlign: cell.align || 'left',
                                                         fontWeight: isHeader || cell.bold ? 'bold' : 'normal',
                                                         backgroundColor: isHeader ? '#f3f4f6' : 'transparent',
-                                                        width: tableConfig.column_widths?.[colIndex]
-                                                            ? `${tableConfig.column_widths[colIndex]}%`
+                                                        width: tableConfig.column_widths?.[colIndex] 
+                                                            ? `${tableConfig.column_widths[colIndex]}%` 
                                                             : 'auto',
                                                     }}
                                                     colSpan={cell.colspan || 1}
@@ -540,8 +551,8 @@ export function TemplatePreview({
             }
 
             return (
-                <div key={block.id} className="whitespace-pre-wrap" style={commonStyle}>
-                    {block.content ? replaceVariables(block.content) : <span className="text-gray-400 italic text-sm">[Teks]</span>}
+                <div key={block.id} style={{ ...commonStyle, whiteSpace: 'pre-wrap' }}>
+                    {block.content ? replaceVariables(block.content) : (!isPrintMode && <span className="text-gray-400 italic text-sm">[Teks]</span>)}
                 </div>
             );
         });
@@ -552,17 +563,17 @@ export function TemplatePreview({
         // Always show signature section in template builder (even if no slots yet)
         // But hide if hideSignature is explicitly set
         if (hideSignature) return null;
-
+        
         const columnCount = getColumnCount();
         const hasSlots = signatureSettings?.slots?.length > 0;
         const showQrInSignature = showQrCode && qrCodeDataUrl;
-
+        
         // Check if we're in "letter mode" (has signatory data) vs "template builder mode"
         const isLetterMode = signatoriesData && signatoriesData.length > 0;
 
         return (
             <div style={{ marginTop: mmToPx(signatureSettings.margin_top || 20) }}>
-                <div
+                <div 
                     className="grid"
                     style={{
                         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
@@ -584,7 +595,7 @@ export function TemplatePreview({
                             // In template builder, show placeholder
                             return (
                                 <div key={colIndex} className="text-center">
-                                    <div className="text-gray-300 border border-dashed border-gray-300 p-4 text-xs">
+                                    <div className="text-gray-300 border border-dashed border-gray-300 rounded p-4 text-xs">
                                         [Slot TTD Kolom {colIndex + 1}]
                                     </div>
                                 </div>
@@ -592,20 +603,19 @@ export function TemplatePreview({
                         }
 
                         return (
-                            <div key={colIndex} className="flex flex-col" style={{ minWidth: 0 }}>
+                            <div key={colIndex} className="flex flex-col">
                                 {columnSlots.map((slot) => {
                                     // Find signatory data for this slot
                                     const signatoryInfo = signatoriesData.find(s => s.slot_id === slot.id);
                                     const hasSignatory = signatoryInfo && signatoryInfo.name;
                                     const isSigned = signatoryInfo?.signed;
-
+                                    
                                     return (
-                                        <div
+                                        <div 
                                             key={slot.id}
                                             style={{
                                                 textAlign: slot.text_align,
                                                 fontSize: ptToPx(slot.font_size),
-                                                wordWrap: 'break-word',
                                             }}
                                         >
                                             {slot.label_above && (
@@ -614,22 +624,28 @@ export function TemplatePreview({
                                             {slot.label_position && (
                                                 <div className="mb-1">{replaceVariables(slot.label_position)}</div>
                                             )}
-                                            <div
-                                                style={{
+                                            <div 
+                                                style={{ 
                                                     height: mmToPx(slot.signature_height),
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: slot.text_align === 'center' ? 'center'
+                                                    justifyContent: slot.text_align === 'center' ? 'center' 
                                                         : slot.text_align === 'right' ? 'flex-end' : 'flex-start',
                                                 }}
                                             >
                                                 {/* QR Code in signature area when signed */}
                                                 {isSigned && showQrInSignature ? (
-                                                    <img
-                                                        src={qrCodeDataUrl}
-                                                        alt="QR Code"
-                                                        style={{ width: mmToPx(18), height: mmToPx(18) }}
-                                                    />
+                                                    <div className="relative inline-flex items-center justify-center">
+                                                                <img 
+                                                                    src={qrCodeDataUrl} 
+                                                                    alt="QR Code" 
+                                                                    className="w-20 h-20"
+                                                                    style={{ imageRendering: 'pixelated' }}
+                                                                />
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <img src="/1.png" style={{ width: '20%', height: '20%', backgroundColor: 'white', padding: '1px', borderRadius: '2px' }} />
+                                                        </div>
+                                                    </div>
                                                 ) : isSigned ? (
                                                     <div className="flex flex-col items-center">
                                                         <div className="text-green-700 text-center text-[10px] italic border-b border-green-600 pb-0.5">
@@ -637,7 +653,7 @@ export function TemplatePreview({
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-gray-500 border-b-2 border-dashed border-gray-400 w-32 text-center text-xs py-2">
+                                                    !isPrintMode && <div className="text-gray-500 border-b-2 border-dashed border-gray-400 w-32 text-center text-xs py-2">
                                                         [tanda tangan]
                                                     </div>
                                                 )}
@@ -679,12 +695,12 @@ export function TemplatePreview({
         if (!footerSettings?.enabled && !showVerificationFooter) return null;
 
         return (
-            <div
-                className="absolute bottom-0 left-0 right-0"
+            <div 
+                className="absolute left-0 right-0"
                 style={{
+                    bottom: mmToPx(8), // Jarak ideal dari bawah agar rapi
                     paddingLeft: mmToPx(pageSettings.margins.left),
                     paddingRight: mmToPx(pageSettings.margins.right),
-                    marginBottom: mmToPx(pageSettings.margins.bottom),
                 }}
             >
                 {/* Original footer content */}
@@ -694,29 +710,35 @@ export function TemplatePreview({
                             height: mmToPx(footerSettings.height),
                             textAlign: footerSettings.text_align,
                             fontSize: ptToPx(footerSettings.font_size),
-                            color: footerSettings.text_color,
-                            borderTop: footerSettings.show_page_numbers ? '1px solid #e5e7eb' : 'none',
-                            paddingTop: ptToPx(5),
                         }}
                     >
-                        {replaceVariables(footerSettings.content)}
+                        {footerSettings.content || <span className="text-gray-400 italic text-sm">[Footer]</span>}
                     </div>
                 )}
 
-                {/* QR Code Verification Footer */}
+                {/* Verification footer with QR code */}
                 {showVerificationFooter && (
-                    <div
-                        className="border-t border-gray-300 pt-2 mt-1 flex items-center gap-2"
-                        style={{ fontSize: ptToPx(7) }}
+                    <div 
+                        className="flex items-center gap-2 pt-2 border-t-2"
+                        style={{ 
+                            fontSize: ptToPx(6.5), // Perkecil ukuran font
+                            borderColor: 'rgba(37, 99, 235, 0.2)', // Light blue border
+                        }}
                     >
-                        <img
-                            src={qrCodeDataUrl}
-                            alt="QR Verifikasi"
-                            style={{ width: mmToPx(12), height: mmToPx(12) }}
-                        />
-                        <div className="text-gray-500">
-                            <div>Dokumen ini ditandatangani secara elektronik</div>
-                            <div>dan sah sesuai UU ITE. Scan QR untuk verifikasi.</div>
+                        <div className="relative flex-shrink-0 inline-flex items-center justify-center">
+                            <img 
+                                src={qrCodeDataUrl} 
+                                alt="QR Verifikasi" 
+                                style={{ width: mmToPx(18), height: mmToPx(18), imageRendering: 'pixelated' }} // Diperbesar dan ditajamkan
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <img src="/1.png" style={{ width: '20%', height: '20%', backgroundColor: 'white', padding: '1px', borderRadius: '2px' }} />
+                            </div>
+                        </div>
+                        <div className="text-slate-700 flex flex-col justify-center leading-relaxed">
+                            <div className="font-bold text-blue-900 mb-0.5" style={{ fontSize: ptToPx(7.5) }}>Dokumen Elektronik Resmi</div>
+                            <div>Surat ini telah ditandatangani secara elektronik dan sah sesuai dengan <b>Undang-Undang ITE</b>.</div>
+                            <div>Pindai kode QR di samping untuk memverifikasi keaslian dokumen.</div>
                         </div>
                     </div>
                 )}
@@ -728,11 +750,11 @@ export function TemplatePreview({
     const renderPage = (page: PageContent, pageIndex: number, totalPages: number) => {
         const showSig = shouldShowSignature(page.pageNumber, totalPages);
         const isFirstPage = pageIndex === 0;
-
+        
         return (
-            <div
+            <div 
                 key={pageIndex}
-                className="bg-white shadow-lg border border-gray-300 template-preview-content"
+                className="bg-white shadow-lg border border-gray-300 template-preview-content print:shadow-none print:border-none print:m-0"
                 style={{
                     width: scaledWidth,
                     height: scaledHeight,
@@ -775,17 +797,17 @@ export function TemplatePreview({
     };
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-8 pb-12 pt-4 mx-auto print:gap-0 print:p-0">
             {pages.map((page, index) => {
                 const showSig = shouldShowSignature(page.pageNumber, pages.length);
                 const hasContent = page.blocks.length > 0;
-
+                
                 // Always show all pages - don't skip any
                 return (
                     <div key={index} className="relative">
                         {/* Page number indicator */}
                         {pages.length > 1 && (
-                            <div className="absolute -top-5 left-0 text-xs text-muted-foreground">
+                            <div className="absolute -top-5 left-0 text-xs text-muted-foreground print:hidden">
                                 Halaman {page.pageNumber} dari {pages.length}
                                 {!page.showHeader && index > 0 && (
                                     <span className="ml-2 text-amber-600">(tanpa kop)</span>
@@ -799,6 +821,8 @@ export function TemplatePreview({
                     </div>
                 );
             })}
+            {/* Spacer to force margin below the paper in the canvas */}
+            <div className="h-12 shrink-0 w-full print:hidden" />
         </div>
     );
 }

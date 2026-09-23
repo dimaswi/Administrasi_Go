@@ -157,8 +157,6 @@ export interface FooterSettings {
     content: string;
     text_align: 'left' | 'center' | 'right';
     font_size: number;
-    text_color?: string;
-    show_page_numbers?: boolean;
 }
 
 export interface SignatureSlot {
@@ -178,7 +176,7 @@ export interface SignatureSettings {
     margin_top: number;
     layout: '1-column' | '2-column' | '3-column' | '4-column';
     column_gap: number;
-    page_position: 'last' | number; // 'last' = halaman terakhir, angka = halaman tertentu
+    page_position: 'last' | 'all' | number; // 'last' = halaman terakhir, 'all' = semua halaman, angka = halaman tertentu
     slots: SignatureSlot[];
 }
 
@@ -194,11 +192,14 @@ export interface TemplateVariable {
     placeholder: string;
 }
 
+export type TemplateType = 'general' | 'leave' | 'early_leave' | 'leave_response' | 'early_leave_response';
+
 export interface DocumentTemplate {
     id?: number;
     name: string;
     code: string;
     category: string | null;
+    template_type: TemplateType;
     organization_unit_id: number | null;
     numbering_group_id: number | null;
     description: string | null;

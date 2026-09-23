@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { IndexPage } from '@/components/ui/index-page';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Plus } from 'lucide-react';
+import { Eye, Plus, Pencil } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
 
 interface OutgoingLetter {
@@ -74,7 +74,7 @@ export default function OutgoingLetterIndex() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'draft': return <Badge variant="secondary">Draft</Badge>;
-            case 'pending_approval': return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending Approval</Badge>;
+            case 'pending': return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending</Badge>;
             case 'partially_signed': return <Badge className="bg-blue-500 hover:bg-blue-600">Partially Signed</Badge>;
             case 'fully_signed': return <Badge className="bg-green-500 hover:bg-green-600">Fully Signed</Badge>;
             case 'rejected': return <Badge variant="destructive">Rejected</Badge>;
@@ -98,8 +98,8 @@ export default function OutgoingLetterIndex() {
                 <div>{new Date(item.letter_date).toLocaleDateString('id-ID')}</div>
             )
         },
-        { 
-            label: 'Perihal', 
+        {
+            label: 'Perihal',
             key: 'subject',
             render: (item: OutgoingLetter) => (
                 <div className="max-w-[300px] truncate" title={item.subject}>
@@ -119,13 +119,23 @@ export default function OutgoingLetterIndex() {
             key: 'actions',
             render: (item: OutgoingLetter) => (
                 <div className="flex gap-2">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => navigate(`/admin/outgoing-letters/${item.id}`)}
                     >
-                        <Eye className="w-4 h-4 mr-1" /> Detail
+                        <Eye className="w-4 h-4" />
                     </Button>
+                    {['draft', 'pending', 'revision_requested'].includes(item.status) && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => navigate(`/admin/outgoing-letters/${item.id}/edit`)}
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </Button>
+                    )}
                 </div>
             )
         }
@@ -152,6 +162,7 @@ export default function OutgoingLetterIndex() {
                     last_page: Math.ceil(total / perPage) || 1
                 }}
                 onPageChange={handlePageChange}
+                onPerPageChange={(perPage) => setSearchParams(prev => { prev.set('per_page', perPage.toString()); prev.set('page', '1'); return prev; })}
                 onSearchChange={handleSearch}
                 searchValue={searchQuery}
                 isLoading={loading}
