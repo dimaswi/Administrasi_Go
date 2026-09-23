@@ -21,3 +21,13 @@ type Disposition struct {
 	UpdatedAt           time.Time  `db:"updated_at" json:"updated_at"`
 	DeletedAt           *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }
+
+type DispositionWithDetails struct {
+	Disposition
+	FromUserName           string    `db:"from_user_name" json:"from_user_name"`
+	IncomingNumber         string    `db:"incoming_number" json:"incoming_number"`
+	IncomingSubject        string    `db:"incoming_subject" json:"incoming_subject"`
+	IncomingSender         string    `db:"incoming_sender" json:"incoming_sender"`
+	IncomingReceivedDate   time.Time `db:"incoming_received_date" json:"incoming_received_date"`
+	IncomingClassification string    `db:"incoming_classification" json:"incoming_classification"`
+}

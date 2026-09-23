@@ -18,7 +18,7 @@ func NewIncomingLetterRepository(db *sqlx.DB) *IncomingLetterRepository {
 	return &IncomingLetterRepository{db: db}
 }
 
-func (r *IncomingLetterRepository) GetPaginated(ctx context.Context, limit, offset int, search, status string) ([]models.IncomingLetter, int, error) {
+func (r *IncomingLetterRepository) GetPaginated(ctx context.Context, limit, offset int, search, status, category, classification, dateFrom, dateTo string) ([]models.IncomingLetter, int, error) {
 	var letters []models.IncomingLetter
 	var total int
 
@@ -38,6 +38,30 @@ func (r *IncomingLetterRepository) GetPaginated(ctx context.Context, limit, offs
 	if status != "" {
 		conditions = append(conditions, fmt.Sprintf("status = $%d", argID))
 		args = append(args, status)
+		argID++
+	}
+
+	if category != "" {
+		conditions = append(conditions, fmt.Sprintf("category = $%d", argID))
+		args = append(args, category)
+		argID++
+	}
+
+	if classification != "" {
+		conditions = append(conditions, fmt.Sprintf("classification = $%d", argID))
+		args = append(args, classification)
+		argID++
+	}
+
+	if dateFrom != "" {
+		conditions = append(conditions, fmt.Sprintf("received_date >= $%d", argID))
+		args = append(args, dateFrom)
+		argID++
+	}
+
+	if dateTo != "" {
+		conditions = append(conditions, fmt.Sprintf("received_date <= $%d", argID))
+		args = append(args, dateTo)
 		argID++
 	}
 

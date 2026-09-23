@@ -51,6 +51,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AppLogoIcon from '@/components/AppLogoIcon';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // --- Workspace Switcher ---
 const workspaces = [
@@ -155,9 +156,10 @@ const navItems = [
     href: '/admin/incoming-letters',
     icon: Mail,
     children: [
-      { title: 'Surat Masuk', href: '/admin/incoming-letters' },
-      { title: 'Surat Keluar', href: '/admin/outgoing-letters' },
-      { title: 'Template Surat', href: '/arsip/document-templates' },
+      { title: 'Surat Masuk', href: '/admin/incoming-letters', permission: 'incoming_letter.view' },
+      { title: 'Surat Keluar', href: '/admin/outgoing-letters', permission: 'outgoing_letter.view' },
+      { title: 'Kotak Disposisi', href: '/admin/dispositions', permission: 'disposition.view' },
+      { title: 'Template Surat', href: '/arsip/document-templates', permission: 'document_template.view' },
     ],
   },
   {
@@ -175,6 +177,7 @@ function NavMain() {
   const location = useLocation();
   const url = location.pathname;
   const [openMenu, setOpenMenu] = React.useState<string | null>(null);
+  const { hasPermission } = useAuth();
 
   React.useEffect(() => {
     // Set initial open menu based on active URL
@@ -192,7 +195,16 @@ function NavMain() {
     <SidebarGroup className="px-2 py-0">
       <SidebarMenu>
         {navItems.map((item) => {
-          const hasChildren = item.children && item.children.length > 0;
+          let itemChildren = item.children;
+          if (itemChildren) {
+            itemChildren = itemChildren.filter((c: any) => !c.permission || hasPermission(c.permission));
+          }
+
+          if (itemChildren && itemChildren.length === 0) {
+            return null;
+          }
+
+          const hasChildren = itemChildren && itemChildren.length > 0;
           const isActive = url.startsWith(item.href) && item.href !== '/dashboard' || (item.href === '/dashboard' && url === '/dashboard');
 
           if (!hasChildren) {
@@ -224,7 +236,7 @@ function NavMain() {
                 </SidebarMenuButton>} />
                 <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
                   <SidebarMenuSub>
-                    {item.children.map((child) => {
+                    {itemChildren!.map((child: any) => {
                       const childActive = url === child.href || url.startsWith(child.href + '/');
                       return (
                         <SidebarMenuSubItem key={child.title}>

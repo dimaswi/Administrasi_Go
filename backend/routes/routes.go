@@ -51,7 +51,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	outgoingLetterRepo := repository.NewOutgoingLetterRepository(db)
 
 	// Setup Services
-	authService := service.NewAuthService(userRepo, jwtSecret)
+	authService := service.NewAuthService(userRepo, roleRepo, jwtSecret)
 
 	// Setup Handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -99,6 +99,8 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 		protected := api.Group("/")
 		protected.Use(middleware.JWTAuthMiddleware(jwtSecret))
 		{
+			// Auth User Info
+			protected.GET("/auth/me", authHandler.Me)
 			// Organization Units
 			orgUnits := protected.Group("/org-units")
 			{
@@ -252,62 +254,65 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 			// Incoming Letters
 			incomingLetters := protected.Group("/incoming-letters")
 			{
-				incomingLetters.GET("", incomingLetterHandler.Index)
-				incomingLetters.GET("/:id", incomingLetterHandler.Show)
-				incomingLetters.POST("", incomingLetterHandler.Create)
+				incomingLetters.GET("", middleware.RequirePermission(roleRepo, "incoming_letter.view"), incomingLetterHandler.Index)
+				incomingLetters.GET("/:id", middleware.RequirePermission(roleRepo, "incoming_letter.view"), incomingLetterHandler.Show)
+				incomingLetters.POST("", middleware.RequirePermission(roleRepo, "incoming_letter.create"), incomingLetterHandler.Create)
+				incomingLetters.PUT("/:id", middleware.RequirePermission(roleRepo, "incoming_letter.edit"), incomingLetterHandler.Update)
+				incomingLetters.DELETE("/:id", middleware.RequirePermission(roleRepo, "incoming_letter.delete"), incomingLetterHandler.Delete)
 
 				// Dispositions for a specific letter
-				incomingLetters.GET("/:id/dispositions", dispositionHandler.GetByLetter)
+				incomingLetters.GET("/:id/dispositions", middleware.RequirePermission(roleRepo, "disposition.view"), dispositionHandler.GetByLetter)
 			}
 
 			// Document Templates
 			documentTemplates := protected.Group("/document-templates")
 			{
-				documentTemplates.GET("", documentTemplateHandler.GetAll)
-				documentTemplates.GET("/:id", documentTemplateHandler.GetByID)
-				documentTemplates.POST("", documentTemplateHandler.Create)
-				documentTemplates.PUT("/:id", documentTemplateHandler.Update)
-				documentTemplates.DELETE("/:id", documentTemplateHandler.Delete)
+				documentTemplates.GET("", middleware.RequirePermission(roleRepo, "document_template.view"), documentTemplateHandler.GetAll)
+				documentTemplates.GET("/:id", middleware.RequirePermission(roleRepo, "document_template.view"), documentTemplateHandler.GetByID)
+				documentTemplates.POST("", middleware.RequirePermission(roleRepo, "document_template.create"), documentTemplateHandler.Create)
+				documentTemplates.PUT("/:id", middleware.RequirePermission(roleRepo, "document_template.edit"), documentTemplateHandler.Update)
+				documentTemplates.DELETE("/:id", middleware.RequirePermission(roleRepo, "document_template.delete"), documentTemplateHandler.Delete)
 			}
 
 			// Outgoing Letters
 			outgoingLetters := protected.Group("/outgoing-letters")
 			{
-				outgoingLetters.GET("", outgoingLetterHandler.GetAll)
-				outgoingLetters.GET("/:id", outgoingLetterHandler.GetByID)
-				outgoingLetters.POST("", outgoingLetterHandler.Create)
-				outgoingLetters.PUT("/:id", outgoingLetterHandler.Update)
-				outgoingLetters.PUT("/:id/submit", outgoingLetterHandler.Submit)
-				outgoingLetters.PUT("/:id/sign", outgoingLetterHandler.SignLetter)
-				outgoingLetters.PUT("/:id/reject", outgoingLetterHandler.RejectLetter)
+				outgoingLetters.GET("", middleware.RequirePermission(roleRepo, "outgoing_letter.view"), outgoingLetterHandler.GetAll)
+				outgoingLetters.GET("/:id", middleware.RequirePermission(roleRepo, "outgoing_letter.view"), outgoingLetterHandler.GetByID)
+				outgoingLetters.POST("", middleware.RequirePermission(roleRepo, "outgoing_letter.create"), outgoingLetterHandler.Create)
+				outgoingLetters.PUT("/:id", middleware.RequirePermission(roleRepo, "outgoing_letter.edit"), outgoingLetterHandler.Update)
+				outgoingLetters.PUT("/:id/submit", middleware.RequirePermission(roleRepo, "outgoing_letter.submit"), outgoingLetterHandler.Submit)
+				outgoingLetters.PUT("/:id/sign", middleware.RequirePermission(roleRepo, "outgoing_letter.sign"), outgoingLetterHandler.SignLetter)
+				outgoingLetters.PUT("/:id/reject", middleware.RequirePermission(roleRepo, "outgoing_letter.sign"), outgoingLetterHandler.RejectLetter)
 				outgoingLetters.GET("/:id/pdf", outgoingLetterHandler.GeneratePDF)
 			}
 
 			// Dispositions
 			dispositions := protected.Group("/dispositions")
 			{
-				dispositions.POST("", dispositionHandler.Create)
-				dispositions.PUT("/:id/status", dispositionHandler.UpdateStatus)
+				dispositions.GET("", middleware.RequirePermission(roleRepo, "disposition.view"), dispositionHandler.GetMyDispositions)
+				dispositions.POST("", middleware.RequirePermission(roleRepo, "disposition.create"), dispositionHandler.Create)
+				dispositions.PUT("/:id/status", middleware.RequirePermission(roleRepo, "disposition.update_status"), dispositionHandler.UpdateStatus)
 			}
 
 			// Rooms
 			rooms := protected.Group("/rooms")
 			{
-				rooms.GET("", roomHandler.GetAll)
-				rooms.GET("/:id", roomHandler.GetByID)
-				rooms.POST("", roomHandler.Create)
-				rooms.PUT("/:id", roomHandler.Update)
-				rooms.DELETE("/:id", roomHandler.Delete)
+				rooms.GET("", middleware.RequirePermission(roleRepo, "room.view"), roomHandler.GetAll)
+				rooms.GET("/:id", middleware.RequirePermission(roleRepo, "room.view"), roomHandler.GetByID)
+				rooms.POST("", middleware.RequirePermission(roleRepo, "room.create"), roomHandler.Create)
+				rooms.PUT("/:id", middleware.RequirePermission(roleRepo, "room.edit"), roomHandler.Update)
+				rooms.DELETE("/:id", middleware.RequirePermission(roleRepo, "room.delete"), roomHandler.Delete)
 			}
 
 			// Meetings
 			meetings := protected.Group("/meetings")
 			{
-				meetings.GET("", meetingHandler.GetAll)
-				meetings.GET("/:id", meetingHandler.GetByID)
-				meetings.POST("", meetingHandler.Create)
-				meetings.PUT("/:id", meetingHandler.Update)
-				meetings.DELETE("/:id", meetingHandler.Delete)
+				meetings.GET("", middleware.RequirePermission(roleRepo, "meeting.view"), meetingHandler.GetAll)
+				meetings.GET("/:id", middleware.RequirePermission(roleRepo, "meeting.view"), meetingHandler.GetByID)
+				meetings.POST("", middleware.RequirePermission(roleRepo, "meeting.create"), meetingHandler.Create)
+				meetings.PUT("/:id", middleware.RequirePermission(roleRepo, "meeting.edit"), meetingHandler.Update)
+				meetings.DELETE("/:id", middleware.RequirePermission(roleRepo, "meeting.delete"), meetingHandler.Delete)
 
 				// Lifecycle
 				meetings.POST("/:id/start", meetingHandler.StartMeeting)

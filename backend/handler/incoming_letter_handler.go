@@ -36,7 +36,12 @@ func (h *IncomingLetterHandler) Index(c *gin.Context) {
 	}
 	offset := (page - 1) * perPage
 
-	letters, total, err := h.repo.GetPaginated(c.Request.Context(), perPage, offset, search, status)
+	category := c.Query("category")
+	classification := c.Query("classification")
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
+
+	letters, total, err := h.repo.GetPaginated(c.Request.Context(), perPage, offset, search, status, category, classification, dateFrom, dateTo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -154,4 +159,125 @@ func (h *IncomingLetterHandler) Show(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": letter})
+}
+
+func (h *IncomingLetterHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form: " + err.Error()})
+		return
+	}
+
+	letter, err := h.repo.GetByID(c.Request.Context(), id)
+	if err != nil || letter == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Incoming letter not found"})
+		return
+	}
+
+	roleID := int64(c.GetFloat64("role_id"))
+	if letter.Status != "new" && roleID != 1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Hanya surat dengan status baru yang dapat diedit"})
+		return
+	}
+
+	if val := c.PostForm("incoming_number"); val != "" {
+		letter.IncomingNumber = val
+	}
+	if val := c.PostForm("original_number"); val != "" {
+		letter.OriginalNumber = val
+	}
+	if val := c.PostForm("original_date"); val != "" {
+		if parsed, err := time.Parse("2006-01-02", val); err == nil {
+			letter.OriginalDate = parsed
+		}
+	}
+	if val := c.PostForm("received_date"); val != "" {
+		if parsed, err := time.Parse("2006-01-02", val); err == nil {
+			letter.ReceivedDate = parsed
+		}
+	}
+	if val := c.PostForm("sender"); val != "" {
+		letter.Sender = val
+	}
+	if val := c.PostForm("subject"); val != "" {
+		letter.Subject = val
+	}
+	if val := c.PostForm("category"); val != "" {
+		letter.Category = val
+	}
+	if val := c.PostForm("classification"); val != "" {
+		letter.Classification = val
+	}
+	if val := c.PostForm("attachment_count"); val != "" {
+		if count, err := strconv.Atoi(val); err == nil {
+			letter.AttachmentCount = count
+		}
+	}
+	if val := c.PostForm("attachment_description"); val != "" {
+		letter.AttachmentDescription = &val
+	}
+	if val := c.PostForm("notes"); val != "" {
+		letter.Notes = &val
+	}
+	if val := c.PostForm("status"); val != "" {
+		letter.Status = val
+	}
+
+	// Handle file upload
+	file, fileHeader, err := c.Request.FormFile("file")
+	if err == nil {
+		defer file.Close()
+		uploadDir := "public/uploads/incoming_letters"
+		os.MkdirAll(uploadDir, os.ModePerm)
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), fileHeader.Filename)
+		filePath := filepath.Join(uploadDir, filename)
+		out, err := os.Create(filePath)
+		if err == nil {
+			defer out.Close()
+			io.Copy(out, file)
+			logicalPath := "/uploads/incoming_letters/" + filename
+			letter.FilePath = &logicalPath
+		}
+	}
+
+	if err := h.repo.Update(c.Request.Context(), letter); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Incoming letter updated successfully", "data": letter})
+}
+
+func (h *IncomingLetterHandler) Delete(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	letter, err := h.repo.GetByID(c.Request.Context(), id)
+	if err != nil || letter == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Incoming letter not found"})
+		return
+	}
+
+	roleID := int64(c.GetFloat64("role_id"))
+	userID := int64(c.GetFloat64("user_id"))
+
+	if roleID != 1 && letter.RegisteredBy != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk menghapus surat ini"})
+		return
+	}
+
+	if err := h.repo.Delete(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus surat (mungkin sudah ada disposisi): " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Incoming letter deleted successfully"})
 }

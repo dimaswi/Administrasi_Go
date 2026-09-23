@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '@/layouts/admin-layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IndexPage } from '@/components/ui/index-page';
@@ -30,6 +31,7 @@ interface Meeting {
 export default function MeetingIndex() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { hasPermission } = useAuth();
 
     const [allData, setAllData] = useState<Meeting[]>([]);
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
@@ -215,24 +217,28 @@ export default function MeetingIndex() {
                     >
                         <Eye className="h-4 w-4" />
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 text-blue-500 border-blue-200 hover:bg-blue-50"
-                        onClick={() => navigate(`/admin/meetings/${m.id}/edit`)}
-                        title="Edit"
-                    >
-                        <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 border-red-200 hover:bg-red-50"
-                        onClick={() => handleDeleteClick(m)}
-                        title="Hapus"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {hasPermission('meeting.edit') && (
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-blue-500 border-blue-200 hover:bg-blue-50"
+                            onClick={() => navigate(`/admin/meetings/${m.id}/edit`)}
+                            title="Edit"
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {hasPermission('meeting.delete') && (
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 border-red-200 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(m)}
+                            title="Hapus"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             ),
         },
@@ -402,10 +408,12 @@ export default function MeetingIndex() {
                             <CalendarDays className="h-4 w-4 mr-2" /> Kalender
                         </Button>
                     </div>
-                    <Button onClick={() => navigate('/admin/meetings/create')}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Buat Rapat
-                    </Button>
+                    {hasPermission('meeting.create') && (
+                        <Button onClick={() => navigate('/admin/meetings/create')}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Buat Rapat
+                        </Button>
+                    )}
                 </div>
             </div>
 

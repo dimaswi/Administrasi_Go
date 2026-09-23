@@ -719,9 +719,9 @@ export function TemplatePreview({
                 {/* Verification footer with QR code */}
                 {showVerificationFooter && (
                     <div 
-                        className="flex items-center gap-2 pt-2 border-t-2"
+                        className="flex items-center gap-2 pt-1 border-t"
                         style={{ 
-                            fontSize: ptToPx(6.5), // Perkecil ukuran font
+                            fontSize: ptToPx(5.5), // Perkecil ukuran font teks detail
                             borderColor: 'rgba(37, 99, 235, 0.2)', // Light blue border
                         }}
                     >
@@ -729,14 +729,14 @@ export function TemplatePreview({
                             <img 
                                 src={qrCodeDataUrl} 
                                 alt="QR Verifikasi" 
-                                style={{ width: mmToPx(18), height: mmToPx(18), imageRendering: 'pixelated' }} // Diperbesar dan ditajamkan
+                                style={{ width: mmToPx(12), height: mmToPx(12), imageRendering: 'pixelated' }} // Ukuran QR diperkecil
                             />
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <img src="/1.png" style={{ width: '20%', height: '20%', backgroundColor: 'white', padding: '1px', borderRadius: '2px' }} />
+                                <img src="/1.png" style={{ width: '20%', height: '20%', backgroundColor: 'white', padding: '0.5px', borderRadius: '1px' }} />
                             </div>
                         </div>
-                        <div className="text-slate-700 flex flex-col justify-center leading-relaxed">
-                            <div className="font-bold text-blue-900 mb-0.5" style={{ fontSize: ptToPx(7.5) }}>Dokumen Elektronik Resmi</div>
+                        <div className="text-slate-700 flex flex-col justify-center leading-tight">
+                            <div className="font-bold text-blue-900 mb-0.5" style={{ fontSize: ptToPx(6.5) }}>Dokumen Elektronik Resmi</div>
                             <div>Surat ini telah ditandatangani secara elektronik dan sah sesuai dengan <b>Undang-Undang ITE</b>.</div>
                             <div>Pindai kode QR di samping untuk memverifikasi keaslian dokumen.</div>
                         </div>

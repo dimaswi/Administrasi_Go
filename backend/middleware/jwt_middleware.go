@@ -41,6 +41,7 @@ func JWTAuthMiddleware(secret string) gin.HandlerFunc {
 		if ok && token.Valid {
 			c.Set("user_id", claims["user_id"])
 			c.Set("nip", claims["nip"])
+			c.Set("role_id", claims["role_id"])
 		}
 
 		c.Next()

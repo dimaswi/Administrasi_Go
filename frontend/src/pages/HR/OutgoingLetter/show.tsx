@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, FileText, ZoomIn, ZoomOut, CheckCircle, Clock, XCircle, PenTool } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { TemplatePreview } from '@/components/document-template/template-preview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import { toast } from 'sonner';
 export default function OutgoingLetterShow() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { hasPermission } = useAuth();
 
     const [letter, setLetter] = useState<any>(null);
     const [template, setTemplate] = useState<any>(null);
@@ -93,11 +95,13 @@ export default function OutgoingLetterShow() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'draft': return <Badge variant="outline" className="bg-slate-100 text-slate-700">Draft</Badge>;
-            case 'pending': return <Badge variant="secondary" className="bg-blue-100 text-blue-700">Pending</Badge>;
-            case 'approved': return <Badge className="bg-green-500 hover:bg-green-600">Approved</Badge>;
-            case 'rejected': return <Badge variant="destructive">Rejected</Badge>;
-            case 'revision_requested': return <Badge className="bg-orange-500 hover:bg-orange-600">Revision</Badge>;
+            case 'draft': return <Badge variant="outline" className="bg-slate-100 text-slate-700">Draf</Badge>;
+            case 'pending': return <Badge variant="secondary" className="bg-blue-100 text-blue-700">Menunggu</Badge>;
+            case 'approved': return <Badge className="bg-green-500 hover:bg-green-600">Disetujui</Badge>;
+            case 'partially_signed': return <Badge className="bg-blue-500 hover:bg-blue-600">TTD Sebagian</Badge>;
+            case 'fully_signed': return <Badge className="bg-green-500 hover:bg-green-600">TTD Lengkap</Badge>;
+            case 'rejected': return <Badge variant="destructive">Ditolak</Badge>;
+            case 'revision_requested': return <Badge className="bg-orange-500 hover:bg-orange-600">Revisi</Badge>;
             default: return <Badge variant="outline">{status}</Badge>;
         }
     };
@@ -241,7 +245,7 @@ export default function OutgoingLetterShow() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {canSign && (
+                        {canSign && hasPermission('outgoing_letter.sign') && (
                             <>
                                 <Button variant="outline" className="rounded-none text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setRejectDialogOpen(true)}>
                                     <XCircle className="h-4 w-4 mr-1.5" />
@@ -253,7 +257,7 @@ export default function OutgoingLetterShow() {
                                 </Button>
                             </>
                         )}
-                        {letter.status === 'draft' && (
+                        {letter.status === 'draft' && hasPermission('outgoing_letter.submit') && (
                             <Button className="rounded-none bg-blue-600 hover:bg-blue-700" onClick={handleSubmitDraft}>
                                 Ajukan Surat
                             </Button>
@@ -286,7 +290,7 @@ export default function OutgoingLetterShow() {
                             <FileText className="h-4 w-4 mr-1.5" />
                             {processing ? "Memproses..." : "Cetak"}
                         </Button>
-                        {['draft', 'pending', 'revision_requested'].includes(letter.status) && (
+                        {['draft', 'pending', 'revision_requested'].includes(letter.status) && hasPermission('outgoing_letter.edit') && (
                             <Button className="rounded-none" onClick={() => navigate(`/admin/outgoing-letters/${letter.id}/edit`)}>
                                 Edit Surat
                             </Button>

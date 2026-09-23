@@ -26,6 +26,18 @@ func (r *RoleRepository) GetByID(id int) (*models.Role, error) {
 	return &role, err
 }
 
+func (r *RoleRepository) GetPermissionsByRoleID(roleID int) ([]string, error) {
+	permissions := []string{}
+	query := `
+		SELECT p.name 
+		FROM permissions p
+		JOIN role_permission rp ON p.id = rp.permission_id
+		WHERE rp.role_id = $1
+	`
+	err := r.db.Select(&permissions, query, roleID)
+	return permissions, err
+}
+
 func (r *RoleRepository) Create(role *models.Role) error {
 	query := `
 		INSERT INTO roles (name, description, created_at, updated_at)

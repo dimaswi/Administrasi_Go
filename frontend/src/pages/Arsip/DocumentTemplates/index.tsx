@@ -6,8 +6,8 @@ import AdminLayout from '@/layouts/admin-layout';
 // import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Copy, ToggleLeft, ToggleRight, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
-// Removed AlertDialog
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Template {
     id: number;
@@ -31,6 +31,7 @@ const breadcrumbs = [
 export default function DocumentTemplatesIndex() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { hasPermission } = useAuth();
     
     const [templates, setTemplates] = useState<{
         data: Template[];
@@ -246,36 +247,42 @@ export default function DocumentTemplatesIndex() {
                             <Eye className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <Link to={`/arsip/document-templates/${template.id}/edit`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit">
-                            <Edit className="h-4 w-4" />
+                    {hasPermission('document_template.edit') && (
+                        <>
+                            <Link to={`/arsip/document-templates/${template.id}/edit`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit">
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                            </Link>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                title={template.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                                onClick={(e) => handleToggleActive(template.id, e)}
+                            >
+                                {template.is_active ? (
+                                    <ToggleRight className="h-4 w-4 text-green-600" />
+                                ) : (
+                                    <ToggleLeft className="h-4 w-4" />
+                                )}
+                            </Button>
+                        </>
+                    )}
+                    {hasPermission('document_template.delete') && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Hapus"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(template.id);
+                            }}
+                        >
+                            <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
-                    </Link>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        title={template.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                        onClick={(e) => handleToggleActive(template.id, e)}
-                    >
-                        {template.is_active ? (
-                            <ToggleRight className="h-4 w-4 text-green-600" />
-                        ) : (
-                            <ToggleLeft className="h-4 w-4" />
-                        )}
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        title="Hapus"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(template.id);
-                        }}
-                    >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                    )}
                 </div>
             ),
         },
@@ -306,13 +313,13 @@ export default function DocumentTemplatesIndex() {
             <IndexPage
                 title="Template Surat"
                 description="Kelola template untuk surat keluar"
-                actions={[
+                actions={hasPermission('document_template.create') ? [
                     {
                         label: 'Buat Template',
                         href: '/arsip/document-templates/create',
                         icon: Plus,
                     },
-                ]}
+                ] : undefined}
                 data={templates.data}
                 columns={columns}
                 pagination={{

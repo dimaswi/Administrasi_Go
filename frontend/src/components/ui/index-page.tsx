@@ -15,6 +15,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
     Table,
     TableBody,
@@ -274,8 +275,8 @@ export function IndexPage<T extends { id: number | string }>({
             {filterFields && filterFields.length > 0 && (
                 <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
                     <CollapsibleContent>
-                        <div className="rounded-md border bg-muted/20 px-4 py-3">
-                            <div className="flex flex-wrap items-end gap-3">
+                        <div className="rounded-md border bg-muted/20 px-4 py-4 mt-2">
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-4">
                                 {filterFields.map((field) => (
                                     <div key={field.key} className="space-y-1">
                                         {field.label && (
@@ -284,22 +285,13 @@ export function IndexPage<T extends { id: number | string }>({
                                             </label>
                                         )}
                                         {field.type === "select" && field.options && (
-                                            <Select
+                                            <SearchableSelect
+                                                options={field.options}
                                                 value={filterValues[field.key] || "all"}
-                                                onValueChange={(val) => onFilterChange?.(field.key, val === "all" || !val ? "" : val)}
-                                            >
-                                                <SelectTrigger className={cn("h-8 w-[160px] text-xs", field.className)}>
-                                                    <SelectValue placeholder={field.placeholder || "Pilih..."} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">{field.placeholder || "Semua"}</SelectItem>
-                                                    {field.options.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                                onChange={(val) => onFilterChange?.(field.key, val === "all" || !val ? "" : val)}
+                                                placeholder={field.placeholder || "Pilih..."}
+                                                className={field.className}
+                                            />
                                         )}
                                         {field.type === "text" && (
                                             <Input
@@ -311,16 +303,18 @@ export function IndexPage<T extends { id: number | string }>({
                                             />
                                         )}
                                         {field.type === "date" && (
-                                            <Input
-                                                type="date"
-                                                value={filterValues[field.key] || ""}
-                                                onChange={(e) => onFilterChange?.(field.key, e.target.value)}
-                                                className={cn("h-8 w-[160px] text-xs", field.className)}
-                                            />
+                                            <div className="relative">
+                                                <Input
+                                                    type="date"
+                                                    value={filterValues[field.key] || ""}
+                                                    onChange={(e) => onFilterChange?.(field.key, e.target.value)}
+                                                    className={cn("h-8 w-full text-xs flex items-center justify-between", field.className)}
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                 ))}
-                                <div className="flex gap-2 ml-auto">
+                                <div className="col-span-full flex gap-2 justify-end mt-2">
                                     <Button onClick={onFilterSubmit} size="sm" className="h-8 text-xs">
                                         Terapkan
                                     </Button>
@@ -419,20 +413,18 @@ export function IndexPage<T extends { id: number | string }>({
                         <div className="flex items-center gap-1.5">
                             <span>Baris:</span>
                             {onPerPageChange ? (
-                                <Select
+                                <SearchableSelect
+                                    options={[
+                                        { value: "10", label: "10" },
+                                        { value: "25", label: "25" },
+                                        { value: "50", label: "50" },
+                                        { value: "100", label: "100" }
+                                    ]}
                                     value={pagination.per_page.toString()}
-                                    onValueChange={(val) => val && onPerPageChange(parseInt(val))}
-                                >
-                                    <SelectTrigger className="w-[56px] h-7 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="10">10</SelectItem>
-                                        <SelectItem value="25">25</SelectItem>
-                                        <SelectItem value="50">50</SelectItem>
-                                        <SelectItem value="100">100</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                    onChange={(val) => val && onPerPageChange(parseInt(val))}
+                                    placeholder="10"
+                                    className="w-[70px]"
+                                />
                             ) : (
                                 <span className="font-medium">{pagination.per_page}</span>
                             )}

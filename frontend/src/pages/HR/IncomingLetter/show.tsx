@@ -5,6 +5,21 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, FileText, Download, Plus, Clock, CheckCircle2 } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface IncomingLetter {
     id: number;
@@ -35,9 +50,16 @@ interface Disposition {
 export default function IncomingLetterShow() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { hasPermission, user } = useAuth();
     const [letter, setLetter] = useState<IncomingLetter | null>(null);
     const [dispositions, setDispositions] = useState<Disposition[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [dispositionOpen, setDispositionOpen] = useState(false);
+    const [submittingDisp, setSubmittingDisp] = useState(false);
+    const [selectedToUser, setSelectedToUser] = useState<string>("");
+    const [selectedPriority, setSelectedPriority] = useState<string>("normal");
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -65,6 +87,16 @@ export default function IncomingLetterShow() {
                     setDispositions(dispData.data || []);
                 }
 
+                // Fetch Users for Disposition
+                const resUsers = await fetch(`http://localhost:8080/api/users?limit=100`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (resUsers.ok) {
+                    const userData = await resUsers.json();
+                    setUsers(userData.data || []);
+                }
+
             } catch (err) {
                 console.error(err);
             } finally {
@@ -74,6 +106,50 @@ export default function IncomingLetterShow() {
 
         if (id) fetchDetails();
     }, [id]);
+
+    const handleDispositionSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSubmittingDisp(true);
+        try {
+            const formData = new FormData(e.currentTarget);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`http://localhost:8080/api/dispositions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    incoming_letter_id: Number(id),
+                    from_user_id: user?.id || 1, 
+                    to_user_id: Number(formData.get('to_user_id')),
+                    instruction: formData.get('instruction'),
+                    notes: formData.get('notes'),
+                    priority: formData.get('priority')
+                })
+            });
+
+            if (res.ok) {
+                toast.success('Disposisi berhasil dibuat');
+                setDispositionOpen(false);
+                // Refresh dispositions
+                const resDisp = await fetch(`http://localhost:8080/api/incoming-letters/${id}/dispositions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resDisp.ok) {
+                    const dispData = await resDisp.json();
+                    setDispositions(dispData.data || []);
+                }
+            } else {
+                const errData = await res.json();
+                toast.error(errData.error || 'Gagal membuat disposisi');
+            }
+        } catch (error) {
+            toast.error('Terjadi kesalahan jaringan');
+        } finally {
+            setSubmittingDisp(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -170,9 +246,11 @@ export default function IncomingLetterShow() {
                                     <CardTitle>Riwayat Disposisi</CardTitle>
                                     <CardDescription>Jejak alur disposisi surat ini</CardDescription>
                                 </div>
-                                <Button size="sm">
-                                    <Plus className="size-4 mr-2" /> Disposisi Baru
-                                </Button>
+                                {hasPermission('incoming_letter.edit') && (
+                                    <Button size="sm" onClick={() => setDispositionOpen(true)}>
+                                        <Plus className="size-4 mr-2" /> Disposisi Baru
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardContent className="pt-4">
                                 {dispositions.length === 0 ? (
@@ -224,9 +302,11 @@ export default function IncomingLetterShow() {
                                                 <p className="text-xs opacity-70">Dokumen Digital</p>
                                             </div>
                                         </div>
-                                        <Button size="sm" variant="outline" className="w-full" onClick={() => navigate(`/admin/incoming-letters/${id}/edit`)}>
-                                            Edit Surat
-                                        </Button>
+                                        {hasPermission('incoming_letter.edit') && (
+                                            <Button size="sm" variant="outline" className="w-full" onClick={() => navigate(`/admin/incoming-letters/${id}/edit`)}>
+                                                Edit Surat
+                                            </Button>
+                                        )}
                                         <Button variant="outline" className="w-full" onClick={() => window.open(`http://localhost:8080${letter.file_path}`, '_blank')}>
                                             <Download className="size-4 mr-2" /> Unduh Dokumen
                                         </Button>
@@ -241,6 +321,64 @@ export default function IncomingLetterShow() {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={dispositionOpen} onOpenChange={setDispositionOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <form onSubmit={handleDispositionSubmit}>
+                        <DialogHeader>
+                            <DialogTitle>Buat Disposisi Baru</DialogTitle>
+                            <DialogDescription>
+                                Berikan instruksi disposisi surat masuk kepada staf atau bagian lain.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="to_user_id">Penerima</Label>
+                                <input type="hidden" name="to_user_id" value={selectedToUser} required />
+                                <SearchableSelect
+                                    options={users.map(u => ({ value: String(u.id), label: u.name }))}
+                                    value={selectedToUser}
+                                    onChange={setSelectedToUser}
+                                    placeholder="Pilih Penerima"
+                                    className="w-full"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="instruction">Instruksi Utama</Label>
+                                <Input id="instruction" name="instruction" required placeholder="Misal: Segera tindaklanjuti" />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="priority">Prioritas</Label>
+                                <input type="hidden" name="priority" value={selectedPriority} />
+                                <SearchableSelect
+                                    options={[
+                                        { value: "low", label: "Rendah (Low)" },
+                                        { value: "normal", label: "Normal" },
+                                        { value: "high", label: "Tinggi (High)" },
+                                        { value: "urgent", label: "Mendesak (Urgent)" }
+                                    ]}
+                                    value={selectedPriority}
+                                    onChange={setSelectedPriority}
+                                    placeholder="Pilih prioritas"
+                                    className="w-full"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="notes">Catatan Tambahan (Opsional)</Label>
+                                <Textarea id="notes" name="notes" placeholder="Catatan untuk penerima disposisi" />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setDispositionOpen(false)}>
+                                Batal
+                            </Button>
+                            <Button type="submit" disabled={submittingDisp}>
+                                {submittingDisp ? 'Menyimpan...' : 'Kirim Disposisi'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
 }

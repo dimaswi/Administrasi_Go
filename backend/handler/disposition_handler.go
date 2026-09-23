@@ -107,3 +107,33 @@ func (h *DispositionHandler) UpdateStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Disposition status updated successfully"})
 }
+
+func (h *DispositionHandler) GetMyDispositions(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	status := c.Query("status")
+	priority := c.Query("priority")
+
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 10
+	}
+	offset := (page - 1) * perPage
+
+	userID := int64(c.GetFloat64("user_id"))
+
+	dispositions, total, err := h.repo.GetMyDispositions(c.Request.Context(), userID, perPage, offset, status, priority)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":         dispositions,
+		"current_page": page,
+		"per_page":     perPage,
+		"total":        total,
+	})
+}

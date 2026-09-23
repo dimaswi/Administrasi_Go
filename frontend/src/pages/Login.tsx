@@ -53,7 +53,9 @@ export default function Login() {
         try {
             const response = await api.post('/auth/login', { nip, password });
             localStorage.setItem('token', response.data.token);
-            navigate('/dashboard');
+            // Use window.location.href instead of navigate to force a full app reload
+            // This ensures AuthContext fetches the new user and permissions from /auth/me
+            window.location.href = '/dashboard';
         } catch (err: any) {
             setErrors({
                 nip: err.response?.data?.error || 'Failed to login. Please check your credentials.'

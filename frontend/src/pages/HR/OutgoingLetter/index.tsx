@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Plus, Pencil } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface OutgoingLetter {
     id: number;
@@ -19,6 +20,7 @@ interface OutgoingLetter {
 export default function OutgoingLetterIndex() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { hasPermission } = useAuth();
 
     const [letters, setLetters] = useState<OutgoingLetter[]>([]);
     const [total, setTotal] = useState(0);
@@ -71,14 +73,23 @@ export default function OutgoingLetterIndex() {
         });
     };
 
+    const handlePerPageChange = (perPageVal: number) => {
+        setSearchParams(prev => {
+            prev.set('per_page', perPageVal.toString());
+            prev.set('page', '1');
+            return prev;
+        });
+    };
+
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'draft': return <Badge variant="secondary">Draft</Badge>;
-            case 'pending': return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending</Badge>;
-            case 'partially_signed': return <Badge className="bg-blue-500 hover:bg-blue-600">Partially Signed</Badge>;
-            case 'fully_signed': return <Badge className="bg-green-500 hover:bg-green-600">Fully Signed</Badge>;
-            case 'rejected': return <Badge variant="destructive">Rejected</Badge>;
-            case 'revision_requested': return <Badge className="bg-orange-500 hover:bg-orange-600">Revision</Badge>;
+            case 'draft': return <Badge variant="secondary">Draf</Badge>;
+            case 'pending': return <Badge className="bg-yellow-500 hover:bg-yellow-600">Menunggu</Badge>;
+            case 'partially_signed': return <Badge className="bg-blue-500 hover:bg-blue-600">TTD Sebagian</Badge>;
+            case 'fully_signed': return <Badge className="bg-green-500 hover:bg-green-600">TTD Lengkap</Badge>;
+            case 'approved': return <Badge className="bg-green-500 hover:bg-green-600">Disetujui</Badge>;
+            case 'rejected': return <Badge variant="destructive">Ditolak</Badge>;
+            case 'revision_requested': return <Badge className="bg-orange-500 hover:bg-orange-600">Revisi</Badge>;
             default: return <Badge variant="outline">{status}</Badge>;
         }
     };
@@ -117,21 +128,25 @@ export default function OutgoingLetterIndex() {
         {
             label: 'Aksi',
             key: 'actions',
+            className: 'w-[120px] text-right',
             render: (item: OutgoingLetter) => (
-                <div className="flex gap-2">
+                <div className="flex items-center justify-end gap-2">
                     <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8 text-blue-500 border-blue-200 hover:bg-blue-50"
                         onClick={() => navigate(`/admin/outgoing-letters/${item.id}`)}
+                        title="Lihat"
                     >
                         <Eye className="w-4 h-4" />
                     </Button>
-                    {['draft', 'pending', 'revision_requested'].includes(item.status) && (
+                    {['draft', 'pending', 'revision_requested'].includes(item.status) && hasPermission('outgoing_letter.edit') && (
                         <Button
                             variant="outline"
-                            size="sm"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            size="icon"
+                            className="h-8 w-8 text-indigo-500 border-indigo-200 hover:bg-indigo-50"
                             onClick={() => navigate(`/admin/outgoing-letters/${item.id}/edit`)}
+                            title="Edit"
                         >
                             <Pencil className="w-4 h-4" />
                         </Button>
@@ -146,20 +161,22 @@ export default function OutgoingLetterIndex() {
             <IndexPage
                 title="Surat Keluar"
                 description="Manajemen pembuatan dan persetujuan surat keluar"
-                actions={[
+                actions={hasPermission('outgoing_letter.create') ? [
                     {
                         label: 'Buat Surat',
                         icon: Plus,
                         onClick: () => navigate('/admin/outgoing-letters/create')
                     }
-                ]}
+                ] : undefined}
                 data={letters}
                 columns={columns}
                 pagination={{
                     current_page: currentPage,
                     per_page: perPage,
                     total: total,
-                    last_page: Math.ceil(total / perPage) || 1
+                    last_page: Math.ceil(total / perPage) || 1,
+                    from: total === 0 ? 0 : (currentPage - 1) * perPage + 1,
+                    to: Math.min(currentPage * perPage, total)
                 }}
                 onPageChange={handlePageChange}
                 onPerPageChange={(perPage) => setSearchParams(prev => { prev.set('per_page', perPage.toString()); prev.set('page', '1'); return prev; })}

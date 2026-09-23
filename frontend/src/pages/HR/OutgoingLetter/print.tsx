@@ -101,11 +101,16 @@ export default function OutgoingLetterPrint() {
     const verificationUrl = `http://localhost:5173/verify/${letter.id}`;
 
     // Map Signatories Data directly from letter to ensure it works even if user list fails
-    const signatoriesData = letter.signatories?.map((sig: any) => ({
-        slot_id: sig.slot_id,
-        signed: sig.status === 'signed',
-        signed_at: sig.signed_at
-    })) || [];
+    const signatoriesData = letter.signatories?.map((sig: any) => {
+        const user = users.find(u => u.id.toString() === sig.user_id?.toString());
+        return {
+            slot_id: sig.slot_id,
+            name: user ? (user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()) : '(Nama Penandatangan)',
+            nip: user ? (user.nip || '') : '',
+            signed: sig.status === 'signed' || sig.status === 'approved',
+            signed_at: sig.signed_at
+        };
+    }) || [];
     
     // Calculate dynamic paper size in mm
     const pageSettings = template?.parsedPage || { paper_size: 'A4', orientation: 'portrait' };

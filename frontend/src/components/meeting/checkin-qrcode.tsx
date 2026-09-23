@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { QrCode, RefreshCw, Timer, Users } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface Props {
     meetingId: string | number;
@@ -86,16 +87,18 @@ export function CheckinQRCode({ meetingId, meetingStatus, isModeratorOrOrganizer
                             <p className="text-xs text-muted-foreground text-center px-2">QR belum dibuat</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <select
-                                className="text-sm border rounded-md px-3 py-1.5 bg-background"
-                                value={expiresIn}
-                                onChange={e => setExpiresIn(Number(e.target.value))}
-                            >
-                                <option value={15}>15 menit</option>
-                                <option value={30}>30 menit</option>
-                                <option value={60}>60 menit</option>
-                                <option value={120}>2 jam</option>
-                            </select>
+                            <SearchableSelect
+                                options={[
+                                    { value: "15", label: "15 menit" },
+                                    { value: "30", label: "30 menit" },
+                                    { value: "60", label: "60 menit" },
+                                    { value: "120", label: "2 jam" }
+                                ]}
+                                value={String(expiresIn)}
+                                onChange={(val) => setExpiresIn(Number(val))}
+                                placeholder="Pilih Waktu"
+                                className="w-[140px]"
+                            />
                             <Button onClick={handleGenerate} disabled={loading}>
                                 <QrCode className="h-4 w-4 mr-2" />
                                 {loading ? 'Membuat...' : 'Generate QR Code'}

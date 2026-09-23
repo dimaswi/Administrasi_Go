@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
 import Login from './pages/Login';
 import EmployeeIndex from './pages/HR/Employee/index';
@@ -8,6 +9,7 @@ import IncomingLetterIndex from './pages/HR/IncomingLetter/index';
 import IncomingLetterCreate from './pages/HR/IncomingLetter/create';
 import IncomingLetterShow from './pages/HR/IncomingLetter/show';
 import IncomingLetterEdit from './pages/HR/IncomingLetter/edit';
+import DispositionIndex from './pages/HR/Disposition/index';
 import OutgoingLetterIndex from './pages/HR/OutgoingLetter';
 import OutgoingLetterCreate from './pages/HR/OutgoingLetter/create';
 import OutgoingLetterEdit from './pages/HR/OutgoingLetter/edit';
@@ -80,8 +82,13 @@ import LeaveTypeShow from './pages/HR/MasterData/LeaveType/show';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem('token');
-  if (!token) {
+  const { loading, user } = useAuth();
+  
+  if (loading) {
+    return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>;
+  }
+  
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
@@ -106,8 +113,9 @@ function DashboardHome() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/verify/:id" element={<Verify />} />
@@ -169,6 +177,8 @@ function App() {
         <Route path="/admin/incoming-letters/:id" element={<ProtectedRoute><IncomingLetterShow /></ProtectedRoute>} />
         <Route path="/admin/incoming-letters/:id/edit" element={<ProtectedRoute><IncomingLetterEdit /></ProtectedRoute>} />
 
+        <Route path="/admin/dispositions" element={<ProtectedRoute><DispositionIndex /></ProtectedRoute>} />
+
         <Route path="/admin/outgoing-letters" element={<ProtectedRoute><OutgoingLetterIndex /></ProtectedRoute>} />
         <Route path="/admin/outgoing-letters/create" element={<ProtectedRoute><OutgoingLetterCreate /></ProtectedRoute>} />
         <Route path="/admin/outgoing-letters/:id/edit" element={<ProtectedRoute><OutgoingLetterEdit /></ProtectedRoute>} />
@@ -198,9 +208,10 @@ function App() {
         <Route path="/hr/master-data/leavetype/:id/edit" element={<ProtectedRoute><LeaveTypeEdit /></ProtectedRoute>} />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-      <Toaster />
-    </BrowserRouter>
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

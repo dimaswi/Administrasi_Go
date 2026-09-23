@@ -8,7 +8,7 @@
 .env.*.local
 
 # ── Database Dump (jangan commit ke repo!) ───────────────────
-dump-*.sql
+# dump-*.sql
 docker/postgres/dump.sql
 docker/postgres/*.dump
 

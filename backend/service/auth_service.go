@@ -12,12 +12,14 @@ import (
 
 type AuthService struct {
 	userRepo  *repository.UserRepository
+	roleRepo  *repository.RoleRepository
 	jwtSecret []byte
 }
 
-func NewAuthService(userRepo *repository.UserRepository, secret string) *AuthService {
+func NewAuthService(userRepo *repository.UserRepository, roleRepo *repository.RoleRepository, secret string) *AuthService {
 	return &AuthService{
 		userRepo:  userRepo,
+		roleRepo:  roleRepo,
 		jwtSecret: []byte(secret),
 	}
 }
@@ -60,12 +62,27 @@ func (s *AuthService) Register(name, nip, password string) error {
 	}
 
 	user := &models.User{
-		Name:      name,
-		Nip:       nip,
-		Password:  string(hashedPassword),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Name:     name,
+		Nip:      nip,
+		Password: string(hashedPassword),
 	}
-
 	return s.userRepo.Create(user)
 }
+
+func (s *AuthService) GetMe(userID int) (*models.User, []string, error) {
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var permissions []string
+	if user.RoleID != nil {
+		perms, err := s.roleRepo.GetPermissionsByRoleID(*user.RoleID)
+		if err == nil {
+			permissions = perms
+		}
+	}
+
+	return user, permissions, nil
+}
+

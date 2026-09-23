@@ -16,7 +16,7 @@ func NewPermissionRepository(db *sqlx.DB) *PermissionRepository {
 
 func (r *PermissionRepository) GetAll() ([]models.Permission, error) {
 	permissions := []models.Permission{}
-	err := r.db.Select(&permissions, "SELECT * FROM permissions ORDER BY module, action")
+	err := r.db.Select(&permissions, "SELECT * FROM permissions ORDER BY module, name")
 	return permissions, err
 }
 
@@ -28,8 +28,8 @@ func (r *PermissionRepository) GetByID(id int) (*models.Permission, error) {
 
 func (r *PermissionRepository) Create(permission *models.Permission) error {
 	query := `
-		INSERT INTO permissions (name, description, module, action, created_at, updated_at)
-		VALUES (:name, :description, :module, :action, :created_at, :updated_at)
+		INSERT INTO permissions (name, display_name, description, module, created_at, updated_at)
+		VALUES (:name, :display_name, :description, :module, :created_at, :updated_at)
 		RETURNING id
 	`
 	rows, err := r.db.NamedQuery(query, permission)
@@ -46,7 +46,7 @@ func (r *PermissionRepository) Create(permission *models.Permission) error {
 func (r *PermissionRepository) Update(permission *models.Permission) error {
 	query := `
 		UPDATE permissions 
-		SET name = :name, description = :description, module = :module, action = :action, updated_at = :updated_at
+		SET name = :name, display_name = :display_name, description = :description, module = :module, updated_at = :updated_at
 		WHERE id = :id
 	`
 	_, err := r.db.NamedExec(query, permission)
