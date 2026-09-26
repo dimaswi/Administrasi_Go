@@ -16,6 +16,34 @@ export default function OrganizationCreate() {
 
     // For a real app, you would fetch the list of existing units and users to populate parent_id and head_id
     // But for now we just use simple input or static options.
+    const [employees, setEmployees] = useState<{ value: string, label: string }[]>([]);
+    const [orgUnits, setOrgUnits] = useState<{ value: string, label: string }[]>([]);
+
+    React.useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [resEmp, resOrg] = await Promise.all([
+                    api.get('/employees?perPage=1000'),
+                    api.get('/org-units?perPage=100')
+                ]);
+                if (resEmp.data && resEmp.data.data) {
+                    setEmployees(resEmp.data.data.map((e: any) => ({
+                        value: e.id.toString(),
+                        label: `${e.first_name} ${e.last_name || ''} - ${e.position || 'No Position'}`
+                    })));
+                }
+                if (resOrg.data && resOrg.data.data) {
+                    setOrgUnits(resOrg.data.data.map((o: any) => ({
+                        value: o.id.toString(),
+                        label: `${o.code} - ${o.name}`
+                    })));
+                }
+            } catch (e) {
+                console.error('Failed to fetch data', e);
+            }
+        };
+        fetchData();
+    }, []);
 
     const [formData, setFormData] = useState({
         code: '',
@@ -118,12 +146,22 @@ export default function OrganizationCreate() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="parent_id">Induk Unit (Parent)</Label>
-                                    <Input id="parent_id" name="parent_id" type="number" value={formData.parent_id} onChange={handleChange} placeholder="ID Unit Induk (Kosongkan jika root)" />
-                                    <p className="text-[11px] text-muted-foreground mt-1">Isi dengan ID unit atasan (opsional).</p>
+                                    <SearchableSelect
+                                        value={formData.parent_id}
+                                        onValueChange={(val) => handleSelectChange('parent_id', val)}
+                                        placeholder="Pilih Unit Induk (Opsional)"
+                                        options={[{ value: '', label: '-- Tidak Ada Induk (Root) --' }, ...orgUnits]}
+                                    />
+                                    <p className="text-[11px] text-muted-foreground mt-1">Isi dengan unit atasan (opsional).</p>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="head_id">Kepala Unit (Head ID)</Label>
-                                    <Input id="head_id" name="head_id" type="number" value={formData.head_id} onChange={handleChange} placeholder="ID User/Pegawai" />
+                                    <Label htmlFor="head_id">Kepala Unit (Head)</Label>
+                                    <SearchableSelect
+                                        value={formData.head_id}
+                                        onValueChange={(val) => handleSelectChange('head_id', val)}
+                                        placeholder="Pilih Kepala Unit"
+                                        options={[{ value: '', label: '-- Kosong --' }, ...employees]}
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="is_active">Status Aktif</Label>

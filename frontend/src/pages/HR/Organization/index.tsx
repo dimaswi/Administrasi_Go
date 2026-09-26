@@ -13,7 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, MoreHorizontal, Edit, Trash2, Eye, Building2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit, Trash2, Eye, Building2, Network } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import api from '@/lib/api';
 
@@ -239,6 +239,12 @@ export default function OrganizationIndex() {
                 title="Unit Organisasi"
                 description="Kelola struktur organisasi klinik"
                 actions={[
+                    {
+                        label: 'Bagan Struktur',
+                        href: '/hr/organizations/chart',
+                        icon: Network,
+                        variant: 'outline',
+                    },
                     {
                         label: 'Tambah Unit',
                         href: '/hr/organizations/create',

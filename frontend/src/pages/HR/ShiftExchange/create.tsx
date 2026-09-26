@@ -86,7 +86,7 @@ export default function ShiftExchangeCreate() {
         const fetchRequestingRosters = async () => {
             try {
                 const rosRes = await api.get(`/roster-schedules?employee_id=${formData.requesting_employee_id}`);
-                const rosters = rosRes.data || [];
+                const rosters = rosRes.data?.data || rosRes.data || [];
                 const rosOptions = rosters.map((r: any) => ({
                     value: r.id.toString(),
                     label: new Date(r.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -110,7 +110,7 @@ export default function ShiftExchangeCreate() {
         const fetchTargetRosters = async () => {
             try {
                 const rosRes = await api.get(`/roster-schedules?employee_id=${formData.target_employee_id}`);
-                const rosters = rosRes.data || [];
+                const rosters = rosRes.data?.data || rosRes.data || [];
                 const rosOptions = rosters.map((r: any) => ({
                     value: r.id.toString(),
                     label: new Date(r.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })

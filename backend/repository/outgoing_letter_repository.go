@@ -17,30 +17,51 @@ func NewOutgoingLetterRepository(db *sqlx.DB) *OutgoingLetterRepository {
 	return &OutgoingLetterRepository{DB: db}
 }
 
-func (r *OutgoingLetterRepository) GetAll(page, perPage int, search string, status string) ([]models.OutgoingLetter, map[string]interface{}, error) {
+func (r *OutgoingLetterRepository) GetAll(page, perPage int, search string, status string, filterType string, userID int) ([]models.OutgoingLetter, map[string]interface{}, error) {
 	var letters []models.OutgoingLetter
 	var total int
 
 	offset := (page - 1) * perPage
 
 	queryCount := `
-		SELECT COUNT(*) FROM outgoing_letters ol
+		SELECT COUNT(DISTINCT ol.id) FROM outgoing_letters ol
 		LEFT JOIN document_templates dt ON ol.template_id = dt.id
 		LEFT JOIN users u ON ol.created_by = u.id
-		WHERE ol.deleted_at IS NULL
 	`
 	querySelect := `
 		SELECT ol.*, dt.name as template_name, u.name as creator_name
 		FROM outgoing_letters ol
 		LEFT JOIN document_templates dt ON ol.template_id = dt.id
 		LEFT JOIN users u ON ol.created_by = u.id
-		WHERE ol.deleted_at IS NULL
 	`
 
+	if filterType == "need_approval" {
+		queryCount += " JOIN letter_signatories ls ON ls.letter_id = ol.id"
+		// Distinct is needed for select if we join to avoid duplicates, but since we are filtering by user_id, 
+		// if a user is signer twice it might duplicate. Let's use DISTINCT.
+		querySelect = strings.Replace(querySelect, "SELECT ol.*", "SELECT DISTINCT ol.*", 1)
+		querySelect += " JOIN letter_signatories ls ON ls.letter_id = ol.id"
+	}
+
+	queryCount += " WHERE ol.deleted_at IS NULL"
+	querySelect += " WHERE ol.deleted_at IS NULL"
+
 	var args []interface{}
+
+	if filterType == "my_letters" {
+		whereClause := fmt.Sprintf(" AND ol.created_by = $%d", len(args)+1)
+		queryCount += whereClause
+		querySelect += whereClause
+		args = append(args, userID)
+	} else if filterType == "need_approval" {
+		whereClause := fmt.Sprintf(" AND ls.user_id = $%d", len(args)+1)
+		queryCount += whereClause
+		querySelect += whereClause
+		args = append(args, userID)
+	}
 	
 	if status != "" {
-		whereStatus := " AND ol.status = $1"
+		whereStatus := fmt.Sprintf(" AND ol.status = $%d", len(args)+1)
 		queryCount += whereStatus
 		querySelect += whereStatus
 		args = append(args, status)

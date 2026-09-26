@@ -108,3 +108,19 @@ func (r *OrgUnitRepository) Create(unit *models.OrganizationUnit) error {
 	}
 	return nil
 }
+
+func (r *OrgUnitRepository) Update(unit *models.OrganizationUnit) error {
+	query := `
+		UPDATE organization_units
+		SET code = :code, name = :name, description = :description, parent_id = :parent_id, 
+		    level = :level, head_id = :head_id, is_active = :is_active, updated_at = :updated_at
+		WHERE id = :id
+	`
+	_, err := r.db.NamedExec(query, unit)
+	return err
+}
+
+func (r *OrgUnitRepository) Delete(id int) error {
+	_, err := r.db.Exec("DELETE FROM organization_units WHERE id = $1", id)
+	return err
+}

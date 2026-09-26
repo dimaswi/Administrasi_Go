@@ -6,14 +6,20 @@ import { IndexPage } from '@/components/ui/index-page';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, MoreHorizontal, Edit, Trash2, Users } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import api from '@/lib/api';
+
+interface Role {
+    id: number;
+    name: string;
+    display_name: string;
+}
 
 interface User {
     id: number;
     name: string;
-    nip: string;
-    position: string;
-    phone: string;
+    role_id?: number;
 }
 
 export default function UserIndex() {
@@ -21,6 +27,7 @@ export default function UserIndex() {
     const navigate = useNavigate();
     
     const [data, setData] = useState<User[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Pagination state
@@ -37,8 +44,12 @@ export default function UserIndex() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/users');
-            setData(res.data.data || []);
+            const [usersRes, rolesRes] = await Promise.all([
+                api.get('/users'),
+                api.get('/roles')
+            ]);
+            setData(usersRes.data.data || []);
+            setRoles(rolesRes.data.data || []);
         } catch (error) {
             console.error(error);
         } finally {
@@ -48,9 +59,7 @@ export default function UserIndex() {
 
     // Derived paginated data
     const filteredData = data.filter(item => 
-        (item.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (item.nip?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (item.position?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+        (item.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     const total = filteredData.length;
@@ -77,24 +86,55 @@ export default function UserIndex() {
         }
     };
 
+    const handleRoleChange = async (userId: number, newRoleId: string) => {
+        const userToUpdate = data.find(u => u.id === userId);
+        if (!userToUpdate) return;
+        
+        try {
+            await api.put(`/users/${userId}`, {
+                ...userToUpdate,
+                role_id: parseInt(newRoleId)
+            });
+            toast.success('Role berhasil diperbarui');
+            
+            // Update local state to avoid full refetch
+            setData(prev => prev.map(u => u.id === userId ? { ...u, role_id: parseInt(newRoleId) } : u));
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Gagal memperbarui role');
+            console.error(error);
+        }
+    };
+
     const columns = [
-        {
-            key: 'nip',
-            label: 'NIP',
-            className: 'w-[200px]',
-            render: (row: User) => <span className="font-mono">{row.nip}</span>,
-        },
         {
             key: 'name',
             label: 'Nama Lengkap',
-            className: 'w-[200px]',
+            className: 'w-[300px]',
             render: (row: User) => <div className="font-medium">{row.name}</div>,
         },
         {
-            key: 'position',
-            label: 'Jabatan',
+            key: 'role',
+            label: 'Role',
             className: 'w-[200px]',
-            render: (row: User) => row.position || '-',
+            render: (row: User) => (
+                <Select
+                    value={row.role_id?.toString() || ""}
+                    onValueChange={(val) => handleRoleChange(row.id, val)}
+                >
+                    <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Pilih Role">
+                            {row.role_id ? roles.find(r => r.id === row.role_id)?.display_name || roles.find(r => r.id === row.role_id)?.name : "Pilih Role"}
+                        </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                        {roles.map(r => (
+                            <SelectItem key={r.id} value={r.id.toString()}>
+                                {r.display_name || r.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            ),
         },
         {
             key: 'actions',

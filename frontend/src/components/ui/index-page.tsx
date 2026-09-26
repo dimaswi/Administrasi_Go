@@ -251,14 +251,14 @@ export function IndexPage<T extends { id: number | string }>({
                     {filterFields && filterFields.length > 0 && (
                         <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
                             <CollapsibleTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 gap-1.5 text-xs")}>
-                                    <Filter className="h-3.5 w-3.5" />
-                                    Filter
-                                    {activeFilterCount > 0 && (
-                                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-medium">
-                                            {activeFilterCount}
-                                        </span>
-                                    )}
-                                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", filterOpen && "rotate-180")} />
+                                <Filter className="h-3.5 w-3.5" />
+                                Filter
+                                {activeFilterCount > 0 && (
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-medium">
+                                        {activeFilterCount}
+                                    </span>
+                                )}
+                                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", filterOpen && "rotate-180")} />
                             </CollapsibleTrigger>
                         </Collapsible>
                     )}
@@ -333,76 +333,76 @@ export function IndexPage<T extends { id: number | string }>({
 
             {/* Table or custom content */}
             {tableContent ?? (
-            <div className="overflow-x-auto rounded-md border border-border">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="border-b border-border hover:bg-transparent bg-muted/40">
-                            {columns.map((column) => (
-                                <TableHead
-                                    key={column.key}
-                                    className={cn(
-                                        "h-9 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider py-0 select-none",
-                                        column.sortable !== false && column.label && "cursor-pointer hover:text-foreground transition-colors",
-                                        column.className
-                                    )}
-                                    onClick={() => column.sortable !== false && column.label ? handleSort(column.key) : undefined}
-                                >
-                                    {column.label ? (
-                                        <span className="inline-flex items-center gap-1">
-                                            {column.label}
-                                            {column.sortable !== false && (
-                                                sortKey === column.key ? (
-                                                    sortDir === "asc"
-                                                        ? <ArrowUp className="h-3 w-3 text-primary" />
-                                                        : <ArrowDown className="h-3 w-3 text-primary" />
-                                                ) : (
-                                                    <ArrowUpDown className="h-3 w-3 opacity-30" />
-                                                )
-                                            )}
-                                        </span>
-                                    ) : null}
-                                </TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow className="border-0">
-                                <TableCell colSpan={columns.length} className="h-32 text-center">
-                                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                        Memuat data...
-                                    </div>
-                                </TableCell>
+                <div className="overflow-x-auto rounded-md border border-border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="border-b border-border hover:bg-transparent bg-muted/40">
+                                {columns.map((column) => (
+                                    <TableHead
+                                        key={column.key}
+                                        className={cn(
+                                            "h-9 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider py-0 select-none",
+                                            column.sortable !== false && column.label && "cursor-pointer hover:text-foreground transition-colors",
+                                            column.className
+                                        )}
+                                        onClick={() => column.sortable !== false && column.label ? handleSort(column.key) : undefined}
+                                    >
+                                        {column.label ? (
+                                            <span className="inline-flex items-center gap-1">
+                                                {column.label}
+                                                {column.sortable !== false && (
+                                                    sortKey === column.key ? (
+                                                        sortDir === "asc"
+                                                            ? <ArrowUp className="h-3 w-3 text-primary" />
+                                                            : <ArrowDown className="h-3 w-3 text-primary" />
+                                                    ) : (
+                                                        <ArrowUpDown className="h-3 w-3 opacity-30" />
+                                                    )
+                                                )}
+                                            </span>
+                                        ) : null}
+                                    </TableHead>
+                                ))}
                             </TableRow>
-                        ) : sortedData.length === 0 ? (
-                            <TableRow className="border-0">
-                                <TableCell colSpan={columns.length} className="h-36 text-center">
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        {EmptyIcon && <EmptyIcon className="h-8 w-8 opacity-30" />}
-                                        <span className="text-sm">{emptyMessage}</span>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            sortedData.map((item) => (
-                                <TableRow
-                                    key={item.id}
-                                    className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors h-[46px]"
-                                >
-                                    {columns.map((column) => (
-                                        <TableCell key={column.key} className={cn("py-2 text-sm", column.className)}>
-                                            {column.render
-                                                ? column.render(item)
-                                                : (item as any)[column.key]}
-                                        </TableCell>
-                                    ))}
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                <TableRow className="border-0">
+                                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                            Memuat data...
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            ) : sortedData.length === 0 ? (
+                                <TableRow className="border-0">
+                                    <TableCell colSpan={columns.length} className="h-36 text-center">
+                                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                            {EmptyIcon && <EmptyIcon className="h-8 w-8 opacity-30" />}
+                                            <span className="text-sm">{emptyMessage}</span>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                sortedData.map((item) => (
+                                    <TableRow
+                                        key={item.id}
+                                        className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors h-[46px]"
+                                    >
+                                        {columns.map((column) => (
+                                            <TableCell key={column.key} className={cn("py-2 text-sm", column.className)}>
+                                                {column.render
+                                                    ? column.render(item)
+                                                    : (item as any)[column.key]}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             )}
 
             {/* Pagination */}
@@ -413,18 +413,24 @@ export function IndexPage<T extends { id: number | string }>({
                         <div className="flex items-center gap-1.5">
                             <span>Baris:</span>
                             {onPerPageChange ? (
-                                <SearchableSelect
-                                    options={[
-                                        { value: "10", label: "10" },
-                                        { value: "25", label: "25" },
-                                        { value: "50", label: "50" },
-                                        { value: "100", label: "100" }
-                                    ]}
+                                <Select
                                     value={pagination.per_page.toString()}
-                                    onChange={(val) => val && onPerPageChange(parseInt(val))}
-                                    placeholder="10"
-                                    className="w-[70px]"
-                                />
+                                    onValueChange={(val) => val && onPerPageChange(parseInt(val))}
+                                >
+                                    <SelectTrigger className="h-7 w-[70px]">
+                                        <SelectValue placeholder="10" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="10">10</SelectItem>
+                                        <SelectItem value="25">25</SelectItem>
+                                        <SelectItem value="50">50</SelectItem>
+                                        <SelectItem value="100">100</SelectItem>
+                                        <SelectItem value="200">200</SelectItem>
+                                        <SelectItem value="250">250</SelectItem>
+                                        <SelectItem value="500">500</SelectItem>
+                                        <SelectItem value="1000">1000</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             ) : (
                                 <span className="font-medium">{pagination.per_page}</span>
                             )}

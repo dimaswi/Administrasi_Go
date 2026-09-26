@@ -379,7 +379,7 @@ export default function OutgoingLetterEdit() {
                                                     </div>
 
                                                     {signatories.map((sig, idx) => (
-                                                        <div key={idx} className="border rounded-xl p-4 bg-white shadow-sm space-y-4 relative overflow-hidden">
+                                                        <Card key={idx} className="border p-4 bg-card shadow-sm space-y-4 relative overflow-hidden">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="w-6 h-6 rounded-full bg-slate-100 border flex items-center justify-center text-xs font-semibold text-slate-600 shrink-0">
                                                                     {idx + 1}
@@ -411,7 +411,7 @@ export default function OutgoingLetterEdit() {
                                                                 {sig.show_name && <div className="text-[11px] px-2 py-0.5 bg-slate-50 border rounded text-slate-600">Nama</div>}
                                                                 {sig.show_nip && <div className="text-[11px] px-2 py-0.5 bg-slate-50 border rounded text-slate-600">NIP</div>}
                                                             </div>
-                                                        </div>
+                                                        </Card>
                                                     ))}
                                                 </div>
                                             )}

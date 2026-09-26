@@ -38,6 +38,39 @@ func (r *RoleRepository) GetPermissionsByRoleID(roleID int) ([]string, error) {
 	return permissions, err
 }
 
+func (r *RoleRepository) GetPermissionIDsByRoleID(roleID int) ([]int, error) {
+	permissionIDs := []int{}
+	query := `SELECT permission_id FROM role_permission WHERE role_id = $1`
+	err := r.db.Select(&permissionIDs, query, roleID)
+	return permissionIDs, err
+}
+
+func (r *RoleRepository) AssignPermissions(roleID int, permissionIDs []int) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	// Delete old permissions
+	if _, err := tx.Exec("DELETE FROM role_permission WHERE role_id = $1", roleID); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Insert new permissions
+	if len(permissionIDs) > 0 {
+		query := "INSERT INTO role_permission (role_id, permission_id) VALUES ($1, $2)"
+		for _, pid := range permissionIDs {
+			if _, err := tx.Exec(query, roleID, pid); err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (r *RoleRepository) Create(role *models.Role) error {
 	query := `
 		INSERT INTO roles (name, description, created_at, updated_at)

@@ -20,8 +20,9 @@ func NewRosterScheduleHandler(repo *repository.RosterScheduleRepository) *Roster
 
 func (h *RosterScheduleHandler) GetAll(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "1000"))
 	search := c.Query("search")
+	employeeID, _ := strconv.Atoi(c.Query("employee_id"))
 
 	if page < 1 {
 		page = 1
@@ -30,7 +31,7 @@ func (h *RosterScheduleHandler) GetAll(c *gin.Context) {
 		perPage = 10
 	}
 
-	response, err := h.repo.GetAll(page, perPage, search)
+	response, err := h.repo.GetAll(page, perPage, search, employeeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch rosters"})
 		return
@@ -123,7 +124,7 @@ func (h *RosterScheduleHandler) AutoGenerate(c *gin.Context) {
 
 	err := h.repo.AutoGenerate(payload.EmployeeID, payload.UnitID, payload.StartDate, payload.EndDate, payload.WorkDaysPattern, payload.WorkScheduleIDs, payload.Overwrite)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate schedule"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

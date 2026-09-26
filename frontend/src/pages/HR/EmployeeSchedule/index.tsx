@@ -12,6 +12,11 @@ export default function EmployeeScheduleIndex() {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Pagination & Search state
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
         fetchData();
     }, [searchParams]);
@@ -28,6 +33,23 @@ export default function EmployeeScheduleIndex() {
         }
     };
 
+    const filteredData = data.filter(item =>
+        (item.user_id?.toString() || '').includes(searchTerm.toLowerCase()) ||
+        (item.id?.toString() || '').includes(searchTerm.toLowerCase())
+    );
+
+    const total = filteredData.length;
+    const paginatedData = filteredData.slice((page - 1) * perPage, page * perPage);
+
+    const pagination = {
+        current_page: page,
+        last_page: Math.ceil(total / perPage) || 1,
+        per_page: perPage,
+        total: total,
+        from: total === 0 ? 0 : (page - 1) * perPage + 1,
+        to: Math.min(page * perPage, total)
+    };
+
     const columns = [
         { key: 'id', label: 'ID', render: (row: any) => row.id },
         { key: 'user_id', label: 'ID Pegawai', render: (row: any) => row.user_id },
@@ -41,8 +63,13 @@ export default function EmployeeScheduleIndex() {
                 title="Jadwal Mingguan Pegawai"
                 description="Kelola jadwal kerja reguler pegawai (Senin - Minggu)"
                 actions={[{ label: 'Tetapkan Jadwal', href: '/hr/employee-schedules/create', icon: Plus }]}
-                data={data}
+                data={paginatedData}
                 columns={columns}
+                pagination={pagination}
+                onPageChange={(p) => setPage(p)}
+                onPerPageChange={(p) => { setPerPage(p); setPage(1); }}
+                searchValue={searchTerm}
+                onSearchChange={(v) => { setSearchTerm(v); setPage(1); }}
                 emptyMessage="Belum ada data jadwal mingguan"
                 emptyIcon={CalendarDays}
                 isLoading={loading}

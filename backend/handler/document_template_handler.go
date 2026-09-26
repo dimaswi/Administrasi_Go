@@ -22,7 +22,22 @@ func (h *DocumentTemplateHandler) GetAll(c *gin.Context) {
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "15"))
 	search := c.Query("search")
 
-	templates, paginationMeta, err := h.Repo.GetAll(page, perPage, search)
+	userIDFloat, _ := c.Get("user_id")
+	userID := int(userIDFloat.(float64))
+
+	roleIDFloat, _ := c.Get("role_id")
+	var roleID int
+	if roleIDFloat != nil {
+		roleID = int(roleIDFloat.(float64))
+	}
+	
+	var orgUnitID int
+	// If admin (1 or 7), we leave orgUnitID as 0 to see all templates.
+	if roleID != 1 && roleID != 7 {
+		_ = h.Repo.DB.Get(&orgUnitID, "SELECT organization_unit_id FROM employees WHERE user_id = $1 LIMIT 1", userID)
+	}
+
+	templates, paginationMeta, err := h.Repo.GetAll(page, perPage, search, orgUnitID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

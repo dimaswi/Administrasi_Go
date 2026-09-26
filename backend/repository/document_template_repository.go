@@ -16,7 +16,7 @@ func NewDocumentTemplateRepository(db *sqlx.DB) *DocumentTemplateRepository {
 	return &DocumentTemplateRepository{DB: db}
 }
 
-func (r *DocumentTemplateRepository) GetAll(page, perPage int, search string) ([]models.DocumentTemplate, map[string]interface{}, error) {
+func (r *DocumentTemplateRepository) GetAll(page, perPage int, search string, organizationUnitID int) ([]models.DocumentTemplate, map[string]interface{}, error) {
 	var templates []models.DocumentTemplate
 	var total int
 
@@ -31,9 +31,17 @@ func (r *DocumentTemplateRepository) GetAll(page, perPage int, search string) ([
 	`
 
 	var args []interface{}
+	
+	if organizationUnitID > 0 {
+		whereUnit := fmt.Sprintf(" AND dt.organization_unit_id = $%d", len(args)+1)
+		queryCount += whereUnit
+		querySelect += whereUnit
+		args = append(args, organizationUnitID)
+	}
+
 	if search != "" {
 		searchTerm := "%" + search + "%"
-		whereClause := " AND (dt.name ILIKE $1 OR dt.code ILIKE $2)"
+		whereClause := fmt.Sprintf(" AND (dt.name ILIKE $%d OR dt.code ILIKE $%d)", len(args)+1, len(args)+2)
 		queryCount += whereClause
 		querySelect += whereClause
 		args = append(args, searchTerm, searchTerm)

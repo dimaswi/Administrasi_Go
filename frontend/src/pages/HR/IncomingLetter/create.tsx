@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import { ArrowLeft, Save, Loader2, Mail } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function IncomingLetterCreate() {
     const navigate = useNavigate();
@@ -21,7 +21,7 @@ export default function IncomingLetterCreate() {
         try {
             const token = localStorage.getItem('token');
             const formData = new FormData(e.currentTarget);
-            
+
             // Hardcode orgUnitID and registeredBy for now, should be from context
             formData.append('organization_unit_id', '1');
             formData.append('registered_by', '1');
@@ -76,60 +76,63 @@ export default function IncomingLetterCreate() {
                                 <Mail className="h-5 w-5 text-primary" />
                                 Data Surat Masuk
                             </CardTitle>
+                            <CardDescription>
+                                Silahkan isi data surat masuk di bawah ini
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="incoming_number">Nomor Agenda (Masuk)</Label>
-                            <Input id="incoming_number" name="incoming_number" required placeholder="Contoh: 001/AGENDA/2026" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="original_number">Nomor Surat Asli</Label>
-                            <Input id="original_number" name="original_number" required placeholder="Sesuai fisik surat" />
-                        </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="incoming_number">Nomor Agenda (Masuk)</Label>
+                                <Input id="incoming_number" name="incoming_number" required placeholder="Contoh: 001/AGENDA/2026" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="original_number">Nomor Surat Asli</Label>
+                                <Input id="original_number" name="original_number" required placeholder="Sesuai fisik surat" />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="original_date">Tanggal Surat Asli</Label>
-                            <Input id="original_date" name="original_date" type="date" required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="received_date">Tanggal Diterima</Label>
-                            <Input id="received_date" name="received_date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
-                        </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="original_date">Tanggal Surat Asli</Label>
+                                <Input id="original_date" name="original_date" type="date" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="received_date">Tanggal Diterima</Label>
+                                <Input id="received_date" name="received_date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                            </div>
 
-                        <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="sender">Pengirim</Label>
-                            <Input id="sender" name="sender" required placeholder="Instansi / Nama Pengirim" />
-                        </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="sender">Pengirim</Label>
+                                <Input id="sender" name="sender" required placeholder="Instansi / Nama Pengirim" />
+                            </div>
 
-                        <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="subject">Perihal / Hal</Label>
-                            <Input id="subject" name="subject" required placeholder="Tentang apa surat ini" />
-                        </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="subject">Perihal / Hal</Label>
+                                <Input id="subject" name="subject" required placeholder="Tentang apa surat ini" />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="category">Kategori</Label>
-                            <Input id="category" name="category" placeholder="Contoh: Undangan, Edaran, dll" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="classification">Klasifikasi</Label>
-                            <Input id="classification" name="classification" placeholder="Biasa / Penting / Rahasia" />
-                        </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="category">Kategori</Label>
+                                <Input id="category" name="category" placeholder="Contoh: Undangan, Edaran, dll" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="classification">Klasifikasi</Label>
+                                <Input id="classification" name="classification" placeholder="Biasa / Penting / Rahasia" />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="attachment_count">Jumlah Lampiran</Label>
-                            <Input id="attachment_count" name="attachment_count" type="number" min="0" defaultValue="0" required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="file">File Scan Surat (PDF)</Label>
-                            <Input id="file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png" />
-                            <p className="text-xs text-muted-foreground mt-1">Format PDF/JPG, maks 10MB.</p>
-                        </div>
-                        
-                        <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="notes">Catatan Tambahan</Label>
-                            <Textarea id="notes" name="notes" placeholder="Catatan opsional..." rows={3} />
-                        </div>
-                    </CardContent>
+                            <div className="space-y-2">
+                                <Label htmlFor="attachment_count">Jumlah Lampiran</Label>
+                                <Input id="attachment_count" name="attachment_count" type="number" min="0" defaultValue="0" required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="file">File Scan Surat (PDF)</Label>
+                                <Input id="file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                                <p className="text-xs text-muted-foreground mt-1">Format PDF/JPG, maks 10MB.</p>
+                            </div>
+
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="notes">Catatan Tambahan</Label>
+                                <Textarea id="notes" name="notes" placeholder="Catatan opsional..." rows={3} />
+                            </div>
+                        </CardContent>
                     </Card>
 
                     {/* Form Actions (Sticky Footer) */}

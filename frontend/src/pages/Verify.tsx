@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, XCircle, FileText, Calendar, User, ShieldCheck, Clock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function Verify() {
     const { id } = useParams();
@@ -63,23 +64,23 @@ export default function Verify() {
                     <p className="mt-2 text-slate-600">Dokumen elektronik ini resmi dan tercatat di sistem kami.</p>
                 </div>
 
-                <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100">
-                    <div className="px-6 py-8 sm:p-10">
+                <Card className="shadow-xl overflow-hidden border-slate-100">
+                    <CardContent className="p-6 sm:p-10">
                         <div className="space-y-6">
                             <div className="flex items-start">
                                 <FileText className="w-6 h-6 text-slate-400 mt-1 mr-4 shrink-0" />
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Perihal</p>
-                                    <p className="mt-1 text-lg font-semibold text-slate-900">{letter.subject}</p>
-                                    <p className="text-sm text-slate-500 mt-1">{letter.letter_number}</p>
+                                    <p className="mt-1 text-lg font-semibold text-slate-900 break-words">{letter.subject}</p>
+                                    <p className="text-sm text-slate-500 mt-1 break-all">{letter.letter_number}</p>
                                 </div>
                             </div>
 
                             <div className="flex items-start">
                                 <Calendar className="w-6 h-6 text-slate-400 mt-1 mr-4 shrink-0" />
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Tanggal Dokumen</p>
-                                    <p className="mt-1 text-base text-slate-900">
+                                    <p className="mt-1 text-base text-slate-900 break-words">
                                         {new Date(letter.letter_date).toLocaleDateString('id-ID', {
                                             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                                         })}
@@ -87,30 +88,29 @@ export default function Verify() {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </CardContent>
 
                     {signatories.length > 0 && (
-                        <div className="bg-slate-50 px-6 py-8 sm:p-10 border-t border-slate-100">
+                        <div className="bg-slate-50 p-6 sm:p-10 border-t border-slate-100">
                             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center">
-                                <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                                <CheckCircle2 className="w-4 h-4 mr-2 text-green-500 shrink-0" />
                                 Ditandatangani Elektronik Oleh
                             </h3>
                             <ul className="space-y-4">
                                 {signatories.map((sig: any, index: number) => (
-                                    <li key={index} className="flex items-start bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                        <div className="bg-blue-50 p-2 rounded-lg mr-4">
+                                    <li key={index} className="flex items-start bg-white p-4 border border-slate-200 shadow-sm rounded-md overflow-hidden">
+                                        <div className="bg-blue-50 p-2 mr-4 shrink-0 rounded-md">
                                             <User className="w-5 h-5 text-blue-600" />
                                         </div>
-                                        <div>
-                                            {/* We fetch the name from variable values or we don't have it directly in the public api unless populated */}
-                                            {/* Since public API just returns the letter, the signatories might just have user_id. */}
-                                            {/* To keep it simple, we just show the timestamp of the signature for now. */}
-                                            <p className="text-sm font-medium text-slate-900">{sig.user_name || `Penanda Tangan ${index + 1}`}</p>
-                                            <p className="text-xs text-slate-500 mt-1 flex items-center">
-                                                <Clock className="w-3 h-3 mr-1" />
-                                                {new Date(sig.signed_at).toLocaleString('id-ID', {
-                                                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit'
-                                                })} WIB
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-slate-900 truncate">{sig.user_name || `Penanda Tangan ${index + 1}`}</p>
+                                            <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-1">
+                                                <Clock className="w-3 h-3 shrink-0" />
+                                                <span>
+                                                    {new Date(sig.signed_at).toLocaleString('id-ID', {
+                                                        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit'
+                                                    })} WIB
+                                                </span>
                                             </p>
                                         </div>
                                     </li>
@@ -118,7 +118,7 @@ export default function Verify() {
                             </ul>
                         </div>
                     )}
-                </div>
+                </Card>
                 
                 <div className="mt-8 text-center text-sm text-slate-500">
                     <p>Sistem Administrasi Klinik Rawat Inap Utama Muhammadiyah Kedungadem</p>

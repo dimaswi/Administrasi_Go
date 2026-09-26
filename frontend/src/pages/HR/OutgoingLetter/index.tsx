@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { IndexPage } from '@/components/ui/index-page';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Plus, Pencil } from 'lucide-react';
+import { Eye, Plus, Pencil, CheckSquare, FileText } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,7 +20,8 @@ interface OutgoingLetter {
 export default function OutgoingLetterIndex() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { hasPermission } = useAuth();
+    const { hasPermission, user } = useAuth();
+    const isAdmin = user?.role_id === 1 || user?.role_id === 7;
 
     const [letters, setLetters] = useState<OutgoingLetter[]>([]);
     const [total, setTotal] = useState(0);
@@ -29,12 +30,21 @@ export default function OutgoingLetterIndex() {
     const currentPage = parseInt(searchParams.get('page') || '1', 10);
     const perPage = parseInt(searchParams.get('per_page') || '10', 10);
     const searchQuery = searchParams.get('search') || '';
+    const activeTab = searchParams.get('tab') || 'my_letters';
+
+    const handleTabChange = (val: string) => {
+        setSearchParams(prev => {
+            prev.set('tab', val);
+            prev.set('page', '1');
+            return prev;
+        });
+    };
 
     const fetchLetters = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/outgoing-letters?page=${currentPage}&per_page=${perPage}&search=${searchQuery}`, {
+            const res = await fetch(`http://localhost:8080/api/outgoing-letters?page=${currentPage}&per_page=${perPage}&search=${searchQuery}&type=${activeTab}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -55,7 +65,7 @@ export default function OutgoingLetterIndex() {
 
     useEffect(() => {
         fetchLetters();
-    }, [currentPage, perPage, searchQuery]);
+    }, [currentPage, perPage, searchQuery, activeTab]);
 
     const handleSearch = (value: string) => {
         setSearchParams(prev => {
@@ -156,35 +166,62 @@ export default function OutgoingLetterIndex() {
         }
     ];
 
+    const tabs = [
+        { id: 'my_letters', label: isAdmin ? "Semua Surat" : "Surat Saya", icon: FileText },
+        { id: 'need_approval', label: "Tanda Tangan", icon: CheckSquare }
+    ];
+
     return (
         <AdminLayout>
-            <IndexPage
-                title="Surat Keluar"
-                description="Manajemen pembuatan dan persetujuan surat keluar"
-                actions={hasPermission('outgoing_letter.create') ? [
-                    {
-                        label: 'Buat Surat',
-                        icon: Plus,
-                        onClick: () => navigate('/admin/outgoing-letters/create')
+            <div className="flex flex-col gap-6">
+                <IndexPage
+                    headerExtra={
+                        <div className="bg-muted/50 p-1 rounded-lg flex items-center gap-1 border border-border/50">
+                            {tabs.map((tab) => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => handleTabChange(tab.id)}
+                                        className={`
+                                            inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all
+                                            ${isActive 
+                                                ? 'bg-background text-foreground shadow-sm border border-border/50' 
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                            }
+                                        `}
+                                    >
+                                        <Icon className="h-4 w-4 mr-2" />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     }
-                ] : undefined}
-                data={letters}
-                columns={columns}
-                pagination={{
-                    current_page: currentPage,
-                    per_page: perPage,
-                    total: total,
-                    last_page: Math.ceil(total / perPage) || 1,
-                    from: total === 0 ? 0 : (currentPage - 1) * perPage + 1,
-                    to: Math.min(currentPage * perPage, total)
-                }}
-                onPageChange={handlePageChange}
-                onPerPageChange={(perPage) => setSearchParams(prev => { prev.set('per_page', perPage.toString()); prev.set('page', '1'); return prev; })}
-                onSearchChange={handleSearch}
+                    title={activeTab === 'my_letters' ? (isAdmin ? "Semua Surat Keluar" : "Surat Keluar") : "Tanda Tangan"}
+                    description={activeTab === 'my_letters' ? (isAdmin ? "Daftar seluruh surat keluar di sistem." : "Daftar surat keluar yang Anda buat.") : "Daftar surat keluar yang menunggu tanda tangan Anda."}
+                    actions={hasPermission('outgoing_letter.create') ? [
+                        { label: 'Buat Surat', icon: Plus, onClick: () => navigate('/admin/outgoing-letters/create') }
+                    ] : undefined}
+                    data={letters}
+                            columns={columns}
+                            pagination={{
+                                current_page: currentPage,
+                                per_page: perPage,
+                                total: total,
+                                last_page: Math.ceil(total / perPage) || 1,
+                                from: total === 0 ? 0 : (currentPage - 1) * perPage + 1,
+                                to: Math.min(currentPage * perPage, total)
+                            }}
+                            onPageChange={handlePageChange}
+                            onPerPageChange={(perPage) => setSearchParams(prev => { prev.set('per_page', perPage.toString()); prev.set('page', '1'); return prev; })}
+                            onSearchChange={handleSearch}
                 searchValue={searchQuery}
                 isLoading={loading}
-                emptyMessage="Belum ada surat keluar."
+                emptyMessage={activeTab === 'my_letters' ? "Belum ada surat keluar." : "Belum ada surat yang menunggu tanda tangan."}
             />
+            </div>
         </AdminLayout>
     );
 }

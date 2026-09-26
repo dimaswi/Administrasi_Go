@@ -24,6 +24,11 @@ export default function LeaveTypeIndex() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<LeaveType | null>(null);
 
+    // Pagination & Search state
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -52,6 +57,23 @@ export default function LeaveTypeIndex() {
                 setItemToDelete(null);
             }
         }
+    };
+
+    const filteredData = data.filter(item =>
+        (item.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (item.code?.toString() || '').includes(searchTerm.toLowerCase())
+    );
+
+    const total = filteredData.length;
+    const paginatedData = filteredData.slice((page - 1) * perPage, page * perPage);
+
+    const pagination = {
+        current_page: page,
+        last_page: Math.ceil(total / perPage) || 1,
+        per_page: perPage,
+        total: total,
+        from: total === 0 ? 0 : (page - 1) * perPage + 1,
+        to: Math.min(page * perPage, total)
     };
 
     const columns = [
@@ -116,8 +138,13 @@ export default function LeaveTypeIndex() {
                 actions={[
                     { label: 'Tambah Data', href: '/hr/master-data/leavetype/create', icon: Plus },
                 ]}
-                data={data}
+                data={paginatedData}
                 columns={columns}
+                pagination={pagination}
+                onPageChange={(p) => setPage(p)}
+                onPerPageChange={(p) => { setPerPage(p); setPage(1); }}
+                searchValue={searchTerm}
+                onSearchChange={(v) => { setSearchTerm(v); setPage(1); }}
                 emptyMessage="Belum ada data"
                 emptyIcon={FileText}
                 isLoading={loading}

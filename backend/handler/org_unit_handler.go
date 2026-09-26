@@ -3,6 +3,7 @@ package handler
 import (
 	"backend/models"
 	"backend/repository"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -71,4 +72,46 @@ func (h *OrgUnitHandler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, unit)
+}
+
+func (h *OrgUnitHandler) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var unit models.OrganizationUnit
+	if err := c.ShouldBindJSON(&unit); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	unit.ID = id
+	unit.UpdatedAt = time.Now()
+
+	if err := h.repo.Update(&unit); err != nil {
+		log.Printf("Error updating org unit: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update organization unit: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, unit)
+}
+
+func (h *OrgUnitHandler) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	if err := h.repo.Delete(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete organization unit"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Organization unit deleted successfully"})
 }

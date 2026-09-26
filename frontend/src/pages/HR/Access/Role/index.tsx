@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
 import { IndexPage } from '@/components/ui/index-page';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Edit, Trash2, Shield } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit, Trash2, Shield, ShieldCheck } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import api from '@/lib/api';
 
@@ -92,6 +92,15 @@ export default function RoleIndex() {
             className: 'w-[100px] text-right',
             render: (row: Role) => (
                 <div className="flex items-center justify-end gap-2">
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8 text-amber-500 border-amber-200 hover:bg-amber-50"
+                        onClick={() => navigate(`/hr/access/roles/${row.id}/permissions`)}
+                        title="Atur Hak Akses"
+                    >
+                        <ShieldCheck className="h-4 w-4" />
+                    </Button>
                     <Button 
                         variant="outline" 
                         size="icon" 

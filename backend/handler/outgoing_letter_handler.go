@@ -27,8 +27,25 @@ func (h *OutgoingLetterHandler) GetAll(c *gin.Context) {
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
 	search := c.Query("search")
 	status := c.Query("status")
+	filterType := c.Query("type")
 
-	letters, paginationMeta, err := h.Repo.GetAll(page, perPage, search, status)
+	userIDFloat, _ := c.Get("user_id")
+	userID := int(userIDFloat.(float64))
+
+	roleIDFloat, _ := c.Get("role_id")
+	var roleID int
+	if roleIDFloat != nil {
+		roleID = int(roleIDFloat.(float64))
+	}
+
+	// For admin, we show all letters if they are in "my_letters" tab, or maybe we just don't filter.
+	if roleID == 1 || roleID == 7 {
+		if filterType == "my_letters" {
+			filterType = "" // show all
+		}
+	}
+
+	letters, paginationMeta, err := h.Repo.GetAll(page, perPage, search, status, filterType, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

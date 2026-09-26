@@ -36,6 +36,7 @@ export default function DispositionIndex() {
     const perPage = parseInt(searchParams.get('per_page') || '10', 10);
     const statusQuery = searchParams.get('status') || '';
     const priorityQuery = searchParams.get('priority') || '';
+    const searchQuery = searchParams.get('search') || '';
 
     const fetchDispositions = async () => {
         setLoading(true);
@@ -46,6 +47,7 @@ export default function DispositionIndex() {
                 per_page: perPage.toString(),
                 status: statusQuery,
                 priority: priorityQuery,
+                search: searchQuery,
             }).toString();
 
             const res = await fetch(`http://localhost:8080/api/dispositions?${queryParams}`, {
@@ -69,7 +71,7 @@ export default function DispositionIndex() {
 
     useEffect(() => {
         fetchDispositions();
-    }, [currentPage, perPage, statusQuery, priorityQuery]);
+    }, [currentPage, perPage, statusQuery, priorityQuery, searchQuery]);
 
     const handlePageChange = (page: number) => {
         setSearchParams(prev => {
@@ -234,6 +236,8 @@ export default function DispositionIndex() {
                 }}
                 onPageChange={handlePageChange}
                 onPerPageChange={handlePerPageChange}
+                searchValue={searchQuery}
+                onSearchChange={(v) => handleFilterChange('search', v)}
                 isLoading={loading}
                 emptyMessage="Tidak ada disposisi untuk Anda."
                 filterFields={[

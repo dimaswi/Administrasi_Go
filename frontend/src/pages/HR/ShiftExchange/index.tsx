@@ -30,6 +30,11 @@ export default function ShiftExchangeIndex() {
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
+    // Pagination & Search state
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -66,6 +71,24 @@ export default function ShiftExchangeIndex() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const filteredData = data.filter((item: any) =>
+        (item.reason?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (usersMap[item.requesting_employee_id]?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (usersMap[item.target_employee_id]?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
+
+    const total = filteredData.length;
+    const paginatedData = filteredData.slice((page - 1) * perPage, page * perPage);
+
+    const pagination = {
+        current_page: page,
+        last_page: Math.ceil(total / perPage) || 1,
+        per_page: perPage,
+        total: total,
+        from: total === 0 ? 0 : (page - 1) * perPage + 1,
+        to: Math.min(page * perPage, total)
     };
 
     const handleUpdateStatus = async (id: number, status: string) => {
@@ -122,8 +145,13 @@ export default function ShiftExchangeIndex() {
                 title="Tukar Shift"
                 description="Kelola pengajuan pertukaran jadwal dinas antar perawat/dokter"
                 actions={[{ label: 'Ajukan Tukar Shift', href: '/hr/shift-exchanges/create', icon: Plus }]}
-                data={data}
+                data={paginatedData}
                 columns={columns}
+                pagination={pagination}
+                onPageChange={(p) => setPage(p)}
+                onPerPageChange={(p) => { setPerPage(p); setPage(1); }}
+                searchValue={searchTerm}
+                onSearchChange={(v) => { setSearchTerm(v); setPage(1); }}
                 emptyMessage="Belum ada data pengajuan tukar shift"
                 emptyIcon={ArrowRightLeft}
                 isLoading={loading}

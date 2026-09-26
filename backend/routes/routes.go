@@ -107,6 +107,8 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				orgUnits.GET("", orgUnitHandler.GetAll)
 				orgUnits.GET("/:id", orgUnitHandler.GetByID)
 				orgUnits.POST("", orgUnitHandler.Create)
+				orgUnits.PUT("/:id", orgUnitHandler.Update)
+				orgUnits.DELETE("/:id", orgUnitHandler.Delete)
 			}
 
 			// Master Data - Job Categories
@@ -167,6 +169,8 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				roles.POST("", roleHandler.Create)
 				roles.PUT("/:id", roleHandler.Update)
 				roles.DELETE("/:id", roleHandler.Delete)
+				roles.GET("/:id/permissions", roleHandler.GetPermissions)
+				roles.POST("/:id/permissions", roleHandler.AssignPermissions)
 			}
 
 			// Access Management - Permissions
