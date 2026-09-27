@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, FileDown, Save, RefreshCw } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as indonesianLocale } from 'date-fns/locale';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
 import { toast } from 'sonner';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -68,7 +68,7 @@ export default function MeetingMemo() {
     };
 
     const handleDownloadMemo = () => {
-        window.open(`http://localhost:8080/api/meetings/${id}/generate-memo`, '_blank');
+        window.open(getApiUrl(`/api/meetings/${id}/generate-memo`), '_blank');
     };
 
     if (loading) return <AdminLayout><div className="p-6">Loading...</div></AdminLayout>;

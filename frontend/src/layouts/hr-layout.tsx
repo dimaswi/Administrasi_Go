@@ -59,14 +59,14 @@ const workspaces = [
     name: 'Administrasi',
     label: 'Administrasi',
     icon: Building,
-    href: '/dashboard',
+    href: '/admin/dashboard',
   },
   {
     id: 'hr',
     name: 'Human Resources',
     label: 'Human Resources',
     icon: Users,
-    href: '/hr/employees',
+    href: '/hr/dashboard',
   },
 ];
 
@@ -147,7 +147,7 @@ function WorkspaceSwitcherHR() {
 const navItems = [
   {
     title: 'Dashboard',
-    href: '/dashboard',
+    href: '/hr/dashboard',
     icon: LayoutDashboard,
   },
 
@@ -160,6 +160,7 @@ const navItems = [
       { title: 'Jadwal Karyawan', href: '/hr/rosters/planner' },
       { title: 'Tukar Shift', href: '/hr/shift-exchanges' },
       { title: 'Riwayat Absensi', href: '/hr/attendances' },
+      { title: 'Pemantauan Cuti', href: '/hr/leaves' },
     ],
   },
   {
@@ -175,6 +176,7 @@ const navItems = [
       { title: 'Status Kepegawaian', href: '/hr/master-data/employmentstatus' },
       { title: 'Tingkat Pendidikan', href: '/hr/master-data/educationlevel' },
       { title: 'Jenis Cuti', href: '/hr/master-data/leavetype' },
+      { title: 'Lokasi Presensi (GPS)', href: '/hr/master-data/work-location' },
       { title: 'Master Shift', href: '/hr/work-schedules' },
     ],
   },

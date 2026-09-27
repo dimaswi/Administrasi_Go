@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 
 export default function OutgoingLetterShow() {
     const { id } = useParams();
@@ -41,7 +42,7 @@ export default function OutgoingLetterShow() {
                 }
 
                 // Fetch Letter
-                const resLetter = await fetch(`http://localhost:8080/api/outgoing-letters/${id}`, {
+                const resLetter = await fetch(getApiUrl(`/api/outgoing-letters/${id}`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -51,7 +52,7 @@ export default function OutgoingLetterShow() {
 
                     // Fetch Template based on letter.template_id
                     if (data.data && data.data.template_id) {
-                        const resTpl = await fetch(`http://localhost:8080/api/document-templates/${data.data.template_id}`, {
+                        const resTpl = await fetch(getApiUrl(`/api/document-templates/${data.data.template_id}`), {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (resTpl.ok) {
@@ -75,7 +76,7 @@ export default function OutgoingLetterShow() {
                 }
 
                 // Fetch Users for Signatories mapping
-                const resUsers = await fetch(`http://localhost:8080/api/users?perPage=1000`, {
+                const resUsers = await fetch(getApiUrl(`/api/users?perPage=1000`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (resUsers.ok) {
@@ -161,7 +162,7 @@ export default function OutgoingLetterShow() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/outgoing-letters/${id}/submit`, {
+            const res = await fetch(getApiUrl(`/api/outgoing-letters/${id}/submit`), {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -182,7 +183,7 @@ export default function OutgoingLetterShow() {
         setProcessing(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/outgoing-letters/${id}/sign`, {
+            const res = await fetch(getApiUrl(`/api/outgoing-letters/${id}/sign`), {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -205,7 +206,7 @@ export default function OutgoingLetterShow() {
         setProcessing(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/outgoing-letters/${id}/reject`, {
+            const res = await fetch(getApiUrl(`/api/outgoing-letters/${id}/reject`), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -267,7 +268,7 @@ export default function OutgoingLetterShow() {
                             setProcessing(true);
                             const toastId = toast.loading("Membuat PDF dari server...");
                             try {
-                                const response = await fetch(`http://localhost:8080/api/outgoing-letters/${letter.id}/pdf`, {
+                                const response = await fetch(getApiUrl(`/api/outgoing-letters/${letter.id}/pdf`), {
                                     headers: { 'Authorization': `Bearer ${token}` }
                                 });
                                 if (!response.ok) throw new Error('Gagal mencetak PDF');

@@ -144,27 +144,24 @@ func (r *RosterScheduleRepository) GetByUnitAndMonth(unitID int, yearMonth strin
 
 func (r *RosterScheduleRepository) AssignShift(employeeID int, date string, workScheduleID int) error {
 	var userID int
-	err := r.db.Get(&userID, "SELECT user_id FROM employees WHERE id = $1", employeeID)
-	if err != nil {
-		return err
-	}
+	_ = r.db.Get(&userID, "SELECT user_id FROM employees WHERE id = $1", employeeID)
 
 	if workScheduleID == 0 {
 		// If workScheduleID is 0, it means delete the shift (off day)
-		_, err := r.db.Exec("DELETE FROM roster_schedules WHERE employee_id = $1 AND date = $2", userID, date)
+		_, err := r.db.Exec("DELETE FROM roster_schedules WHERE (employee_id = $1 OR employee_id = $2) AND date = $3", employeeID, userID, date)
 		return err
 	}
 
 	var count int
-	err = r.db.Get(&count, "SELECT COUNT(*) FROM roster_schedules WHERE employee_id = $1 AND date = $2", userID, date)
+	err := r.db.Get(&count, "SELECT COUNT(*) FROM roster_schedules WHERE (employee_id = $1 OR employee_id = $2) AND date = $3", employeeID, userID, date)
 	if err != nil {
 		return err
 	}
 
 	if count > 0 {
-		_, err = r.db.Exec("UPDATE roster_schedules SET work_schedule_id = $1, updated_at = CURRENT_TIMESTAMP WHERE employee_id = $2 AND date = $3", workScheduleID, userID, date)
+		_, err = r.db.Exec("UPDATE roster_schedules SET work_schedule_id = $1, employee_id = $2, updated_at = CURRENT_TIMESTAMP WHERE (employee_id = $2 OR employee_id = $3) AND date = $4", workScheduleID, employeeID, userID, date)
 	} else {
-		_, err = r.db.Exec("INSERT INTO roster_schedules (employee_id, work_schedule_id, date) VALUES ($1, $2, $3)", userID, workScheduleID, date)
+		_, err = r.db.Exec("INSERT INTO roster_schedules (employee_id, work_schedule_id, date) VALUES ($1, $2, $3)", employeeID, workScheduleID, date)
 	}
 	return err
 }
@@ -190,7 +187,15 @@ func (r *RosterScheduleRepository) CheckConflicts(employeeID int, unitID int, st
 	return count, err
 }
 
-func (r *RosterScheduleRepository) AutoGenerate(employeeID, unitID int, startDate, endDate, workDaysPattern string, workScheduleIDs []int, overwrite bool) error {
+func getMondayOfWeek(d time.Time) time.Time {
+	wd := d.Weekday()
+	if wd == time.Sunday {
+		return d.AddDate(0, 0, -6)
+	}
+	return d.AddDate(0, 0, 1-int(wd))
+}
+
+func (r *RosterScheduleRepository) AutoGenerate(employeeID, unitID int, startDate, endDate, workDaysPattern string, workScheduleIDs []int, overwrite bool, offDaysCount int) error {
 	if len(workScheduleIDs) == 0 {
 		return nil
 	}
@@ -229,55 +234,141 @@ func (r *RosterScheduleRepository) AutoGenerate(employeeID, unitID int, startDat
 	end, err := time.Parse("2006-01-02", endDate)
 	if err != nil { return err }
 
+	if offDaysCount < 0 {
+		offDaysCount = 0
+	}
+	if offDaysCount > 6 {
+		offDaysCount = 6
+	}
+
 	var insertedCount int
 	for _, eid := range employeeIDs {
 		current := start
-		for !current.After(end) {
-			// Check day pattern
-			weekday := current.Weekday()
-			shouldAssign := true
-			if workDaysPattern == "mon-fri" && (weekday == time.Saturday || weekday == time.Sunday) {
-				shouldAssign = false
-			} else if workDaysPattern == "mon-sat" && weekday == time.Sunday {
-				shouldAssign = false
+
+		if workDaysPattern == "all" && offDaysCount > 0 {
+			assignedOffMap := make(map[string]bool)
+			currWeekMon := getMondayOfWeek(start)
+
+			// Loop through true calendar weeks (Senin to Minggu)
+			for !currWeekMon.After(end) {
+				currWeekSun := currWeekMon.AddDate(0, 0, 6)
+
+				// Collect valid days in this Monday-Sunday week that fall within [start, end]
+				validDaysInWeek := []time.Time{}
+				for d := currWeekMon; !d.After(currWeekSun); d = d.AddDate(0, 0, 1) {
+					if !d.Before(start) && !d.After(end) {
+						validDaysInWeek = append(validDaysInWeek, d)
+					}
+				}
+
+				if len(validDaysInWeek) > 0 {
+					targetOff := offDaysCount
+					if len(validDaysInWeek) < 7 {
+						targetOff = int(math.Round(float64(offDaysCount*len(validDaysInWeek)) / 7.0))
+					}
+					if targetOff > len(validDaysInWeek) {
+						targetOff = len(validDaysInWeek)
+					}
+
+					perm := rand.Perm(len(validDaysInWeek))
+					offIndices := make(map[int]bool)
+					pickedCount := 0
+
+					for _, pIdx := range perm {
+						if pickedCount >= targetOff {
+							break
+						}
+						dTime := validDaysInWeek[pIdx]
+						dStr := dTime.Format("2006-01-02")
+						yStr := dTime.AddDate(0, 0, -1).Format("2006-01-02")
+						tAgoStr := dTime.AddDate(0, 0, -2).Format("2006-01-02")
+						tStr := dTime.AddDate(0, 0, 1).Format("2006-01-02")
+						tLaterStr := dTime.AddDate(0, 0, 2).Format("2006-01-02")
+
+						// Prevent 3 consecutive off days
+						if (assignedOffMap[yStr] && assignedOffMap[tAgoStr]) ||
+							(assignedOffMap[yStr] && assignedOffMap[tStr]) ||
+							(assignedOffMap[tStr] && assignedOffMap[tLaterStr]) {
+							continue
+						}
+
+						offIndices[pIdx] = true
+						assignedOffMap[dStr] = true
+						pickedCount++
+					}
+
+					for idx, dTime := range validDaysInWeek {
+						dateStr := dTime.Format("2006-01-02")
+						isOff := offIndices[idx]
+
+						if !isOff {
+							var count int
+							err = tx.Get(&count, "SELECT COUNT(*) FROM roster_schedules WHERE employee_id = $1 AND date = $2", eid, dateStr)
+							if err != nil { return err }
+
+							pickedShiftID := workScheduleIDs[rand.Intn(len(workScheduleIDs))]
+							if count > 0 {
+								if overwrite {
+									_, err = tx.Exec("UPDATE roster_schedules SET work_schedule_id = $1, updated_at = CURRENT_TIMESTAMP WHERE employee_id = $2 AND date = $3", pickedShiftID, eid, dateStr)
+									if err != nil { return err }
+									insertedCount++
+								}
+							} else {
+								_, err = tx.Exec("INSERT INTO roster_schedules (employee_id, work_schedule_id, date) VALUES ($1, $2, $3)", eid, pickedShiftID, dateStr)
+								if err != nil { return err }
+								insertedCount++
+							}
+						} else {
+							if overwrite {
+								_, err = tx.Exec("DELETE FROM roster_schedules WHERE employee_id = $1 AND date = $2", eid, dateStr)
+								if err != nil { return err }
+							}
+						}
+					}
+				}
+
+				currWeekMon = currWeekMon.AddDate(0, 0, 7)
 			}
+		} else {
+			for !current.After(end) {
+				weekday := current.Weekday()
+				shouldAssign := true
+				if workDaysPattern == "mon-fri" && (weekday == time.Saturday || weekday == time.Sunday) {
+					shouldAssign = false
+				} else if workDaysPattern == "mon-sat" && weekday == time.Sunday {
+					shouldAssign = false
+				}
 
-			if shouldAssign {
 				dateStr := current.Format("2006-01-02")
-				
-				// check if exists
-				var count int
-				err = tx.Get(&count, "SELECT COUNT(*) FROM roster_schedules WHERE employee_id = $1 AND date = $2", eid, dateStr)
-				if err != nil { return err }
+				if shouldAssign {
+					var count int
+					err = tx.Get(&count, "SELECT COUNT(*) FROM roster_schedules WHERE employee_id = $1 AND date = $2", eid, dateStr)
+					if err != nil { return err }
 
-				if count > 0 {
-					if overwrite {
-						// Randomly pick a shift
-						pickedShiftID := workScheduleIDs[rand.Intn(len(workScheduleIDs))]
-						_, err = tx.Exec("UPDATE roster_schedules SET work_schedule_id = $1, updated_at = CURRENT_TIMESTAMP WHERE employee_id = $2 AND date = $3", pickedShiftID, eid, dateStr)
+					pickedShiftID := workScheduleIDs[rand.Intn(len(workScheduleIDs))]
+					if count > 0 {
+						if overwrite {
+							_, err = tx.Exec("UPDATE roster_schedules SET work_schedule_id = $1, updated_at = CURRENT_TIMESTAMP WHERE employee_id = $2 AND date = $3", pickedShiftID, eid, dateStr)
+							if err != nil { return err }
+							insertedCount++
+						}
+					} else {
+						_, err = tx.Exec("INSERT INTO roster_schedules (employee_id, work_schedule_id, date) VALUES ($1, $2, $3)", eid, pickedShiftID, dateStr)
 						if err != nil { return err }
 						insertedCount++
 					}
 				} else {
-					// Randomly pick a shift
-					pickedShiftID := workScheduleIDs[rand.Intn(len(workScheduleIDs))]
-					_, err = tx.Exec("INSERT INTO roster_schedules (employee_id, work_schedule_id, date) VALUES ($1, $2, $3)", eid, pickedShiftID, dateStr)
-					if err != nil { return err }
-					insertedCount++
+					if overwrite {
+						_, err = tx.Exec("DELETE FROM roster_schedules WHERE employee_id = $1 AND date = $2", eid, dateStr)
+						if err != nil { return err }
+					}
 				}
-			} else {
-				// if it shouldn't assign (e.g. weekend), and overwrite is true, we delete the existing shift if any
-				if overwrite {
-					dateStr := current.Format("2006-01-02")
-					_, err = tx.Exec("DELETE FROM roster_schedules WHERE employee_id = $1 AND date = $2", eid, dateStr)
-					if err != nil { return err }
-				}
+				current = current.AddDate(0, 0, 1)
 			}
-			current = current.AddDate(0, 0, 1)
 		}
 	}
 	
-	fmt.Printf("AutoGenerate: Inserted/Updated %d shifts for %d employees (pattern: %s, startDate: %s, endDate: %s)\n", insertedCount, len(employeeIDs), workDaysPattern, startDate, endDate)
+	fmt.Printf("AutoGenerate: Inserted/Updated %d shifts for %d employees (pattern: %s, startDate: %s, endDate: %s, offDays: %d)\n", insertedCount, len(employeeIDs), workDaysPattern, startDate, endDate, offDaysCount)
 
 	return tx.Commit()
 }

@@ -33,6 +33,7 @@ export default function RosterPlanner() {
         startDate: '',
         endDate: '',
         workDaysPattern: 'mon-fri',
+        offDaysCount: '2',
         workScheduleIds: [] as string[]
     });
     const [conflictCount, setConflictCount] = useState(0);
@@ -75,6 +76,7 @@ export default function RosterPlanner() {
                 start_date: autoGenForm.startDate,
                 end_date: autoGenForm.endDate,
                 work_days_pattern: autoGenForm.workDaysPattern,
+                off_days_count: parseInt(autoGenForm.offDaysCount) || 0,
                 work_schedule_ids: autoGenForm.workScheduleIds.map(id => parseInt(id)),
                 overwrite: overwrite,
                 check_only: false
@@ -105,6 +107,7 @@ export default function RosterPlanner() {
                 start_date: autoGenForm.startDate,
                 end_date: autoGenForm.endDate,
                 work_days_pattern: autoGenForm.workDaysPattern,
+                off_days_count: parseInt(autoGenForm.offDaysCount) || 0,
                 work_schedule_ids: autoGenForm.workScheduleIds.map(id => parseInt(id)),
                 overwrite: false,
                 check_only: true
@@ -470,37 +473,46 @@ export default function RosterPlanner() {
                                                     ))}
 
                                                     {/* Render Shift Blocks */}
-                                                    {blocks.map((block, idx) => {
-                                                        // Rumus letak grid: (start + 1) karena CSS grid-column 1-indexed
-                                                        // end bisa berupa desimal misal 14.5. CSS Grid tidak bisa fraction column!
-                                                        // Solusi: Kita pakai absolute positioning berdasarkan persentase.
-                                                        const startPercent = (block.start / 24) * 100;
-                                                        const endPercent = (block.end / 24) * 100;
-                                                        const widthPercent = endPercent - startPercent;
+                                                    {blocks.length === 0 ? (
+                                                        <div className="absolute inset-y-0 left-3 flex items-center gap-2 pointer-events-none text-xs font-semibold select-none z-10">
+                                                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+                                                                LIBUR
+                                                            </span>
+                                                            <span className="text-slate-400 font-medium text-[11px]">Hari Libur / Off</span>
+                                                        </div>
+                                                    ) : (
+                                                        blocks.map((block, idx) => {
+                                                            // Rumus letak grid: (start + 1) karena CSS grid-column 1-indexed
+                                                            // end bisa berupa desimal misal 14.5. CSS Grid tidak bisa fraction column!
+                                                            // Solusi: Kita pakai absolute positioning berdasarkan persentase.
+                                                            const startPercent = (block.start / 24) * 100;
+                                                            const endPercent = (block.end / 24) * 100;
+                                                            const widthPercent = endPercent - startPercent;
 
-                                                        return (
-                                                            <div
-                                                                key={idx}
-                                                                className={`absolute top-1 bottom-1 rounded-md shadow-sm border px-2 py-1 flex items-center overflow-hidden group/block ${getShiftColor(block.shift.id)} ${block.isContinuation ? 'opacity-80 border-dashed rounded-l-none border-l-0' : ''}`}
-                                                                style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
-                                                                title={`${block.shift.name} (${formatTime(block.shift.clock_in_time)} - ${formatTime(block.shift.clock_out_time)})`}
-                                                            >
-                                                                <span className="text-xs font-bold truncate">
-                                                                    {block.isContinuation ? '-> Lanjutan' : block.shift.name}
-                                                                </span>
+                                                            return (
+                                                                <div
+                                                                    key={idx}
+                                                                    className={`absolute top-1 bottom-1 rounded-md shadow-sm border px-2 py-1 flex items-center overflow-hidden group/block ${getShiftColor(block.shift.id)} ${block.isContinuation ? 'opacity-80 border-dashed rounded-l-none border-l-0' : ''}`}
+                                                                    style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
+                                                                    title={`${block.shift.name} (${formatTime(block.shift.clock_in_time)} - ${formatTime(block.shift.clock_out_time)})`}
+                                                                >
+                                                                    <span className="text-xs font-bold truncate">
+                                                                        {block.isContinuation ? '-> Lanjutan' : block.shift.name}
+                                                                    </span>
 
-                                                                {/* Tombol Hapus (Muncul saat hover blok) */}
-                                                                {!block.isContinuation && (
-                                                                    <button
-                                                                        onClick={() => handleDeleteShift(block.dateObj)}
-                                                                        className="ml-auto opacity-0 group-hover/block:opacity-100 hover:bg-black/20 p-0.5 rounded transition-opacity"
-                                                                    >
-                                                                        <X className="w-3 h-3 text-white" />
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        )
-                                                    })}
+                                                                    {/* Tombol Hapus (Muncul saat hover blok) */}
+                                                                    {!block.isContinuation && (
+                                                                        <button
+                                                                            onClick={() => handleDeleteShift(block.dateObj)}
+                                                                            className="ml-auto opacity-0 group-hover/block:opacity-100 hover:bg-black/20 p-0.5 rounded transition-opacity"
+                                                                        >
+                                                                            <X className="w-3 h-3 text-white" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })
+                                                    )}
 
                                                     {/* Visual Indicator saat Drag Over */}
                                                     {isDragOver && (
@@ -599,6 +611,23 @@ export default function RosterPlanner() {
                                 </Popover>
                             </div>
                         </div>
+
+                        {autoGenForm.workDaysPattern === 'all' && (
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right">Jml Libur</Label>
+                                <div className="col-span-3 flex items-center gap-2">
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        max={6}
+                                        className="w-24"
+                                        value={autoGenForm.offDaysCount}
+                                        onChange={(e) => setAutoGenForm(prev => ({ ...prev, offDaysCount: e.target.value }))}
+                                    />
+                                    <span className="text-sm text-muted-foreground">Hari / Minggu</span>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label className="text-right">Acak Shift Dari</Label>

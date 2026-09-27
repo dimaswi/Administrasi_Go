@@ -29,7 +29,7 @@ func (r *AttendanceRepository) GetAll(page int, perPage int, search string) (mod
 		LEFT JOIN work_schedules ws_r ON rs.work_schedule_id = ws_r.id
 		WHERE a.deleted_at IS NULL
 	`
-	
+
 	args := []interface{}{}
 	argId := 1
 
@@ -73,7 +73,7 @@ func (r *AttendanceRepository) GetAll(page int, perPage int, search string) (mod
 	}
 
 	return models.PaginatedResponse{
-		Data:        attendances,
+		Data: attendances,
 		PaginationMeta: models.PaginationMeta{
 			CurrentPage: page,
 			LastPage:    lastPage,
@@ -131,6 +131,35 @@ func (r *AttendanceRepository) CheckOut(employeeID int, date string, clockOutTim
 	return err
 }
 
+func (r *AttendanceRepository) CheckOutWithDetails(employeeID int, date string, clockOutTime string, status *string, notes *string) error {
+	if status != nil && *status != "" && notes != nil && *notes != "" {
+		query := `
+			UPDATE attendances 
+			SET clock_out = $1, status = $2, notes = $3, updated_at = CURRENT_TIMESTAMP 
+			WHERE employee_id = $4 AND date = $5
+		`
+		_, err := r.db.Exec(query, clockOutTime, *status, *notes, employeeID, date)
+		return err
+	} else if status != nil && *status != "" {
+		query := `
+			UPDATE attendances 
+			SET clock_out = $1, status = $2, updated_at = CURRENT_TIMESTAMP 
+			WHERE employee_id = $3 AND date = $4
+		`
+		_, err := r.db.Exec(query, clockOutTime, *status, employeeID, date)
+		return err
+	} else if notes != nil && *notes != "" {
+		query := `
+			UPDATE attendances 
+			SET clock_out = $1, notes = $2, updated_at = CURRENT_TIMESTAMP 
+			WHERE employee_id = $3 AND date = $4
+		`
+		_, err := r.db.Exec(query, clockOutTime, *notes, employeeID, date)
+		return err
+	}
+	return r.CheckOut(employeeID, date, clockOutTime)
+}
+
 func (r *AttendanceRepository) Update(id int, clockIn, clockOut *string, status string, notes *string) error {
 	query := `
 		UPDATE attendances 
@@ -148,30 +177,53 @@ func (r *AttendanceRepository) GetWorkScheduleForEmployee(employeeID int, date s
 		LateTolerance  int    `db:"late_tolerance"`
 		WorkScheduleID int    `db:"work_schedule_id"`
 	}
-	// Check roster schedule first, then employee schedule
+
+	// 1. Check roster schedule for specific date
 	query := `
 		SELECT ws.clock_in_time::text, ws.late_tolerance, ws.id as work_schedule_id
 		FROM roster_schedules rs
 		JOIN work_schedules ws ON rs.work_schedule_id = ws.id
-		WHERE rs.employee_id = $1 AND rs.date::date = $2::date
+		JOIN employees e ON (rs.employee_id = e.user_id OR rs.employee_id = e.id)
+		WHERE (e.id = $1 OR e.user_id = $1)
+		  AND (rs.date::date = $2::date OR TO_CHAR(rs.date, 'YYYY-MM-DD') = $2 OR rs.date::text LIKE $2 || '%')
 		  AND ws.deleted_at IS NULL
 		LIMIT 1
 	`
 	err := r.db.Get(&result, query, employeeID, date)
-	if err != nil {
-		// fallback: employee_schedules
-		query2 := `
-			SELECT ws.clock_in_time::text, ws.late_tolerance, ws.id as work_schedule_id
-			FROM employee_schedules es
-			JOIN work_schedules ws ON es.work_schedule_id = ws.id
-			WHERE es.employee_id = $1 AND ws.deleted_at IS NULL
-			LIMIT 1
-		`
-		err2 := r.db.Get(&result, query2, employeeID)
-		if err2 != nil {
-			return "", 0, nil, false
-		}
+	if err == nil {
+		wsID := result.WorkScheduleID
+		return result.ClockInTime, result.LateTolerance, &wsID, true
 	}
-	wsID := result.WorkScheduleID
-	return result.ClockInTime, result.LateTolerance, &wsID, true
+
+	// 2. Fallback: Check employee_schedules mapping
+	query2 := `
+		SELECT ws.clock_in_time::text, ws.late_tolerance, ws.id as work_schedule_id
+		FROM employee_schedules es
+		JOIN work_schedules ws ON es.work_schedule_id = ws.id
+		JOIN employees e ON (es.employee_id = e.id OR es.employee_id = e.user_id)
+		WHERE (e.id = $1 OR e.user_id = $1) AND ws.deleted_at IS NULL
+		LIMIT 1
+	`
+	err2 := r.db.Get(&result, query2, employeeID)
+	if err2 == nil {
+		wsID := result.WorkScheduleID
+		return result.ClockInTime, result.LateTolerance, &wsID, true
+	}
+
+	// 3. Fallback: Any active work_schedules entry (Default company shift)
+	query3 := `
+		SELECT clock_in_time::text, late_tolerance, id as work_schedule_id
+		FROM work_schedules
+		WHERE deleted_at IS NULL
+		ORDER BY id ASC
+		LIMIT 1
+	`
+	err3 := r.db.Get(&result, query3)
+	if err3 == nil {
+		wsID := result.WorkScheduleID
+		return result.ClockInTime, result.LateTolerance, &wsID, true
+	}
+
+	// 4. Guaranteed Fallback: Standard 08:00 Shift
+	return "08:00:00", 15, nil, true
 }

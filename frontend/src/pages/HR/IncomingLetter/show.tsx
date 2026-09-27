@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { getApiUrl } from '@/lib/api';
 
 interface IncomingLetter {
     id: number;
@@ -68,7 +69,7 @@ export default function IncomingLetterShow() {
                 const token = localStorage.getItem('token');
                 
                 // Fetch Letter
-                const resLetter = await fetch(`http://localhost:8080/api/incoming-letters/${id}`, {
+                const resLetter = await fetch(getApiUrl(`/api/incoming-letters/${id}`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -78,7 +79,7 @@ export default function IncomingLetterShow() {
                 }
 
                 // Fetch Dispositions
-                const resDisp = await fetch(`http://localhost:8080/api/incoming-letters/${id}/dispositions`, {
+                const resDisp = await fetch(getApiUrl(`/api/incoming-letters/${id}/dispositions`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -88,7 +89,7 @@ export default function IncomingLetterShow() {
                 }
 
                 // Fetch Users for Disposition
-                const resUsers = await fetch(`http://localhost:8080/api/users?limit=100`, {
+                const resUsers = await fetch(getApiUrl(`/api/users?limit=100`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -113,7 +114,7 @@ export default function IncomingLetterShow() {
         try {
             const formData = new FormData(e.currentTarget);
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/dispositions`, {
+            const res = await fetch(getApiUrl(`/api/dispositions`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -133,7 +134,7 @@ export default function IncomingLetterShow() {
                 toast.success('Disposisi berhasil dibuat');
                 setDispositionOpen(false);
                 // Refresh dispositions
-                const resDisp = await fetch(`http://localhost:8080/api/incoming-letters/${id}/dispositions`, {
+                const resDisp = await fetch(getApiUrl(`/api/incoming-letters/${id}/dispositions`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (resDisp.ok) {
@@ -307,7 +308,7 @@ export default function IncomingLetterShow() {
                                                 Edit Surat
                                             </Button>
                                         )}
-                                        <Button variant="outline" className="w-full" onClick={() => window.open(`http://localhost:8080${letter.file_path}`, '_blank')}>
+                                        <Button variant="outline" className="w-full" onClick={() => window.open(getApiUrl(letter.file_path || ''), '_blank')}>
                                             <Download className="size-4 mr-2" /> Unduh Dokumen
                                         </Button>
                                     </div>

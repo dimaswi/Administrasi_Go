@@ -82,6 +82,28 @@ services:
     restart: "no"
 
   # ─────────────────────────────────────────
+  # Face Service — Python Microservice
+  # ─────────────────────────────────────────
+  face_service:
+    build:
+      context: ./face_service
+      dockerfile: Dockerfile
+    container_name: administrasi_face_service
+    restart: unless-stopped
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - administrasi_net
+
+  # ─────────────────────────────────────────
   # Backend — Go/Gin API
   # ─────────────────────────────────────────
   backend:
@@ -93,6 +115,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      face_service:
+        condition: service_started
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -102,6 +126,8 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET:?error: JWT_SECRET wajib diisi di .env}
       PORT: 8080
+      FACE_SERVICE_URL: http://face_service:5000/api/verify-face
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     volumes:
       # Persisten uploads (foto, dokumen, dll)
       - uploads_data:/app/uploads

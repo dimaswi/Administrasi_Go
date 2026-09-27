@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { TemplatePreview } from '@/components/document-template/template-preview';
+import { getApiUrl } from '@/lib/api';
 
 export default function OutgoingLetterPrint() {
     const { id } = useParams();
@@ -19,7 +20,7 @@ export default function OutgoingLetterPrint() {
                 if (!token) throw new Error("No token provided");
                 
                 // Fetch Letter
-                const resLetter = await fetch(`http://localhost:8080/api/outgoing-letters/${id}`, {
+                const resLetter = await fetch(getApiUrl(`/api/outgoing-letters/${id}`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -29,7 +30,7 @@ export default function OutgoingLetterPrint() {
                     
                     // Fetch Template based on letter.template_id
                     if (data.data && data.data.template_id) {
-                        const resTpl = await fetch(`http://localhost:8080/api/document-templates/${data.data.template_id}`, {
+                        const resTpl = await fetch(getApiUrl(`/api/document-templates/${data.data.template_id}`), {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         if (resTpl.ok) {
@@ -53,7 +54,7 @@ export default function OutgoingLetterPrint() {
                 }
 
                 // Fetch Users for Signatories mapping
-                const resUsers = await fetch(`http://localhost:8080/api/users?perPage=1000`, {
+                const resUsers = await fetch(getApiUrl(`/api/users?perPage=1000`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (resUsers.ok) {
@@ -98,7 +99,7 @@ export default function OutgoingLetterPrint() {
         });
     }
 
-    const verificationUrl = `http://localhost:5173/verify/${letter.id}`;
+    const verificationUrl = typeof window !== 'undefined' ? `${window.location.origin}/verify/${letter.id}` : `/verify/${letter.id}`;
 
     // Map Signatories Data directly from letter to ensure it works even if user list fails
     const signatoriesData = letter.signatories?.map((sig: any) => {

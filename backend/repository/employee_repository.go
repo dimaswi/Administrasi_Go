@@ -84,6 +84,12 @@ func (r *EmployeeRepository) GetByID(id int) (*models.Employee, error) {
 	return &emp, err
 }
 
+func (r *EmployeeRepository) GetByUserID(userID int) (*models.Employee, error) {
+	var emp models.Employee
+	err := r.db.Get(&emp, "SELECT * FROM employees WHERE user_id = $1 AND deleted_at IS NULL", userID)
+	return &emp, err
+}
+
 func (r *EmployeeRepository) Create(emp *models.Employee) error {
 	query := `
 		INSERT INTO employees (
@@ -121,6 +127,11 @@ func (r *EmployeeRepository) UpdateUserID(employeeID int, userID int) error {
 	return err
 }
 
+func (r *EmployeeRepository) RemoveUserID(employeeID int) error {
+	_, err := r.db.Exec("UPDATE employees SET user_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1", employeeID)
+	return err
+}
+
 func (r *EmployeeRepository) Update(emp *models.Employee) error {
 	query := `
 		UPDATE employees SET
@@ -144,3 +155,10 @@ func (r *EmployeeRepository) Update(emp *models.Employee) error {
 	_, err := r.db.NamedExec(query, emp)
 	return err
 }
+
+func (r *EmployeeRepository) UpdateFacePhoto(employeeID int, photoPath string) error {
+	_, err := r.db.Exec("UPDATE employees SET photo = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", photoPath, employeeID)
+	return err
+}
+
+

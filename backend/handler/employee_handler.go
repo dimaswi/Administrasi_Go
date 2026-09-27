@@ -3,9 +3,14 @@ package handler
 import (
 	"backend/models"
 	"backend/repository"
+	"encoding/base64"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -55,6 +60,22 @@ func (h *EmployeeHandler) GetByID(c *gin.Context) {
 	emp, err := h.repo.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
+		return
+	}
+	c.JSON(http.StatusOK, emp)
+}
+
+func (h *EmployeeHandler) GetByUserID(c *gin.Context) {
+	userIdStr := c.Param("userId")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
+		return
+	}
+
+	emp, err := h.repo.GetByUserID(userId)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found for this user"})
 		return
 	}
 	c.JSON(http.StatusOK, emp)
@@ -124,6 +145,7 @@ type ManageAccountRequest struct {
 	Password *string `json:"password"`
 	RoleID   *int    `json:"role_id"`
 	UserID   *int    `json:"user_id"` // Add for linking existing user
+	Action   string  `json:"action"`  // "unlink" for removing user_id link
 }
 
 func (h *EmployeeHandler) ManageAccount(c *gin.Context) {
@@ -143,6 +165,15 @@ func (h *EmployeeHandler) ManageAccount(c *gin.Context) {
 	emp, err := h.repo.GetByID(employeeID)
 	if err != nil || emp == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Employee not found"})
+		return
+	}
+
+	if req.Action == "unlink" {
+		if err := h.repo.RemoveUserID(employeeID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unlink user account"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "User account unlinked successfully"})
 		return
 	}
 
@@ -217,3 +248,94 @@ func (h *EmployeeHandler) ManageAccount(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Password and Role updated successfully"})
 	}
 }
+
+func (h *EmployeeHandler) RegisterFace(c *gin.Context) {
+	idStr := c.Param("id")
+	employeeID, _ := strconv.Atoi(idStr)
+
+	var emp *models.Employee
+
+	// 1. Prioritize JWT context user_id
+	if userIDVal, exists := c.Get("user_id"); exists {
+		var tokenUserID int
+		if v, ok := userIDVal.(float64); ok {
+			tokenUserID = int(v)
+		} else if v, ok := userIDVal.(int); ok {
+			tokenUserID = v
+		}
+		if tokenUserID > 0 && h.repo != nil {
+			emp, _ = h.repo.GetByUserID(tokenUserID)
+		}
+	}
+
+	// 2. Fallback to URL employeeID
+	if emp == nil && h.repo != nil && employeeID > 0 {
+		emp, _ = h.repo.GetByUserID(employeeID)
+		if emp == nil {
+			emp, _ = h.repo.GetByID(employeeID)
+		}
+	}
+
+	if emp == nil || emp.ID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data pegawai tidak ditemukan untuk akun ini"})
+		return
+	}
+
+	realEmpID := emp.ID
+
+	var payload struct {
+		Photo string `json:"photo"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil || payload.Photo == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Foto wajah (photo) wajib diisi"})
+		return
+	}
+
+	uploadDir := filepath.Join("uploads", "faces")
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		os.MkdirAll(uploadDir, 0755)
+	}
+
+	var rawData []byte
+	var err error
+	if strings.HasPrefix(payload.Photo, "data:image") {
+		idx := strings.Index(payload.Photo, ",")
+		if idx != -1 {
+			rawData, err = base64.StdEncoding.DecodeString(payload.Photo[idx+1:])
+		}
+	} else if strings.HasPrefix(payload.Photo, "file://") || strings.HasPrefix(payload.Photo, "http") {
+		if err := h.repo.UpdateFacePhoto(realEmpID, payload.Photo); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register face: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Pendaftaran wajah berhasil", "photo": payload.Photo})
+		return
+	} else {
+		rawData, err = base64.StdEncoding.DecodeString(payload.Photo)
+	}
+
+	if err != nil || len(rawData) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal memproses gambar foto wajah"})
+		return
+	}
+
+	filename := fmt.Sprintf("face_%d_%d.jpg", realEmpID, time.Now().Unix())
+	filePath := filepath.Join(uploadDir, filename)
+
+	if err := os.WriteFile(filePath, rawData, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan file foto wajah"})
+		return
+	}
+
+	photoURL := "/uploads/faces/" + filename
+	if err := h.repo.UpdateFacePhoto(realEmpID, photoURL); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal update database foto wajah"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Pendaftaran wajah berhasil!",
+		"photo":   photoURL,
+	})
+}
+

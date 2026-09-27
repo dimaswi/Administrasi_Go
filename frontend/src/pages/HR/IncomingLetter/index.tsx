@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, Plus } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiUrl } from '@/lib/api';
 
 interface IncomingLetter {
     id: number;
@@ -51,7 +52,7 @@ export default function IncomingLetterIndex() {
                 date_to: dateToQuery,
             }).toString();
 
-            const res = await fetch(`http://localhost:8080/api/incoming-letters?${queryParams}`, {
+            const res = await fetch(getApiUrl(`/api/incoming-letters?${queryParams}`), {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

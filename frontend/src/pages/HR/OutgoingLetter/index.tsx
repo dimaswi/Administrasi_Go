@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, Plus, Pencil, CheckSquare, FileText } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiUrl } from '@/lib/api';
 
 interface OutgoingLetter {
     id: number;
@@ -44,7 +45,7 @@ export default function OutgoingLetterIndex() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/outgoing-letters?page=${currentPage}&per_page=${perPage}&search=${searchQuery}&type=${activeTab}`, {
+            const res = await fetch(getApiUrl(`/api/outgoing-letters?page=${currentPage}&per_page=${perPage}&search=${searchQuery}&type=${activeTab}`), {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

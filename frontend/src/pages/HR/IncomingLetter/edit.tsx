@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,7 @@ export default function IncomingLetterEdit() {
             formData.append('organization_unit_id', '1');
             formData.append('registered_by', '1');
 
-            const res = await fetch(`http://localhost:8080/api/incoming-letters/${id}`, {
+            const res = await fetch(getApiUrl(`/api/incoming-letters/${id}`), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`

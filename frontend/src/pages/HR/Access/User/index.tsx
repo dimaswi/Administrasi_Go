@@ -86,7 +86,8 @@ export default function UserIndex() {
         }
     };
 
-    const handleRoleChange = async (userId: number, newRoleId: string) => {
+    const handleRoleChange = async (userId: number, newRoleId: string | null) => {
+        if (!newRoleId) return;
         const userToUpdate = data.find(u => u.id === userId);
         if (!userToUpdate) return;
         

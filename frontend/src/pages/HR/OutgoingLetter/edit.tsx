@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getApiUrl } from '@/lib/api';
 
 export default function OutgoingLetterEdit() {
     const { id } = useParams();
@@ -43,14 +44,14 @@ export default function OutgoingLetterEdit() {
             try {
                 const token = localStorage.getItem('token');
                 // Fetch Templates
-                const resTpl = await fetch(`http://localhost:8080/api/document-templates?per_page=1000`, {
+                const resTpl = await fetch(getApiUrl(`/api/document-templates?per_page=1000`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const dataTpl = await resTpl.json();
                 if (resTpl.ok) setTemplates(dataTpl.data || []);
 
                 // Fetch Users for Signatories
-                const resUsers = await fetch(`http://localhost:8080/api/users?perPage=1000`, {
+                const resUsers = await fetch(getApiUrl(`/api/users?perPage=1000`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const dataUsers = await resUsers.json();
@@ -58,7 +59,7 @@ export default function OutgoingLetterEdit() {
 
                 // Fetch Existing Letter
                 if (id) {
-                    const resLetter = await fetch(`http://localhost:8080/api/outgoing-letters/${id}`, {
+                    const resLetter = await fetch(getApiUrl(`/api/outgoing-letters/${id}`), {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (resLetter.ok) {
@@ -204,7 +205,7 @@ export default function OutgoingLetterEdit() {
                 }))
             };
 
-            const res = await fetch(`http://localhost:8080/api/outgoing-letters/${id}`, {
+            const res = await fetch(getApiUrl(`/api/outgoing-letters/${id}`), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

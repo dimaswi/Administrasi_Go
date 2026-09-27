@@ -5,6 +5,7 @@ import (
 	"backend/repository"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,12 +23,44 @@ func NewMeetingHandler(repo *repository.MeetingRepository) *MeetingHandler {
 	return &MeetingHandler{repo: repo}
 }
 
+func getUserIDFromContext(c *gin.Context) int {
+	if val, exists := c.Get("user_id"); exists {
+		switch v := val.(type) {
+		case float64:
+			return int(v)
+		case int:
+			return v
+		case string:
+			if id, err := strconv.Atoi(v); err == nil {
+				return id
+			}
+		}
+	}
+	return 0
+}
+
 func (h *MeetingHandler) GetAll(c *gin.Context) {
-	meetings, err := h.repo.GetAll()
+	userID := getUserIDFromContext(c)
+	showAll := c.Query("all") == "true"
+
+	var meetings []models.Meeting
+	var err error
+
+	if showAll || userID == 0 {
+		meetings, err = h.repo.GetAll()
+	} else {
+		meetings, err = h.repo.GetByUserID(userID)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	if userID > 0 {
+		h.repo.PopulateUserAttendance(meetings, userID)
+	}
+
 	c.JSON(http.StatusOK, meetings)
 }
 
@@ -37,6 +70,10 @@ func (h *MeetingHandler) GetByID(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Meeting not found"})
 		return
+	}
+	userID := getUserIDFromContext(c)
+	if userID > 0 {
+		h.repo.PopulateSingleUserAttendance(meeting, userID)
 	}
 	c.JSON(http.StatusOK, meeting)
 }
@@ -48,6 +85,25 @@ func (h *MeetingHandler) Create(c *gin.Context) {
 		return
 	}
 
+	userID := getUserIDFromContext(c)
+	if userID > 0 && (meeting.OrganizerID == nil || *meeting.OrganizerID == 0) {
+		meeting.OrganizerID = &userID
+	}
+
+	if meeting.Status == "" {
+		meeting.Status = "scheduled"
+	}
+
+	if meeting.MeetingNumber == nil || *meeting.MeetingNumber == "" {
+		num := fmt.Sprintf("RAPAT/%s/%d", time.Now().Format("20060102"), time.Now().Unix()%10000)
+		meeting.MeetingNumber = &num
+	}
+
+	if meeting.CheckinTokenDuration == nil || *meeting.CheckinTokenDuration == 0 {
+		defaultDuration := 5
+		meeting.CheckinTokenDuration = &defaultDuration
+	}
+
 	now := time.Now()
 	meeting.CreatedAt = &now
 	meeting.UpdatedAt = &now
@@ -56,6 +112,17 @@ func (h *MeetingHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Auto add creator as participant so meeting shows in their list/calendar immediately
+	if userID > 0 {
+		_ = h.repo.AddParticipant(&models.MeetingParticipant{
+			MeetingID:        meeting.ID,
+			UserID:           userID,
+			Role:             "moderator",
+			AttendanceStatus: "confirmed",
+		})
+	}
+
 	c.JSON(http.StatusCreated, meeting)
 }
 
@@ -93,7 +160,15 @@ func (h *MeetingHandler) StartMeeting(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Meeting started"})
+
+	// Auto-generate checkin token for 120 minutes so QR Code is immediately ready to scan!
+	token := uuid.New().String()
+	_ = h.repo.SaveCheckinToken(id, token, 120)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Meeting started",
+		"checkin_token": token,
+	})
 }
 
 func (h *MeetingHandler) CompleteMeeting(c *gin.Context) {
@@ -251,6 +326,15 @@ func (h *MeetingHandler) CheckIn(c *gin.Context) {
 
 func (h *MeetingHandler) CheckInByToken(c *gin.Context) {
 	token := c.Query("token")
+	var req struct {
+		UserID int    `json:"user_id"`
+		Token  string `json:"token"`
+	}
+	_ = c.ShouldBindJSON(&req)
+
+	if token == "" {
+		token = req.Token
+	}
 	if token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token required"})
 		return
@@ -258,14 +342,14 @@ func (h *MeetingHandler) CheckInByToken(c *gin.Context) {
 
 	meeting, err := h.repo.GetByCheckinToken(token)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Token tidak valid atau sudah kedaluwarsa"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Token QR Code tidak valid atau sudah kedaluwarsa"})
 		return
 	}
 
-	var req struct {
-		UserID int `json:"user_id"`
+	if req.UserID == 0 {
+		req.UserID = getUserIDFromContext(c)
 	}
-	if err := c.ShouldBindJSON(&req); err != nil || req.UserID == 0 {
+	if req.UserID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id required"})
 		return
 	}
@@ -274,7 +358,13 @@ func (h *MeetingHandler) CheckInByToken(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Check-in berhasil", "meeting_title": meeting.Title})
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Check-in berhasil",
+		"meeting_id":    meeting.ID,
+		"meeting_title": meeting.Title,
+		"is_checked_in": true,
+	})
+
 }
 
 func (h *MeetingHandler) UpdateMemo(c *gin.Context) {
@@ -311,10 +401,15 @@ func (h *MeetingHandler) GenerateCheckinToken(c *gin.Context) {
 		return
 	}
 
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"token":            token,
 		"duration_minutes": req.DurationMinutes,
-		"checkin_url":      fmt.Sprintf("http://localhost:5173/checkin?token=%s", token),
+		"checkin_url":      fmt.Sprintf("%s/checkin?token=%s", frontendURL, token),
 	})
 }
 

@@ -102,6 +102,7 @@ func (h *RosterScheduleHandler) AutoGenerate(c *gin.Context) {
 		StartDate       string `json:"start_date"`
 		EndDate         string `json:"end_date"`
 		WorkDaysPattern string `json:"work_days_pattern"`
+		OffDaysCount    int    `json:"off_days_count"`
 		WorkScheduleIDs []int  `json:"work_schedule_ids"`
 		Overwrite       bool   `json:"overwrite"`
 		CheckOnly       bool   `json:"check_only"`
@@ -122,7 +123,7 @@ func (h *RosterScheduleHandler) AutoGenerate(c *gin.Context) {
 		return
 	}
 
-	err := h.repo.AutoGenerate(payload.EmployeeID, payload.UnitID, payload.StartDate, payload.EndDate, payload.WorkDaysPattern, payload.WorkScheduleIDs, payload.Overwrite)
+	err := h.repo.AutoGenerate(payload.EmployeeID, payload.UnitID, payload.StartDate, payload.EndDate, payload.WorkDaysPattern, payload.WorkScheduleIDs, payload.Overwrite, payload.OffDaysCount)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

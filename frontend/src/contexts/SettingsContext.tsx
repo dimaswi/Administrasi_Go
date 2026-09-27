@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
 
 interface SettingsContextType {
     appName: string;
@@ -30,9 +30,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const res = await api.get('/settings');
             const data = res.data;
             if (data.app_name) setAppName(data.app_name);
-            if (data.app_logo) setAppLogo(`http://localhost:8080${data.app_logo}`);
+            if (data.app_logo) setAppLogo(getApiUrl(data.app_logo));
             if (data.app_icon) {
-                const iconUrl = `http://localhost:8080${data.app_icon}`;
+                const iconUrl = getApiUrl(data.app_icon);
                 setAppIcon(iconUrl);
                 // Update favicon dynamically
                 let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;

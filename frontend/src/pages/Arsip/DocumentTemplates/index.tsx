@@ -8,6 +8,7 @@ import { Plus, Eye, Edit, Trash2, Copy, ToggleLeft, ToggleRight, FileText } from
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiUrl } from '@/lib/api';
 
 interface Template {
     id: number;
@@ -68,7 +69,7 @@ export default function DocumentTemplatesIndex() {
             try {
                 const query = new URLSearchParams(searchParams);
                 const token = localStorage.getItem('token');
-                const res = await fetch(`http://localhost:8080/api/document-templates?${query.toString()}`, {
+                const res = await fetch(getApiUrl(`/api/document-templates?${query.toString()}`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -131,7 +132,7 @@ export default function DocumentTemplatesIndex() {
         if (window.confirm('Hapus template ini? Template yang sudah digunakan tidak dapat dihapus.')) {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch(`http://localhost:8080/api/document-templates/${id}`, {
+                const res = await fetch(getApiUrl(`/api/document-templates/${id}`), {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -156,7 +157,7 @@ export default function DocumentTemplatesIndex() {
             if (!tmpl) return;
             
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/document-templates/${id}`, {
+            const res = await fetch(getApiUrl(`/api/document-templates/${id}`), {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${token}`,

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -286,8 +287,11 @@ func (h *OutgoingLetterHandler) GeneratePDF(c *gin.Context) {
 		return
 	}
 
-	// The frontend URL that renders the printable letter
-	frontendPrintURL := fmt.Sprintf("http://localhost:5173/admin/outgoing-letters/print/%s?token=%s", id, token)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+	frontendPrintURL := fmt.Sprintf("%s/admin/outgoing-letters/print/%s?token=%s", frontendURL, id, token)
 
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()

@@ -42,6 +42,7 @@ import HrLayout from './layouts/hr-layout';
 import AdminLayout from './layouts/admin-layout';
 import MeetingCheckin from './pages/MeetingCheckin/index';
 import AttendanceIndex from './pages/HR/Attendance/index';
+import LeaveMonitoring from './pages/HR/Leave/index';
 
 import RoomIndex from './pages/Admin/Room/index';
 import RoomCreate from './pages/Admin/Room/create';
@@ -81,6 +82,7 @@ import PermissionEdit from './pages/HR/Access/Permission/edit';
 import LeaveTypeCreate from './pages/HR/MasterData/LeaveType/create';
 import LeaveTypeEdit from './pages/HR/MasterData/LeaveType/edit';
 import LeaveTypeShow from './pages/HR/MasterData/LeaveType/show';
+import WorkLocationIndex from './pages/HR/MasterData/WorkLocation/index';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -96,7 +98,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-import DashboardIndex from './pages/Dashboard/index';
+import AdminDashboard from './pages/Dashboard/AdminDashboard';
+import HrDashboard from './pages/Dashboard/HrDashboard';
 
 function App() {
   return (
@@ -110,7 +113,10 @@ function App() {
           <Route path="/meetings/checkin/:token" element={<MeetingCheckin />} />
           <Route path="/checkin" element={<CheckinPage />} />
 
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardIndex /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/hr/dashboard" element={<ProtectedRoute><HrDashboard /></ProtectedRoute>} />
+
           {/* Admin/Settings */}
           <Route path="/admin/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
@@ -160,6 +166,7 @@ function App() {
           <Route path="/hr/shift-exchanges" element={<ProtectedRoute><ShiftExchangeIndex /></ProtectedRoute>} />
           <Route path="/hr/shift-exchanges/create" element={<ProtectedRoute><ShiftExchangeCreate /></ProtectedRoute>} />
           <Route path="/hr/attendances" element={<ProtectedRoute><AttendanceIndex /></ProtectedRoute>} />
+          <Route path="/hr/leaves" element={<ProtectedRoute><LeaveMonitoring /></ProtectedRoute>} />
 
           <Route path="/admin/incoming-letters" element={<ProtectedRoute><IncomingLetterIndex /></ProtectedRoute>} />
           <Route path="/admin/incoming-letters/create" element={<ProtectedRoute><IncomingLetterCreate /></ProtectedRoute>} />
@@ -197,6 +204,7 @@ function App() {
           <Route path="/hr/master-data/leavetype/create" element={<ProtectedRoute><LeaveTypeCreate /></ProtectedRoute>} />
           <Route path="/hr/master-data/leavetype/:id" element={<ProtectedRoute><LeaveTypeShow /></ProtectedRoute>} />
           <Route path="/hr/master-data/leavetype/:id/edit" element={<ProtectedRoute><LeaveTypeEdit /></ProtectedRoute>} />
+          <Route path="/hr/master-data/work-location" element={<ProtectedRoute><WorkLocationIndex /></ProtectedRoute>} />
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>

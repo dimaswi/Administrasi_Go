@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, CheckCircle } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
+import { getApiUrl } from '@/lib/api';
 
 interface DispositionWithDetails {
     id: number;
@@ -50,7 +51,7 @@ export default function DispositionIndex() {
                 search: searchQuery,
             }).toString();
 
-            const res = await fetch(`http://localhost:8080/api/dispositions?${queryParams}`, {
+            const res = await fetch(getApiUrl(`/api/dispositions?${queryParams}`), {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -104,7 +105,7 @@ export default function DispositionIndex() {
     const markAsRead = async (id: number) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/dispositions/${id}/status`, {
+            const res = await fetch(getApiUrl(`/api/dispositions/${id}/status`), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

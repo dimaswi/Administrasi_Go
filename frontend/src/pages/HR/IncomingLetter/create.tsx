@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import { ArrowLeft, Save, Loader2, Mail } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getApiUrl } from '@/lib/api';
 
 export default function IncomingLetterCreate() {
     const navigate = useNavigate();
@@ -26,7 +27,7 @@ export default function IncomingLetterCreate() {
             formData.append('organization_unit_id', '1');
             formData.append('registered_by', '1');
 
-            const res = await fetch('http://localhost:8080/api/incoming-letters', {
+            const res = await fetch(getApiUrl('/api/incoming-letters'), {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`

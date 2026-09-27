@@ -33,4 +33,9 @@ type Meeting struct {
 	OrganizationUnit *OrganizationUnit   `db:"-" json:"organization_unit,omitempty"`
 	Participants     []MeetingParticipant `db:"-" json:"participants,omitempty"`
 	ActionItems      []MeetingActionItem  `db:"-" json:"action_items,omitempty"`
+
+	// Attendance Status for Current User
+	IsCheckedIn          bool    `db:"-" json:"is_checked_in"`
+	UserAttendanceStatus *string `db:"-" json:"user_attendance_status,omitempty"`
 }
+

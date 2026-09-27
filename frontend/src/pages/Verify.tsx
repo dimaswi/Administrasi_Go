@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, XCircle, FileText, Calendar, User, ShieldCheck, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { getApiUrl } from '@/lib/api';
 
 export default function Verify() {
     const { id } = useParams();
@@ -12,7 +13,7 @@ export default function Verify() {
     useEffect(() => {
         const fetchLetter = async () => {
             try {
-                const response = await fetch(`http://localhost:8080/api/verify/outgoing-letters/${id}`);
+                const response = await fetch(getApiUrl(`/api/verify/outgoing-letters/${id}`));
                 if (!response.ok) {
                     throw new Error('Dokumen tidak ditemukan atau tidak valid.');
                 }

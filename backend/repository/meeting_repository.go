@@ -18,7 +18,70 @@ func NewMeetingRepository(db *sqlx.DB) *MeetingRepository {
 func (r *MeetingRepository) GetAll() ([]models.Meeting, error) {
 	meetings := []models.Meeting{}
 	err := r.db.Select(&meetings, "SELECT * FROM meetings ORDER BY meeting_date DESC, start_time DESC")
-	return meetings, err
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range meetings {
+		if meetings[i].RoomID != nil {
+			var room models.Room
+			if err := r.db.Get(&room, "SELECT * FROM rooms WHERE id = $1", *meetings[i].RoomID); err == nil {
+				meetings[i].Room = &room
+			}
+		}
+		if meetings[i].OrganizerID != nil {
+			var org models.User
+			if err := r.db.Get(&org, "SELECT id, name, nip, role_id FROM users WHERE id = $1", *meetings[i].OrganizerID); err == nil {
+				meetings[i].Organizer = &org
+			}
+		}
+		if meetings[i].OrganizationUnitID != nil {
+			var ou models.OrganizationUnit
+			if err := r.db.Get(&ou, "SELECT * FROM organization_units WHERE id = $1", *meetings[i].OrganizationUnitID); err == nil {
+				meetings[i].OrganizationUnit = &ou
+			}
+		}
+	}
+
+	return meetings, nil
+}
+
+func (r *MeetingRepository) GetByUserID(userID int) ([]models.Meeting, error) {
+	meetings := []models.Meeting{}
+	query := `
+		SELECT DISTINCT m.* 
+		FROM meetings m 
+		LEFT JOIN meeting_participants mp ON m.id = mp.meeting_id 
+		WHERE m.organizer_id = $1 OR mp.user_id = $1 
+		ORDER BY m.meeting_date DESC, m.start_time DESC
+	`
+	err := r.db.Select(&meetings, query, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range meetings {
+		if meetings[i].RoomID != nil {
+			var room models.Room
+			if err := r.db.Get(&room, "SELECT * FROM rooms WHERE id = $1", *meetings[i].RoomID); err == nil {
+				meetings[i].Room = &room
+			}
+		}
+		if meetings[i].OrganizerID != nil {
+			var org models.User
+			if err := r.db.Get(&org, "SELECT id, name, nip, role_id FROM users WHERE id = $1", *meetings[i].OrganizerID); err == nil {
+				meetings[i].Organizer = &org
+			}
+		}
+		if meetings[i].OrganizationUnitID != nil {
+			var ou models.OrganizationUnit
+			if err := r.db.Get(&ou, "SELECT * FROM organization_units WHERE id = $1", *meetings[i].OrganizationUnitID); err == nil {
+				meetings[i].OrganizationUnit = &ou
+			}
+		}
+	}
+
+	return meetings, nil
 }
 
 func (r *MeetingRepository) GetByID(id int) (*models.Meeting, error) {
@@ -45,6 +108,11 @@ func (r *MeetingRepository) GetByID(id int) (*models.Meeting, error) {
 }
 
 func (r *MeetingRepository) Create(meeting *models.Meeting) error {
+	if meeting.CheckinTokenDuration == nil || *meeting.CheckinTokenDuration == 0 {
+		defDur := 5
+		meeting.CheckinTokenDuration = &defDur
+	}
+
 	query := `
 		INSERT INTO meetings (meeting_number, title, agenda, meeting_date, start_time, end_time, room_id, organizer_id, organization_unit_id, incoming_letter_id, status, notes, minutes_of_meeting, memo_content, checkin_token, checkin_token_expires_at, checkin_token_duration, created_at, updated_at)
 		VALUES (:meeting_number, :title, :agenda, :meeting_date, :start_time, :end_time, :room_id, :organizer_id, :organization_unit_id, :incoming_letter_id, :status, :notes, :minutes_of_meeting, :memo_content, :checkin_token, :checkin_token_expires_at, :checkin_token_duration, :created_at, :updated_at)
@@ -169,8 +237,16 @@ func (r *MeetingRepository) DeleteActionItem(id int, meetingID int) error {
 }
 
 func (r *MeetingRepository) CheckInParticipant(meetingID int, userID int) error {
-	_, err := r.db.Exec("UPDATE meeting_participants SET attendance_status = 'attended', check_in_time = NOW(), updated_at = NOW() WHERE meeting_id = $1 AND user_id = $2", meetingID, userID)
-	return err
+	res, err := r.db.Exec("UPDATE meeting_participants SET attendance_status = 'attended', check_in_time = NOW(), updated_at = NOW() WHERE meeting_id = $1 AND user_id = $2", meetingID, userID)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		_, err = r.db.Exec("INSERT INTO meeting_participants (meeting_id, user_id, role, attendance_status, check_in_time, created_at, updated_at) VALUES ($1, $2, 'attendee', 'attended', NOW(), NOW(), NOW()) ON CONFLICT DO NOTHING", meetingID, userID)
+		return err
+	}
+	return nil
 }
 
 func (r *MeetingRepository) UpdateMemo(meetingID int, memo string) error {
@@ -195,3 +271,41 @@ func (r *MeetingRepository) GetByCheckinToken(token string) (*models.Meeting, er
 	}
 	return &meeting, nil
 }
+
+func (r *MeetingRepository) PopulateUserAttendance(meetings []models.Meeting, userID int) {
+	if userID == 0 || len(meetings) == 0 {
+		return
+	}
+	type AttRow struct {
+		MeetingID        int    `db:"meeting_id"`
+		AttendanceStatus string `db:"attendance_status"`
+	}
+	var attRows []AttRow
+	query := "SELECT meeting_id, attendance_status FROM meeting_participants WHERE user_id = $1"
+	if err := r.db.Select(&attRows, query, userID); err == nil {
+		attMap := make(map[int]string)
+		for _, row := range attRows {
+			attMap[row.MeetingID] = row.AttendanceStatus
+		}
+		for i := range meetings {
+			if status, ok := attMap[meetings[i].ID]; ok {
+				statusCopy := status
+				meetings[i].UserAttendanceStatus = &statusCopy
+				meetings[i].IsCheckedIn = (status == "attended")
+			}
+		}
+	}
+}
+
+func (r *MeetingRepository) PopulateSingleUserAttendance(meeting *models.Meeting, userID int) {
+	if userID == 0 || meeting == nil {
+		return
+	}
+	var status string
+	query := "SELECT attendance_status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2 LIMIT 1"
+	if err := r.db.Get(&status, query, meeting.ID, userID); err == nil {
+		meeting.UserAttendanceStatus = &status
+		meeting.IsCheckedIn = (status == "attended")
+	}
+}
+

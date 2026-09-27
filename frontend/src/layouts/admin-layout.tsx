@@ -60,14 +60,14 @@ const workspaces = [
     name: 'Administrasi',
     label: 'Administrasi',
     icon: Building,
-    href: '/dashboard', // Default Admin route
+    href: '/admin/dashboard', // Default Admin route
   },
   {
     id: 'hr',
     name: 'Human Resources',
     label: 'Human Resources',
     icon: Users,
-    href: '/hr/employees', // Default HR route
+    href: '/hr/dashboard', // Default HR route
   },
 ];
 
@@ -148,7 +148,7 @@ function WorkspaceSwitcherAdmin() {
 const navItems = [
   {
     title: 'Dashboard',
-    href: '/dashboard',
+    href: '/admin/dashboard',
     icon: LayoutDashboard,
   },
   {
@@ -171,6 +171,21 @@ const navItems = [
       { title: 'Daftar Ruangan', href: '/admin/rooms' },
     ],
   },
+  {
+    title: 'Kepegawaian & Presensi',
+    href: '/hr/attendances',
+    icon: Users,
+    children: [
+      { title: 'Riwayat Absensi & Pulang Cepat', href: '/hr/attendances' },
+      { title: 'Pemantauan Cuti', href: '/hr/leaves' },
+      { title: 'Data Karyawan', href: '/hr/employees' },
+    ],
+  },
+  {
+    title: 'Lokasi Presensi',
+    href: '/hr/master-data/work-location',
+    icon: Settings,
+  },
 ];
 
 function NavMain() {
@@ -182,8 +197,8 @@ function NavMain() {
   React.useEffect(() => {
     // Set initial open menu based on active URL
     const activeItem = navItems.find(item => 
-      (url.startsWith(item.href) && item.href !== '/dashboard') || 
-      (item.href === '/dashboard' && url === '/dashboard') ||
+      (url.startsWith(item.href) && item.href !== '/admin/dashboard') || 
+      (item.href === '/admin/dashboard' && url === '/admin/dashboard') ||
       (item.children && item.children.some((c: any) => url === c.href || url.startsWith(c.href + '/')))
     );
     if (activeItem && activeItem.children) {
@@ -205,7 +220,7 @@ function NavMain() {
           }
 
           const hasChildren = itemChildren && itemChildren.length > 0;
-          const isActive = url.startsWith(item.href) && item.href !== '/dashboard' || (item.href === '/dashboard' && url === '/dashboard');
+          const isActive = url.startsWith(item.href) && item.href !== '/admin/dashboard' || (item.href === '/admin/dashboard' && url === '/admin/dashboard');
 
           if (!hasChildren) {
             return (
@@ -343,7 +358,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink render={<Link to="/dashboard" />}>
+                  <BreadcrumbLink render={<Link to="/admin/dashboard" />}>
                     Administrasi
                   </BreadcrumbLink>
                 </BreadcrumbItem>

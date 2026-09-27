@@ -22,6 +22,7 @@ import { TemplatePreview } from '@/components/document-template/template-preview
 import { NumberingFormatBuilder } from '@/components/document-template/numbering-format-builder';
 import { TemplateType } from '@/types/document-template';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 
 interface Props {
     categories?: string[];
@@ -109,7 +110,7 @@ export default function DocumentTemplateCreate({ categories = [] }: Props) {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:8080/api/document-templates', {
+            const res = await fetch(getApiUrl('/api/document-templates'), {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

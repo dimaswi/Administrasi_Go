@@ -237,6 +237,26 @@ export default function EmployeeIndex() {
         }
     };
 
+    const handleUnlinkAccount = async () => {
+        if (!selectedEmployeeForAccount) return;
+        
+        if (!confirm("Apakah Anda yakin ingin melepaskan tautan akun ini dari karyawan? Karyawan ini tidak akan bisa login lagi sebelum ditautkan kembali.")) {
+            return;
+        }
+
+        setAccountSubmitting(true);
+        try {
+            await api.post(`/employees/${selectedEmployeeForAccount.id}/account`, { action: "unlink" });
+            toast.success("Tautan akun berhasil dilepaskan!");
+            setAccountModalOpen(false);
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Gagal melepaskan tautan akun");
+        } finally {
+            setAccountSubmitting(false);
+        }
+    };
+
     const columns = [
         {
             key: 'employee_id',
@@ -401,20 +421,30 @@ export default function EmployeeIndex() {
 
             {/* Account Manager Dialog */}
             <Dialog open={accountModalOpen} onOpenChange={setAccountModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>
-                            {selectedEmployeeForAccount?.user_id ? "Ubah Password Akun" : "Buat Akun Baru"}
+                            {selectedEmployeeForAccount?.user_id ? "Pengaturan Akun" : "Buat Akun Baru"}
                         </DialogTitle>
                         <DialogDescription>
                             {selectedEmployeeForAccount?.user_id 
-                                ? "Karyawan ini sudah memiliki akun. Anda dapat mereset passwordnya di sini." 
+                                ? (
+                                    <div className="mt-2 space-y-1">
+                                        <p>Karyawan ini telah ditautkan ke akun user:</p>
+                                        <p className="font-semibold text-primary">
+                                            {users.find(u => u.id === selectedEmployeeForAccount.user_id)?.name || "Unknown"} 
+                                            {" "}
+                                            ({users.find(u => u.id === selectedEmployeeForAccount.user_id)?.nip || selectedEmployeeForAccount.employee_id})
+                                        </p>
+                                        <p className="text-xs pt-1">Anda dapat mereset kredensialnya di bawah ini.</p>
+                                    </div>
+                                ) 
                                 : "Buat akun untuk karyawan ini. NIP akan digunakan sebagai username default."}
                         </DialogDescription>
                     </DialogHeader>
                     
                     {selectedEmployeeForAccount && (
-                        <form onSubmit={handleAccountSubmit} className="space-y-4 py-4">
+                        <form onSubmit={handleAccountSubmit} className="space-y-4 py-2">
                             {!selectedEmployeeForAccount.user_id && (
                                 <div className="space-y-2">
                                     <Label>Pilihan Akun</Label>
@@ -457,16 +487,16 @@ export default function EmployeeIndex() {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1.5">
                                         <Label>Username / NIP</Label>
                                         <Input 
-                                            value={selectedEmployeeForAccount.employee_id} 
+                                            value={selectedEmployeeForAccount?.user_id ? (users.find(u => u.id === selectedEmployeeForAccount.user_id)?.nip || selectedEmployeeForAccount.employee_id) : selectedEmployeeForAccount.employee_id} 
                                             readOnly 
-                                            className="bg-gray-100 text-gray-500 cursor-not-allowed"
+                                            className="bg-muted text-muted-foreground cursor-not-allowed border-dashed focus-visible:ring-0"
                                         />
-                                        <p className="text-xs text-muted-foreground">Username tidak dapat diubah (Otomatis dari NIP)</p>
+                                        <p className="text-xs text-muted-foreground">Username tidak dapat diubah dari sini.</p>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1.5">
                                         <Label>Password Baru</Label>
                                         <Input 
                                             type="password" 
@@ -500,12 +530,27 @@ export default function EmployeeIndex() {
                                 </>
                             )}
 
-                            <DialogFooter className="pt-4">
-                                <DialogClose render={<Button type="button" variant="outline">Batal</Button>} />
-                                <Button type="submit" disabled={accountSubmitting}>
-                                    {accountSubmitting ? "Memproses..." : "Simpan"}
-                                </Button>
-                            </DialogFooter>
+                            <div className="pt-4 flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
+                                <div>
+                                    {selectedEmployeeForAccount.user_id && (
+                                        <Button 
+                                            type="button" 
+                                            variant="destructive" 
+                                            onClick={handleUnlinkAccount} 
+                                            disabled={accountSubmitting}
+                                            className="w-full sm:w-auto mt-2 sm:mt-0"
+                                        >
+                                            Lepaskan Tautan Akun
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="flex gap-2 justify-end w-full sm:w-auto">
+                                    <DialogClose render={<Button type="button" variant="outline">Batal</Button>} />
+                                    <Button type="submit" disabled={accountSubmitting}>
+                                        {accountSubmitting ? "Memproses..." : "Simpan"}
+                                    </Button>
+                                </div>
+                            </div>
                         </form>
                     )}
                 </DialogContent>

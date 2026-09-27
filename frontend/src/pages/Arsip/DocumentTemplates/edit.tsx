@@ -23,6 +23,7 @@ import { TemplatePreview } from '@/components/document-template/template-preview
 import { NumberingFormatBuilder } from '@/components/document-template/numbering-format-builder';
 import { TemplateType } from '@/types/document-template';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 
 export default function DocumentTemplateEdit() {
     const { id } = useParams<{ id: string }>();
@@ -35,7 +36,7 @@ export default function DocumentTemplateEdit() {
         const fetchTemplate = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch(`http://localhost:8080/api/document-templates/${id}`, {
+                const res = await fetch(getApiUrl(`/api/document-templates/${id}`), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -152,7 +153,7 @@ function EditForm({ initialTemplate, categories }: { initialTemplate: any, categ
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:8080/api/document-templates/${initialTemplate.id}`, {
+            const res = await fetch(getApiUrl(`/api/document-templates/${initialTemplate.id}`), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

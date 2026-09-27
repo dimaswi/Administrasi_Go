@@ -35,6 +35,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	orgUnitRepo := repository.NewOrgUnitRepository(db)
 	employeeRepo := repository.NewEmployeeRepository(db)
 	workScheduleRepo := repository.NewWorkScheduleRepository(db)
+	leaveRepo := repository.NewLeaveRepository(db)
 	incomingLetterRepo := repository.NewIncomingLetterRepository(db)
 	dispositionRepo := repository.NewDispositionRepository(db)
 	jobCategoryRepo := repository.NewJobCategoryRepository(db)
@@ -58,6 +59,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	orgUnitHandler := handler.NewOrgUnitHandler(orgUnitRepo)
 	employeeHandler := handler.NewEmployeeHandler(employeeRepo, userRepo)
 	workScheduleHandler := handler.NewWorkScheduleHandler(workScheduleRepo)
+	leaveHandler := handler.NewLeaveHandler(leaveRepo)
 	incomingLetterHandler := handler.NewIncomingLetterHandler(incomingLetterRepo)
 	dispositionHandler := handler.NewDispositionHandler(dispositionRepo, incomingLetterRepo)
 	documentTemplateHandler := handler.NewDocumentTemplateHandler(documentTemplateRepo)
@@ -66,8 +68,10 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	employeeScheduleHandler := handler.NewEmployeeScheduleHandler(employeeScheduleRepo)
 	rosterScheduleRepo := repository.NewRosterScheduleRepository(db)
 	rosterScheduleHandler := handler.NewRosterScheduleHandler(rosterScheduleRepo)
+	workLocationRepo := repository.NewWorkLocationRepository(db)
+	workLocationHandler := handler.NewWorkLocationHandler(workLocationRepo)
 	attendanceRepo := repository.NewAttendanceRepository(db)
-	attendanceHandler := handler.NewAttendanceHandler(attendanceRepo)
+	attendanceHandler := handler.NewAttendanceHandler(attendanceRepo, settingRepo, employeeRepo, workLocationRepo)
 	jobCategoryHandler := handler.NewJobCategoryHandler(jobCategoryRepo)
 	employmentStatusHandler := handler.NewEmploymentStatusHandler(employmentStatusRepo)
 	educationLevelHandler := handler.NewEducationLevelHandler(educationLevelRepo)
@@ -188,9 +192,11 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 			{
 				employees.GET("", employeeHandler.GetAll)
 				employees.GET("/:id", employeeHandler.GetByID)
+				employees.GET("/by-user/:userId", employeeHandler.GetByUserID)
 				employees.POST("", employeeHandler.Create)
 				employees.PUT("/:id", employeeHandler.Update)
 				employees.POST("/:id/account", employeeHandler.ManageAccount)
+				employees.POST("/:id/register-face", employeeHandler.RegisterFace)
 
 				// Employee Details - Family
 				employees.GET("/:id/families", employeeDetailHandler.GetFamilies)
@@ -221,6 +227,15 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				workSchedules.DELETE("/:id", workScheduleHandler.Delete)
 			}
 
+			// Leaves
+			leaves := protected.Group("/leaves")
+			{
+				leaves.GET("", leaveHandler.GetAll)
+				leaves.GET("/:id", leaveHandler.GetByID)
+				leaves.POST("", leaveHandler.Create)
+				leaves.PUT("/:id/status", leaveHandler.UpdateStatus)
+			}
+
 			// Employee Schedules
 			employeeSchedules := protected.Group("/employee-schedules")
 			{
@@ -244,6 +259,16 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				shiftExchanges.GET("", shiftExchangeHandler.GetAll)
 				shiftExchanges.POST("", shiftExchangeHandler.Create)
 				shiftExchanges.PUT("/:id/status", shiftExchangeHandler.UpdateStatus)
+			}
+
+			// Work Locations (Geofencing Master)
+			workLocations := protected.Group("/work-locations")
+			{
+				workLocations.GET("", workLocationHandler.GetAll)
+				workLocations.GET("/:id", workLocationHandler.GetByID)
+				workLocations.POST("", workLocationHandler.Create)
+				workLocations.PUT("/:id", workLocationHandler.Update)
+				workLocations.DELETE("/:id", workLocationHandler.Delete)
 			}
 
 			// Attendances
@@ -312,9 +337,9 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 			// Meetings
 			meetings := protected.Group("/meetings")
 			{
-				meetings.GET("", middleware.RequirePermission(roleRepo, "meeting.view"), meetingHandler.GetAll)
-				meetings.GET("/:id", middleware.RequirePermission(roleRepo, "meeting.view"), meetingHandler.GetByID)
-				meetings.POST("", middleware.RequirePermission(roleRepo, "meeting.create"), meetingHandler.Create)
+				meetings.GET("", meetingHandler.GetAll)
+				meetings.GET("/:id", meetingHandler.GetByID)
+				meetings.POST("", meetingHandler.Create)
 				meetings.PUT("/:id", middleware.RequirePermission(roleRepo, "meeting.edit"), meetingHandler.Update)
 				meetings.DELETE("/:id", middleware.RequirePermission(roleRepo, "meeting.delete"), meetingHandler.Delete)
 

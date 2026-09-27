@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '@/layouts/admin-layout';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -133,7 +133,7 @@ export default function MeetingShow() {
             toast.error('Memo hanya dapat didownload setelah rapat selesai');
             return;
         }
-        window.open(`http://localhost:8080/api/meetings/${meeting.id}/generate-${type}`, '_blank');
+        window.open(getApiUrl(`/api/meetings/${meeting.id}/generate-${type}`), '_blank');
     };
 
     const getStatusBadgeColor = (status: string) => {
@@ -391,7 +391,19 @@ export default function MeetingShow() {
                             </CardContent>
                         </Card>
 
-                        <CheckinQRCode meetingId={meeting.id} meetingStatus={meeting.status} isModeratorOrOrganizer={isModeratorOrOrganizer} attendedCount={attendedCount} totalParticipants={participants.length} />
+                        <CheckinQRCode
+                            meetingId={meeting.id}
+                            meetingStatus={meeting.status}
+                            meetingTitle={meeting.title}
+                            meetingNumber={meeting.meeting_number}
+                            roomName={meeting.room?.name || meeting.room_name}
+                            meetingDate={meeting.meeting_date || meeting.date}
+                            startTime={meeting.start_time}
+                            endTime={meeting.end_time}
+                            isModeratorOrOrganizer={isModeratorOrOrganizer}
+                            attendedCount={attendedCount}
+                            totalParticipants={participants.length}
+                        />
 
                         {/* Dokumen */}
                         <Card className="shadow-none">
