@@ -3,7 +3,7 @@
 # Gunakan: make <target>
 # ============================================================
 
-.PHONY: help setup dev dev-down prod prod-down db-restore db-shell \
+.PHONY: help setup dev dev-down prod prod-down db-shell \
         backend-shell frontend-shell logs clean reset
 
 # Warna output
@@ -74,21 +74,15 @@ prod-logs: ## Lihat logs semua service production
 # ─────────────────────────────────────────
 # Database
 # ─────────────────────────────────────────
-db-restore: ## Restore database dari dump (reset flag agar restore ulang)
-	@echo "$(YELLOW)🗄️  Reset flag restore dan jalankan ulang...$(RESET)"
-	docker volume rm -f administrasi_db_restored_flag 2>/dev/null || true
-	docker volume rm -f administrasi_db_restored_dev_flag 2>/dev/null || true
-	docker compose up -d db-restore
-
 db-shell: ## Buka shell PostgreSQL
-	docker exec -it administrasi_postgres psql -U postgres -d administrasi
+	docker exec -it administrasi_db psql -U postgres -d administrasi
 
 db-shell-dev: ## Buka shell PostgreSQL (dev)
 	docker exec -it administrasi_postgres_dev psql -U postgres -d administrasi
 
 db-dump: ## Buat dump baru dari container yang sedang berjalan
 	@echo "$(CYAN)📦 Membuat dump database...$(RESET)"
-	docker exec administrasi_postgres \
+	docker exec administrasi_db \
 		pg_dump -U postgres -Fc administrasi \
 		> docker/postgres/dump-$$(date +%Y%m%d%H%M).sql
 	@echo "$(GREEN)✅ Dump tersimpan di docker/postgres/$(RESET)"

@@ -74,8 +74,8 @@ docker compose up -d --build
 ```
 
 Akses:
-- **Frontend**: http://localhost:80
-- **Backend API**: http://localhost:8080
+- **Frontend**: http://localhost:3233 (atau sesuai FRONTEND_PORT di .env)
+- **Backend API**: http://localhost:8898 (atau sesuai BACKEND_PORT di .env)
 
 ---
 
@@ -87,29 +87,30 @@ Akses:
 | `POSTGRES_USER` | ✅ | `postgres` | User PostgreSQL |
 | `POSTGRES_PASSWORD` | ✅ | — | Password PostgreSQL |
 | `JWT_SECRET` | ✅ | — | Secret key JWT (min. 32 karakter) |
-| `VITE_API_URL` | — | `http://localhost:8080` | URL API untuk frontend |
+| `FRONTEND_URL` | ✅ | — | URL domain publik Zero Trust (cth: `https://administrasi.namaklinik.com`) |
+| `VITE_API_URL` | ❌ | *(kosong)* | **Biarkan kosong** agar web bisa diakses via IP Lokal & Domain sekaligus |
+| `FRONTEND_PORT` | — | `3233` | Port host VPS untuk Web / Tunnel Zero Trust |
+| `BACKEND_PORT` | — | `8898` | Port host VPS untuk Backend API langsung |
+| `POSTGRES_PORT`| — | `5434` | Port host VPS untuk Database |
+| `FACE_SERVICE_PORT` | — | `5005` | Port host VPS untuk Face Service |
 
 ---
 
 ## 🗄️ Database
 
-### Restore ulang database
-Jika ingin restore ulang dari dump:
-
+### Restore manual database dari dump
 ```bash
-# Hapus flag restore, lalu jalankan ulang service db-restore
-docker volume rm administrasi_db_restored_flag
-docker compose up -d db-restore
+docker exec -i administrasi_db pg_restore -U postgres -d administrasi --no-owner --no-privileges < nama_file_dump.sql
 ```
 
 ### Buat dump baru
 ```bash
-docker exec administrasi_postgres pg_dump -U postgres -Fc administrasi > docker/postgres/dump-baru.sql
+docker exec administrasi_db pg_dump -U postgres -Fc administrasi > docker/postgres/dump-baru.sql
 ```
 
 ### Buka psql shell
 ```bash
-docker exec -it administrasi_postgres psql -U postgres -d administrasi
+docker exec -it administrasi_db psql -U postgres -d administrasi
 ```
 
 ---
