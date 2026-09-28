@@ -36,6 +36,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Docker
+# Docker files (only the Dockerfile itself, NOT the docker/ config folder)
 Dockerfile*
-docker/
+# Note: folder docker/ TIDAK di-ignore agar nginx.conf terbawa saat build
