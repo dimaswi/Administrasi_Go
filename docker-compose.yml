@@ -23,7 +23,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-administrasi}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?error: POSTGRES_PASSWORD wajib diisi di .env}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?error: POSTGRES_PASSWORD wajib diisi di .env}"
     volumes:
       # Data PostgreSQL persisten
       - postgres_data:/var/lib/postgresql/data
@@ -80,10 +80,10 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?error: POSTGRES_PASSWORD wajib diisi di .env}
+      DB_PASSWORD: "${POSTGRES_PASSWORD:?error: POSTGRES_PASSWORD wajib diisi di .env}"
       DB_NAME: ${POSTGRES_DB:-administrasi}
       DB_SSLMODE: disable
-      JWT_SECRET: ${JWT_SECRET:?error: JWT_SECRET wajib diisi di .env}
+      JWT_SECRET: "${JWT_SECRET:?error: JWT_SECRET wajib diisi di .env}"
       PORT: 8080
       FACE_SERVICE_URL: http://face_service:5000/api/verify-face
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
