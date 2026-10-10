@@ -4,7 +4,7 @@ import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Users, Building2, Save, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, User, Users, Building2, Save, ZoomIn, ZoomOut, Move, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/SearchableSelect';
@@ -42,6 +42,65 @@ export default function OrganizationChart() {
     };
 
     const [scale, setScale] = useState(1);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartRef = React.useRef({ x: 0, y: 0, posX: 0, posY: 0 });
+    const hasDraggedRef = React.useRef(false);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (e.button !== 0) return;
+        if ((e.target as HTMLElement).closest('.org-node-card')) return;
+        setIsDragging(true);
+        hasDraggedRef.current = false;
+        dragStartRef.current = {
+            x: e.clientX,
+            y: e.clientY,
+            posX: position.x,
+            posY: position.y,
+        };
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isDragging) return;
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+            hasDraggedRef.current = true;
+        }
+        setPosition({
+            x: dragStartRef.current.posX + dx,
+            y: dragStartRef.current.posY + dy,
+        });
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        if (isDragging) {
+            setIsDragging(false);
+            try {
+                (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+            } catch (_) {}
+        }
+    };
+
+    const handleWheel = (e: React.WheelEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.1 : -0.1;
+            setScale((prev) => Math.min(Math.max(prev + delta, 0.3), 2.5));
+        } else {
+            setPosition((prev) => ({
+                x: prev.x - e.deltaX,
+                y: prev.y - e.deltaY,
+            }));
+        }
+    };
+
+    const handleResetView = () => {
+        setScale(1);
+        setPosition({ x: 0, y: 0 });
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -107,6 +166,24 @@ export default function OrganizationChart() {
         }
     };
 
+    const cleanEmpPayload = (emp: any, orgUnitId: number | null) => {
+        const cleanDate = (d: any) => (d && typeof d === 'string' ? d.substring(0, 10) : null);
+        return {
+            ...emp,
+            organization_unit_id: orgUnitId,
+            job_category_id: emp.job_category_id ? parseInt(emp.job_category_id) : 1,
+            employment_status_id: emp.employment_status_id ? parseInt(emp.employment_status_id) : 1,
+            education_level_id: emp.education_level_id ? parseInt(emp.education_level_id) : null,
+            education_year: emp.education_year ? parseInt(emp.education_year) : null,
+            date_of_birth: cleanDate(emp.date_of_birth),
+            join_date: emp.join_date ? emp.join_date.substring(0, 10) : '2024-01-01',
+            contract_start_date: cleanDate(emp.contract_start_date),
+            contract_end_date: cleanDate(emp.contract_end_date),
+            permanent_date: cleanDate(emp.permanent_date),
+            resign_date: cleanDate(emp.resign_date),
+        };
+    };
+
     const handleAssignEmployee = async () => {
         if (!selectedUnit || !assignEmployeeId) return;
         setAssigning(true);
@@ -114,18 +191,15 @@ export default function OrganizationChart() {
             // Find the full employee object from state
             const empToAssign = employees.find(e => e.id.toString() === assignEmployeeId);
             if (empToAssign) {
-                await api.put(`/employees/${empToAssign.id}`, {
-                    ...empToAssign,
-                    organization_unit_id: selectedUnit.id
-                });
+                await api.put(`/employees/${empToAssign.id}`, cleanEmpPayload(empToAssign, selectedUnit.id));
                 
                 // Refresh data to show updated member list
                 await fetchData();
                 setAssignEmployeeId('');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Assign failed', error);
-            showAlert('Peringatan', 'Gagal memindahkan karyawan ke unit ini');
+            showAlert('Peringatan', error.response?.data?.error || 'Gagal memindahkan karyawan ke unit ini');
         } finally {
             setAssigning(false);
         }
@@ -137,15 +211,12 @@ export default function OrganizationChart() {
             try {
                 const empToUnassign = employees.find(e => e.id === employeeId);
                 if (empToUnassign) {
-                    await api.put(`/employees/${empToUnassign.id}`, {
-                        ...empToUnassign,
-                        organization_unit_id: null
-                    });
+                    await api.put(`/employees/${empToUnassign.id}`, cleanEmpPayload(empToUnassign, null));
                     await fetchData();
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Unassign failed', error);
-                showAlert('Peringatan', 'Gagal mengeluarkan karyawan');
+                showAlert('Peringatan', error.response?.data?.error || 'Gagal mengeluarkan karyawan');
             } finally {
                 setAssigning(false);
             }
@@ -161,8 +232,14 @@ export default function OrganizationChart() {
             <div className="flex flex-col items-center">
                 {/* Node Box */}
                 <div
-                    className="z-10 bg-white border-2 border-slate-200 rounded-xl p-4 w-64 shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all group relative"
-                    onClick={() => handleSelectUnit(node)}
+                    className="org-node-card z-10 bg-white border-2 border-slate-200 rounded-xl p-4 w-64 shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all group relative select-none hover:ring-2 hover:ring-primary/20"
+                    onPointerDown={(e) => {
+                        e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectUnit(node);
+                    }}
                 >
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <Badge variant="secondary" className="bg-slate-100 text-xs text-slate-600 border shadow-sm">Level {node.level}</Badge>
@@ -228,37 +305,65 @@ export default function OrganizationChart() {
 
     return (
         <HrLayout>
-            <div className="w-full flex flex-col h-[calc(100vh-80px)] relative">
-                {/* Zoom Controls */}
-                <div className="absolute top-4 right-4 z-50 flex gap-2 bg-white/80 backdrop-blur p-2 rounded-lg shadow-sm border border-slate-200">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.min(s + 0.1, 2))} title="Zoom In">
+            <div className="w-full flex flex-col h-[calc(100vh-80px)] relative overflow-hidden select-none">
+                {/* Zoom & Pan Controls */}
+                <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5 bg-white/90 backdrop-blur p-1.5 rounded-xl shadow-md border border-slate-200">
+                    <span className="text-[11px] text-muted-foreground px-2 hidden sm:inline-flex items-center gap-1">
+                        <Move className="size-3 text-primary" /> Geser: Drag Pointer
+                    </span>
+                    <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.min(s + 0.1, 2.5))} title="Zoom In (Perbesar)">
                         <ZoomIn className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => setScale(1)}>
+                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs font-mono font-semibold" onClick={handleResetView} title="Klik untuk Reset Zoom (100%)">
                         {Math.round(scale * 100)}%
                     </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.max(s - 0.1, 0.3))} title="Zoom Out">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.max(s - 0.1, 0.3))} title="Zoom Out (Perkecil)">
                         <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8 text-slate-600 hover:text-primary" onClick={handleResetView} title="Pusatkan / Reset Posisi">
+                        <RotateCcw className="h-4 w-4" />
                     </Button>
                 </div>
 
-                {/* Chart Container */}
+                {/* Chart Canvas Container */}
                 <Card className="flex-1 overflow-hidden flex flex-col shadow-sm border-slate-200 rounded-none border-0">
-                    <CardContent className="p-0 flex-1 overflow-auto bg-[#f8fafc] relative">
+                    <CardContent 
+                        ref={containerRef}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                        onWheel={handleWheel}
+                        className={`p-0 flex-1 overflow-hidden bg-[#f8fafc] relative select-none ${
+                            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                        }`}
+                        style={{ touchAction: 'none' }}
+                    >
+                        {/* Interactive Dot Grid Pattern */}
+                        <div 
+                            className="absolute inset-0 pointer-events-none opacity-40"
+                            style={{
+                                backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
+                                backgroundSize: `${24 * scale}px ${24 * scale}px`,
+                                backgroundPosition: `${position.x}px ${position.y}px`,
+                            }}
+                        />
+
                         {loading ? (
                             <div className="flex items-center justify-center h-full text-muted-foreground">Memuat struktur...</div>
                         ) : rootNodes.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-muted-foreground">Belum ada Unit Organisasi (Root).</div>
                         ) : (
                             <div
-                                className="min-w-max p-12 flex justify-center pb-32"
+                                className="w-full h-full flex justify-center items-start pt-16"
                                 style={{
-                                    transform: `scale(${scale})`,
+                                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
                                     transformOrigin: 'top center',
-                                    transition: 'transform 0.2s ease-out'
+                                    transition: isDragging ? 'none' : 'transform 0.1s ease-out',
                                 }}
                             >
-                                <div className="flex gap-16">
+                                <div className="flex gap-16 min-w-max pb-32">
                                     {rootNodes.map(root => (
                                         <OrgNode key={root.id} node={root} />
                                     ))}

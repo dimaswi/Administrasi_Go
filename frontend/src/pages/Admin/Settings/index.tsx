@@ -125,7 +125,7 @@ export default function SettingsPage() {
             setLogoFile(null);
             setIconFile(null);
             await refreshSettings();
-            
+
         } catch (error) {
             console.error(error);
             toast.error('Terjadi kesalahan saat menyimpan pengaturan');
@@ -161,11 +161,11 @@ export default function SettingsPage() {
                             {/* App Name */}
                             <div className="space-y-2">
                                 <Label htmlFor="appName">Nama Aplikasi</Label>
-                                <Input 
-                                    id="appName" 
-                                    value={name} 
-                                    onChange={(e) => setName(e.target.value)} 
-                                    placeholder="Contoh: SIMRS Klinik" 
+                                <Input
+                                    id="appName"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Contoh: SIMKEP"
                                 />
                                 <p className="text-xs text-muted-foreground">Ditampilkan di header browser dan menu navigasi.</p>
                             </div>
@@ -178,10 +178,10 @@ export default function SettingsPage() {
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             {logoPreview || appLogo ? (
                                                 <div className="relative h-24 w-auto max-w-[200px]">
-                                                    <img 
-                                                        src={logoPreview || appLogo} 
-                                                        alt="Logo" 
-                                                        className="h-full w-full object-contain" 
+                                                    <img
+                                                        src={logoPreview || appLogo}
+                                                        alt="Logo"
+                                                        className="h-full w-full object-contain"
                                                     />
                                                 </div>
                                             ) : (
@@ -190,12 +190,12 @@ export default function SettingsPage() {
                                                 </div>
                                             )}
                                             <div>
-                                                <Input 
-                                                    type="file" 
-                                                    id="logo" 
-                                                    accept="image/*" 
-                                                    className="hidden" 
-                                                    onChange={handleLogoChange} 
+                                                <Input
+                                                    type="file"
+                                                    id="logo"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleLogoChange}
                                                 />
                                                 <Label htmlFor="logo" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-9 px-4 py-2">
                                                     <UploadCloud className="mr-2 h-4 w-4" /> Pilih File Logo
@@ -213,10 +213,10 @@ export default function SettingsPage() {
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             {iconPreview || appIcon ? (
                                                 <div className="relative h-16 w-16">
-                                                    <img 
-                                                        src={iconPreview || appIcon} 
-                                                        alt="Icon" 
-                                                        className="h-full w-full object-cover rounded shadow-sm" 
+                                                    <img
+                                                        src={iconPreview || appIcon}
+                                                        alt="Icon"
+                                                        className="h-full w-full object-cover rounded shadow-sm"
                                                     />
                                                 </div>
                                             ) : (
@@ -225,12 +225,12 @@ export default function SettingsPage() {
                                                 </div>
                                             )}
                                             <div>
-                                                <Input 
-                                                    type="file" 
-                                                    id="icon" 
-                                                    accept="image/png, image/jpeg, image/x-icon, image/svg+xml" 
-                                                    className="hidden" 
-                                                    onChange={handleIconChange} 
+                                                <Input
+                                                    type="file"
+                                                    id="icon"
+                                                    accept="image/png, image/jpeg, image/x-icon, image/svg+xml"
+                                                    className="hidden"
+                                                    onChange={handleIconChange}
                                                 />
                                                 <Label htmlFor="icon" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-9 px-4 py-2">
                                                     <UploadCloud className="mr-2 h-4 w-4" /> Pilih File Ikon

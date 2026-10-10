@@ -275,6 +275,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 			attendances := protected.Group("/attendances")
 			{
 				attendances.GET("", attendanceHandler.GetAll)
+				attendances.GET("/today-status", attendanceHandler.GetTodayStatus)
 				attendances.POST("/check-in", attendanceHandler.CheckIn)
 				attendances.POST("/check-out", attendanceHandler.CheckOut)
 				attendances.PUT("/:id", attendanceHandler.Update)

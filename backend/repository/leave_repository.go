@@ -37,7 +37,7 @@ func (r *LeaveRepository) GetAll(page int, perPage int, search string, employeeI
 		FROM leaves l
 		LEFT JOIN employees e ON l.employee_id = e.id
 		LEFT JOIN leave_types lt ON l.leave_type_id = lt.id
-		LEFT JOIN employees del ON l.delegation_to = del.id
+		LEFT JOIN employees del ON (l.delegation_to = del.id::text OR l.delegation_employee_id = del.id)
 		WHERE l.deleted_at IS NULL
 	`
 	countQuery := `
@@ -125,7 +125,7 @@ func (r *LeaveRepository) GetByID(id int) (*models.Leave, error) {
 		FROM leaves l
 		LEFT JOIN employees e ON l.employee_id = e.id
 		LEFT JOIN leave_types lt ON l.leave_type_id = lt.id
-		LEFT JOIN employees del ON l.delegation_to = del.id
+		LEFT JOIN employees del ON (l.delegation_to = del.id::text OR l.delegation_employee_id = del.id)
 		WHERE l.id = $1 AND l.deleted_at IS NULL
 	`
 	err := r.db.Get(&leave, query, id)
@@ -139,7 +139,24 @@ func (r *LeaveRepository) UpdateStatus(id int, status string, notes string, appr
 		WHERE id = $4
 	`
 	_, err := r.db.Exec(query, status, notes, approvedBy, id)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// If approved, automatically remove conflicting roster schedules for the employee during the leave period
+	if status == "approved" {
+		var leave models.Leave
+		if getErr := r.db.Get(&leave, "SELECT employee_id, start_date::text as start_date, end_date::text as end_date FROM leaves WHERE id = $1", id); getErr == nil {
+			delQuery := `
+				DELETE FROM roster_schedules
+				WHERE (employee_id = $1 OR employee_id = (SELECT COALESCE(user_id, $1) FROM employees WHERE id = $1))
+				  AND date >= $2::date AND date <= $3::date
+			`
+			_, _ = r.db.Exec(delQuery, leave.EmployeeID, leave.StartDate, leave.EndDate)
+		}
+	}
+
+	return nil
 }
 
 func (r *LeaveRepository) Create(leave *models.Leave) error {

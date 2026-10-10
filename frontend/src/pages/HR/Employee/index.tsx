@@ -282,15 +282,46 @@ export default function EmployeeIndex() {
             ),
         },
         {
-            key: 'contact',
-            label: 'Kontak',
-            className: 'w-[200px]',
-            render: (emp: Employee) => (
-                <div>
-                    <div className="text-sm">{emp.email || '-'}</div>
-                    <div className="text-xs text-muted-foreground">{emp.phone || '-'}</div>
-                </div>
-            ),
+            key: 'user_account',
+            label: 'Akun Terhubung',
+            className: 'w-[220px]',
+            render: (emp: Employee) => {
+                const linkedUser = users.find(u => u.id === emp.user_id);
+                const role = roles.find(r => r.id === linkedUser?.role_id);
+
+                return emp.user_id ? (
+                    <div 
+                        className={`flex flex-col gap-0.5 items-start ${isAdmin ? 'cursor-pointer group' : ''}`}
+                        onClick={() => isAdmin && handleManageAccountClick(emp)}
+                        title={isAdmin ? "Klik untuk kelola akun terhubung" : undefined}
+                    >
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] font-medium py-0.5 px-2 flex items-center gap-1 group-hover:bg-emerald-100 transition-colors">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Terhubung
+                            </Badge>
+                            {role?.name && (
+                                <span className="text-[10px] text-muted-foreground font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                    {role.name}
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-xs font-mono text-slate-700 truncate max-w-[200px]">
+                            {linkedUser?.name || linkedUser?.nip || `User #${emp.user_id}`}
+                        </span>
+                    </div>
+                ) : (
+                    <div 
+                        className={isAdmin ? 'cursor-pointer inline-block' : 'inline-block'}
+                        onClick={() => isAdmin && handleManageAccountClick(emp)}
+                        title={isAdmin ? "Klik untuk menautkan akun user" : undefined}
+                    >
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[11px] font-medium py-0.5 px-2 hover:bg-amber-100 transition-colors">
+                            Belum Terhubung
+                        </Badge>
+                    </div>
+                );
+            },
         },
         {
             key: 'status',

@@ -72,6 +72,17 @@ func ConnectDB(cfg DBConfig) *sqlx.DB {
 	INSERT INTO leave_types (code, name, description, default_quota, is_paid, requires_approval, allow_carry_over, max_carry_over_days, min_advance_days, max_consecutive_days, is_active, sort_order, color, created_at, updated_at)
 	SELECT 'PC', 'Izin Pulang Cepat', 'Izin pulang lebih awal sebelum jam shift berakhir', 0, true, true, false, 0, 0, 1, true, 7, 'orange', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 	WHERE NOT EXISTS (SELECT 1 FROM leave_types WHERE code = 'PC');
+
+	-- Migration for Multi-Shift Attendance support per day
+	DO $$
+	BEGIN
+		IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendances_employee_id_date_unique') THEN
+			ALTER TABLE attendances DROP CONSTRAINT attendances_employee_id_date_unique;
+		END IF;
+		IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'attendances_emp_date_ws_unique') THEN
+			CREATE UNIQUE INDEX attendances_emp_date_ws_unique ON attendances (employee_id, date, COALESCE(work_schedule_id, 0));
+		END IF;
+	END $$;
 	`
 	if _, err := db.Exec(initSchema); err != nil {
 		log.Printf("Warning: Failed to auto-migrate schema/seed: %v", err)

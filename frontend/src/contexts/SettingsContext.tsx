@@ -10,17 +10,17 @@ interface SettingsContextType {
 }
 
 const SettingsContext = createContext<SettingsContextType>({
-    appName: 'SIMRS Klinik',
+    appName: 'SIMKEP',
     appLogo: '',
     appIcon: '',
     loading: true,
-    refreshSettings: async () => {},
+    refreshSettings: async () => { },
 });
 
 export const useSettings = () => useContext(SettingsContext);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [appName, setAppName] = useState('SIMRS Klinik');
+    const [appName, setAppName] = useState('SIMKEP');
     const [appLogo, setAppLogo] = useState('');
     const [appIcon, setAppIcon] = useState('');
     const [loading, setLoading] = useState(true);

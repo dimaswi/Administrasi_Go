@@ -46,7 +46,9 @@ import {
   LogOut,
   ChevronRight,
   Settings,
-  Mail
+  Mail,
+  UserCheck,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AppLogoIcon from '@/components/AppLogoIcon';
@@ -146,11 +148,10 @@ function WorkspaceSwitcherHR() {
 // --- Navigation ---
 const navItems = [
   {
-    title: 'Dashboard',
+    title: 'Dashboard Presensi',
     href: '/hr/dashboard',
     icon: LayoutDashboard,
   },
-
   {
     title: 'Karyawan',
     href: '/hr/employees',
@@ -159,9 +160,14 @@ const navItems = [
       { title: 'Data Karyawan', href: '/hr/employees' },
       { title: 'Jadwal Karyawan', href: '/hr/rosters/planner' },
       { title: 'Tukar Shift', href: '/hr/shift-exchanges' },
-      { title: 'Riwayat Absensi', href: '/hr/attendances' },
-      { title: 'Pemantauan Cuti', href: '/hr/leaves' },
+      { title: 'Riwayat Absensi (Admin)', href: '/hr/attendances' },
+      { title: 'Izin & Cuti Karyawan', href: '/hr/leaves' },
     ],
+  },
+  {
+    title: 'Rekap Absensi',
+    href: '/hr/reports/attendance',
+    icon: FileSpreadsheet,
   },
   {
     title: 'Master Data',
@@ -191,7 +197,10 @@ function NavMain() {
     // Set initial open menu based on active URL
     const activeItem = navItems.find(item => {
       if (item.children && item.children.length > 0) {
-        return item.children.some((c: any) => url === c.href || url.startsWith(c.href + '/'));
+        return item.children.some((c: any) => {
+          const pathOnly = c.href.split('?')[0];
+          return url === pathOnly || url.startsWith(pathOnly + '/');
+        });
       }
       return url === item.href || url.startsWith(item.href + '/');
     });
@@ -207,7 +216,10 @@ function NavMain() {
           const hasChildren = item.children && item.children.length > 0;
           let isActive = false;
           if (hasChildren) {
-            isActive = item.children!.some((c: any) => url === c.href || url.startsWith(c.href + '/'));
+            isActive = item.children!.some((c: any) => {
+              const pathOnly = c.href.split('?')[0];
+              return url === pathOnly || url.startsWith(pathOnly + '/');
+            });
           } else {
             isActive = url === item.href || url.startsWith(item.href + '/');
           }
@@ -215,9 +227,9 @@ function NavMain() {
           if (!hasChildren) {
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  render={<Link to={item.href} />} 
-                  isActive={isActive} 
+                <SidebarMenuButton
+                  render={<Link to={item.href} />}
+                  isActive={isActive}
                   tooltip={{ children: item.title }}
                   className={isActive ? "bg-primary/10 text-primary font-semibold" : ""}
                 >
@@ -247,7 +259,10 @@ function NavMain() {
                 <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
                   <SidebarMenuSub>
                     {item.children.map((child) => {
-                      const childActive = url === child.href;
+                      const fullPath = location.pathname + location.search;
+                      const childActive = child.href.includes('?')
+                        ? (fullPath === child.href || (location.pathname === child.href.split('?')[0] && location.search === '' && child.href.endsWith('?tab=daily')))
+                        : (url === child.href);
                       return (
                         <SidebarMenuSubItem key={child.title}>
                           <SidebarMenuSubButton

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
 import { IndexPage } from '@/components/ui/index-page';
-import { Clock, Plus, LogOut, Pencil, CheckCircle } from 'lucide-react';
+import { Clock, Plus, LogOut, Pencil, CheckCircle, Sparkles } from 'lucide-react';
 import api from '@/lib/api';
 import {
     Dialog,
@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/SearchableSelect';
 
 export default function AttendanceIndex() {
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -414,11 +415,18 @@ export default function AttendanceIndex() {
                         </Button>
                     </div>
                 }
-                actions={[{
-                    label: 'Input Manual',
-                    icon: Plus,
-                    onClick: () => setOpenModal(true)
-                }]}
+                actions={[
+                    {
+                        label: 'Portal Presensi Mandiri',
+                        icon: Sparkles,
+                        onClick: () => navigate('/hr/my-attendance')
+                    },
+                    {
+                        label: 'Input Manual',
+                        icon: Plus,
+                        onClick: () => setOpenModal(true)
+                    }
+                ]}
                 data={displayedData}
                 columns={columns}
                 pagination={pagination}

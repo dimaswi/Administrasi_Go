@@ -46,7 +46,8 @@ import {
   ChevronRight,
   Settings,
   CalendarDays,
-  Mail
+  Mail,
+  UserCheck,
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AppLogoIcon from '@/components/AppLogoIcon';
@@ -173,18 +174,13 @@ const navItems = [
   },
   {
     title: 'Kepegawaian & Presensi',
-    href: '/hr/attendances',
+    href: '/hr/my-attendance',
     icon: Users,
     children: [
       { title: 'Riwayat Absensi & Pulang Cepat', href: '/hr/attendances' },
-      { title: 'Pemantauan Cuti', href: '/hr/leaves' },
+      { title: 'Izin & Cuti Karyawan', href: '/hr/leaves' },
       { title: 'Data Karyawan', href: '/hr/employees' },
     ],
-  },
-  {
-    title: 'Lokasi Presensi',
-    href: '/hr/master-data/work-location',
-    icon: Settings,
   },
 ];
 
@@ -196,8 +192,8 @@ function NavMain() {
 
   React.useEffect(() => {
     // Set initial open menu based on active URL
-    const activeItem = navItems.find(item => 
-      (url.startsWith(item.href) && item.href !== '/admin/dashboard') || 
+    const activeItem = navItems.find(item =>
+      (url.startsWith(item.href) && item.href !== '/admin/dashboard') ||
       (item.href === '/admin/dashboard' && url === '/admin/dashboard') ||
       (item.children && item.children.some((c: any) => url === c.href || url.startsWith(c.href + '/')))
     );

@@ -18,4 +18,6 @@ type RosterSchedule struct {
 	// Joined fields
 	EmployeeName     *string       `db:"employee_name" json:"employee_name,omitempty"`
 	WorkScheduleName *string       `db:"work_schedule_name" json:"work_schedule_name,omitempty"`
+	ClockInTime      *string       `db:"clock_in_time" json:"clock_in_time,omitempty"`
+	ClockOutTime     *string       `db:"clock_out_time" json:"clock_out_time,omitempty"`
 }

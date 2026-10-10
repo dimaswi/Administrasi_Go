@@ -20,5 +20,10 @@ type Attendance struct {
 	
 	// Optional relationships for joining
 	EmployeeName     *string `db:"employee_name" json:"employee_name,omitempty"`
+	EmployeeCode     *string `db:"employee_code" json:"employee_code,omitempty"`
+	UnitName         *string `db:"unit_name" json:"unit_name,omitempty"`
+	Position         *string `db:"position" json:"position,omitempty"`
 	WorkScheduleName *string `db:"work_schedule_name" json:"work_schedule_name,omitempty"`
+	ScheduleClockIn  *string `db:"schedule_clock_in" json:"schedule_clock_in,omitempty"`
+	ScheduleClockOut *string `db:"schedule_clock_out" json:"schedule_clock_out,omitempty"`
 }

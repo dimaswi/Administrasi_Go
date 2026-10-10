@@ -397,6 +397,9 @@ func (h *AttendanceHandler) GetAll(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("perPage", "10"))
 	search := c.Query("search")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+	status := c.Query("status")
 
 	if page < 1 {
 		page = 1
@@ -405,7 +408,21 @@ func (h *AttendanceHandler) GetAll(c *gin.Context) {
 		perPage = 10
 	}
 
-	response, err := h.repo.GetAll(page, perPage, search)
+	var empID *int
+	if empIDStr := c.Query("employee_id"); empIDStr != "" {
+		if id, err := strconv.Atoi(empIDStr); err == nil && id > 0 {
+			empID = &id
+		}
+	}
+
+	var unitID *int
+	if unitIDStr := c.Query("unit_id"); unitIDStr != "" {
+		if id, err := strconv.Atoi(unitIDStr); err == nil && id > 0 {
+			unitID = &id
+		}
+	}
+
+	response, err := h.repo.GetAllWithFilters(page, perPage, search, empID, unitID, startDate, endDate, status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch attendances"})
 		return
@@ -464,9 +481,9 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 
 	// 3b. Fallback: If JWT lookup produced no employee, try payload.EmployeeID
 	if emp == nil && h.employeeRepo != nil && payload.EmployeeID > 0 {
-		emp, _ = h.employeeRepo.GetByUserID(payload.EmployeeID)
+		emp, _ = h.employeeRepo.GetByID(payload.EmployeeID)
 		if emp == nil {
-			emp, _ = h.employeeRepo.GetByID(payload.EmployeeID)
+			emp, _ = h.employeeRepo.GetByUserID(payload.EmployeeID)
 		}
 	}
 
@@ -520,29 +537,34 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 		status = "present"
 	}
 
-	shiftStart, tolerance, autoWSID, ok := h.repo.GetWorkScheduleForEmployee(realEmpID, dateStr)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Pegawai tidak memiliki jadwal pada tanggal tersebut"})
+	// 1. Check if employee has an active OPEN session (ClockIn recorded, ClockOut pending)
+	activeAtt, _ := h.repo.GetActiveAttendanceForEmployee(realEmpID, dateStr)
+	if activeAtt != nil {
+		// Smart Auto-Divert to Check-Out if currently in an active session!
+		if err := h.repo.CheckOut(realEmpID, dateStr, timeStr); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal check-out: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"id":        activeAtt.ID,
+			"message":   "Check-out berhasil (Presensi Pulang)",
+			"action":    "check-out",
+			"clock_out": timeStr,
+		})
 		return
 	}
 
-	existing, _ := h.repo.GetByEmployeeIDAndDate(realEmpID, dateStr)
-	if existing != nil {
-		if existing.ClockOut == nil {
-			// Smart Auto-Divert to Check-Out if already checked in today!
-			if err := h.repo.CheckOut(realEmpID, dateStr, timeStr); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal check-out: " + err.Error()})
-				return
-			}
-			c.JSON(http.StatusOK, gin.H{
-				"id":        existing.ID,
-				"message":   "Check-out berhasil (Presensi Pulang)",
-				"action":    "check-out",
-				"clock_out": timeStr,
-			})
+	// 2. No open session -> Start a new Check-In!
+	// Match next work schedule for employee at this date and time
+	shiftStart, tolerance, autoWSID, ok := h.repo.GetMatchingWorkSchedule(realEmpID, dateStr, timeStr)
+	if !ok {
+		completedIDs, _ := h.repo.GetCompletedWorkScheduleIDs(realEmpID, dateStr)
+		completedCount := h.repo.GetCompletedAttendanceCount(realEmpID, dateStr)
+		if len(completedIDs) > 0 || completedCount > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Semua sesi jadwal shift Anda untuk hari ini sudah selesai diabsen."})
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Anda sudah melakukan Presensi Masuk & Pulang untuk hari ini."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Hari ini Anda libur (tidak memiliki jadwal kerja)."})
 		return
 	}
 
@@ -629,9 +651,9 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 
 	// 3b. Fallback: If JWT lookup produced no employee, try payload.EmployeeID
 	if emp == nil && h.employeeRepo != nil && payload.EmployeeID > 0 {
-		emp, _ = h.employeeRepo.GetByUserID(payload.EmployeeID)
+		emp, _ = h.employeeRepo.GetByID(payload.EmployeeID)
 		if emp == nil {
-			emp, _ = h.employeeRepo.GetByID(payload.EmployeeID)
+			emp, _ = h.employeeRepo.GetByUserID(payload.EmployeeID)
 		}
 	}
 
@@ -680,16 +702,27 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 		timeStr += ":00"
 	}
 
-	_, _, _, hasSchedule := h.repo.GetWorkScheduleForEmployee(realEmpID, dateStr)
-	if !hasSchedule {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Pegawai tidak memiliki jadwal pada tanggal tersebut"})
-		return
-	}
+	activeAtt, _ := h.repo.GetActiveAttendanceForEmployee(realEmpID, dateStr)
+	if activeAtt == nil {
+		// Check if there are completed sessions today
+		completedIDs, _ := h.repo.GetCompletedWorkScheduleIDs(realEmpID, dateStr)
+		if len(completedIDs) > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tidak ada sesi presensi masuk yang sedang berjalan untuk hari ini."})
+			return
+		}
 
-	existing, err := h.repo.GetByEmployeeIDAndDate(realEmpID, dateStr)
-	if err != nil || existing == nil {
-		// Smart Auto-Divert to CheckIn if no check-in record exists today!
-		shiftStart, tolerance, autoWSID, _ := h.repo.GetWorkScheduleForEmployee(realEmpID, dateStr)
+		// Smart Auto-Divert to CheckIn if no check-in record exists today at all
+		shiftStart, tolerance, autoWSID, hasSchedule := h.repo.GetMatchingWorkSchedule(realEmpID, dateStr, timeStr)
+		if !hasSchedule {
+			completedIDs, _ := h.repo.GetCompletedWorkScheduleIDs(realEmpID, dateStr)
+			completedCount := h.repo.GetCompletedAttendanceCount(realEmpID, dateStr)
+			if len(completedIDs) > 0 || completedCount > 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Semua sesi jadwal shift Anda untuk hari ini sudah selesai diabsen."})
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Hari ini Anda libur (tidak memiliki jadwal kerja)."})
+			return
+		}
 		status := "present"
 		attendance := models.Attendance{
 			EmployeeID:     realEmpID,
@@ -716,10 +749,6 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 			"action":   "check-in",
 			"clock_in": timeStr,
 		})
-		return
-	}
-	if existing.ClockOut != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Anda sudah melakukan Presensi Masuk & Pulang untuk hari ini."})
 		return
 	}
 
@@ -775,3 +804,43 @@ func (h *AttendanceHandler) Update(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Absensi berhasil diupdate"})
 }
+
+func (h *AttendanceHandler) resolveEmployeeID(id int) int {
+	emp, _ := h.employeeRepo.GetByID(id)
+	if emp != nil && emp.ID > 0 {
+		return emp.ID
+	}
+	emp, _ = h.employeeRepo.GetByUserID(id)
+	if emp != nil && emp.ID > 0 {
+		return emp.ID
+	}
+	return id
+}
+
+func (h *AttendanceHandler) GetTodayStatus(c *gin.Context) {
+	empIDStr := c.Query("employee_id")
+	if empIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "employee_id wajib diisi"})
+		return
+	}
+	empID, err := strconv.Atoi(empIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "employee_id tidak valid"})
+		return
+	}
+
+	realEmpID := h.resolveEmployeeID(empID)
+
+	dateStr := c.Query("date")
+	if dateStr == "" {
+		dateStr = time.Now().Format("2006-01-02")
+	}
+	timeStr := c.Query("time")
+	if timeStr == "" {
+		timeStr = time.Now().Format("15:04:05")
+	}
+
+	statusInfo := h.repo.GetTodayScheduleInfo(realEmpID, dateStr, timeStr)
+	c.JSON(http.StatusOK, gin.H{"data": statusInfo})
+}
+

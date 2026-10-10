@@ -42,6 +42,7 @@ import HrLayout from './layouts/hr-layout';
 import AdminLayout from './layouts/admin-layout';
 import MeetingCheckin from './pages/MeetingCheckin/index';
 import AttendanceIndex from './pages/HR/Attendance/index';
+import MyAttendancePortal from './pages/HR/MyAttendance/index';
 import LeaveMonitoring from './pages/HR/Leave/index';
 
 import RoomIndex from './pages/Admin/Room/index';
@@ -83,6 +84,7 @@ import LeaveTypeCreate from './pages/HR/MasterData/LeaveType/create';
 import LeaveTypeEdit from './pages/HR/MasterData/LeaveType/edit';
 import LeaveTypeShow from './pages/HR/MasterData/LeaveType/show';
 import WorkLocationIndex from './pages/HR/MasterData/WorkLocation/index';
+import AttendanceReport from './pages/HR/Reports/AttendanceReport';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -166,7 +168,10 @@ function App() {
           <Route path="/hr/shift-exchanges" element={<ProtectedRoute><ShiftExchangeIndex /></ProtectedRoute>} />
           <Route path="/hr/shift-exchanges/create" element={<ProtectedRoute><ShiftExchangeCreate /></ProtectedRoute>} />
           <Route path="/hr/attendances" element={<ProtectedRoute><AttendanceIndex /></ProtectedRoute>} />
+          <Route path="/hr/my-attendance" element={<ProtectedRoute><MyAttendancePortal /></ProtectedRoute>} />
+          <Route path="/my-attendance" element={<ProtectedRoute><MyAttendancePortal /></ProtectedRoute>} />
           <Route path="/hr/leaves" element={<ProtectedRoute><LeaveMonitoring /></ProtectedRoute>} />
+          <Route path="/hr/reports/attendance" element={<ProtectedRoute><AttendanceReport /></ProtectedRoute>} />
 
           <Route path="/admin/incoming-letters" element={<ProtectedRoute><IncomingLetterIndex /></ProtectedRoute>} />
           <Route path="/admin/incoming-letters/create" element={<ProtectedRoute><IncomingLetterCreate /></ProtectedRoute>} />

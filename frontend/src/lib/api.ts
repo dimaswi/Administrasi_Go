@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-// Base URL detection: In production Docker (port 80), use relative URL '' (handled by Nginx reverse proxy).
-// In local dev (port 5173), fallback to http://localhost:8080
+// Base URL detection:
+// - If VITE_API_URL is explicitly set, use it.
+// - In dev (Vite proxy) & prod (Nginx reverse proxy), relative '' ensures seamless access from desktop, mobile LAN, and tunnels.
 export const API_BASE_URL = 
   import.meta.env.VITE_API_URL 
     ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
-    : (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '5173' ? 'http://localhost:8080' : '');
+    : '';
 
 export const getApiUrl = (path: string): string => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;

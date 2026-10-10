@@ -23,6 +23,9 @@ func (h *RosterScheduleHandler) GetAll(c *gin.Context) {
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "1000"))
 	search := c.Query("search")
 	employeeID, _ := strconv.Atoi(c.Query("employee_id"))
+	date := c.Query("date")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
 
 	if page < 1 {
 		page = 1
@@ -31,7 +34,7 @@ func (h *RosterScheduleHandler) GetAll(c *gin.Context) {
 		perPage = 10
 	}
 
-	response, err := h.repo.GetAll(page, perPage, search, employeeID)
+	response, err := h.repo.GetAll(page, perPage, search, employeeID, date, startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch rosters"})
 		return
@@ -79,6 +82,7 @@ func (h *RosterScheduleHandler) AssignShift(c *gin.Context) {
 	var payload struct {
 		EmployeeID     int    `json:"employee_id"`
 		WorkScheduleID int    `json:"work_schedule_id"` // 0 means delete
+		DeleteShiftID  int    `json:"delete_shift_id"`  // specific shift to delete
 		Date           string `json:"date"`             // YYYY-MM-DD
 	}
 
@@ -87,8 +91,8 @@ func (h *RosterScheduleHandler) AssignShift(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.AssignShift(payload.EmployeeID, payload.Date, payload.WorkScheduleID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign shift"})
+	if err := h.repo.AssignShift(payload.EmployeeID, payload.Date, payload.WorkScheduleID, payload.DeleteShiftID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -104,6 +108,7 @@ func (h *RosterScheduleHandler) AutoGenerate(c *gin.Context) {
 		WorkDaysPattern string `json:"work_days_pattern"`
 		OffDaysCount    int    `json:"off_days_count"`
 		WorkScheduleIDs []int  `json:"work_schedule_ids"`
+		StaffPerShift   int    `json:"staff_per_shift"`
 		Overwrite       bool   `json:"overwrite"`
 		CheckOnly       bool   `json:"check_only"`
 	}
@@ -123,7 +128,7 @@ func (h *RosterScheduleHandler) AutoGenerate(c *gin.Context) {
 		return
 	}
 
-	err := h.repo.AutoGenerate(payload.EmployeeID, payload.UnitID, payload.StartDate, payload.EndDate, payload.WorkDaysPattern, payload.WorkScheduleIDs, payload.Overwrite, payload.OffDaysCount)
+	err := h.repo.AutoGenerate(payload.EmployeeID, payload.UnitID, payload.StartDate, payload.EndDate, payload.WorkDaysPattern, payload.WorkScheduleIDs, payload.Overwrite, payload.OffDaysCount, payload.StaffPerShift)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

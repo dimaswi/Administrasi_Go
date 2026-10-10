@@ -55,7 +55,7 @@ export default function Login() {
             localStorage.setItem('token', response.data.token);
             // Use window.location.href instead of navigate to force a full app reload
             // This ensures AuthContext fetches the new user and permissions from /auth/me
-            window.location.href = '/dashboard';
+            window.location.href = '/hr/my-attendance';
         } catch (err: any) {
             setErrors({
                 nip: err.response?.data?.error || 'Failed to login. Please check your credentials.'
