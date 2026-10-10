@@ -4,12 +4,15 @@
 # ============================================================
 
 # ---- Stage 1: Build ----
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
 # Install dependencies untuk build (CGO disabled untuk binary statis)
 RUN apk add --no-cache git
+
+# Pastikan toolchain sesuai dengan go.mod
+ENV GOTOOLCHAIN=local
 
 # Copy go.mod dan go.sum terlebih dahulu agar layer cache optimal
 COPY go.mod go.sum ./
