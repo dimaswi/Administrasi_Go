@@ -30,6 +30,11 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Disposition")
 		c.Writer.Header().Add("Vary", "Origin")
 
+		// Prevent browsers (like Brave) from caching API responses (e.g. auth/me, permissions)
+		c.Writer.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Writer.Header().Set("Pragma", "no-cache")
+		c.Writer.Header().Set("Expires", "0")
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
