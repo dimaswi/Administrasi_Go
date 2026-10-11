@@ -28,6 +28,12 @@ func RequirePermission(roleRepo *repository.RoleRepository, requiredPermission s
 			return
 		}
 
+		// Admin roles (1: administrator, 7: admin) have full access to all endpoints
+		if roleID == 1 || roleID == 7 {
+			c.Next()
+			return
+		}
+
 		// Fetch permissions for this role
 		permissions, err := roleRepo.GetPermissionsByRoleID(roleID)
 		if err != nil {

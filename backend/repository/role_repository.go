@@ -38,6 +38,12 @@ func (r *RoleRepository) GetPermissionsByRoleID(roleID int) ([]string, error) {
 	return permissions, err
 }
 
+func (r *RoleRepository) GetAllPermissionNames() ([]string, error) {
+	permissions := []string{}
+	err := r.db.Select(&permissions, "SELECT name FROM permissions")
+	return permissions, err
+}
+
 func (r *RoleRepository) GetPermissionIDsByRoleID(roleID int) ([]int, error) {
 	permissionIDs := []int{}
 	query := `SELECT permission_id FROM role_permission WHERE role_id = $1`

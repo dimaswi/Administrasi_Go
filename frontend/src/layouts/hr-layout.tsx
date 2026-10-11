@@ -53,6 +53,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AppLogoIcon from '@/components/AppLogoIcon';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { EmployeeSearchDialog } from '@/components/EmployeeSearchDialog';
 
 // --- Workspace Switcher ---
@@ -152,39 +153,41 @@ const navItems = [
     title: 'Dashboard Presensi',
     href: '/hr/dashboard',
     icon: LayoutDashboard,
+    permission: 'dashboard.view',
   },
   {
     title: 'Karyawan',
     href: '/hr/employees',
     icon: Users,
     children: [
-      { title: 'Data Karyawan', href: '/hr/employees' },
-      { title: 'Jadwal Karyawan', href: '/hr/rosters/planner' },
-      { title: 'Tukar Shift', href: '/hr/shift-exchanges' },
-      { title: 'Riwayat Absensi (Admin)', href: '/hr/attendances' },
-      { title: 'Izin & Cuti Karyawan', href: '/hr/leaves' },
+      { title: 'Data Karyawan', href: '/hr/employees', permission: 'employee.view' },
+      { title: 'Jadwal Karyawan', href: '/hr/rosters/planner', permission: 'roster.view' },
+      { title: 'Tukar Shift', href: '/hr/shift-exchanges', permission: 'shift_exchange.view' },
+      { title: 'Riwayat Absensi (Admin)', href: '/hr/attendances', permission: 'attendance.view' },
+      { title: 'Izin & Cuti Karyawan', href: '/hr/leaves', permission: 'leave.view' },
     ],
   },
   {
     title: 'Rekap Absensi',
     href: '/hr/reports/attendance',
     icon: FileSpreadsheet,
+    permission: 'report.view',
   },
   {
     title: 'Master Data',
     href: '/hr/access/users',
     icon: Settings2,
     children: [
-      { title: 'Daftar User', href: '/hr/access/users' },
-      { title: 'Daftar Role', href: '/hr/access/roles' },
-      { title: 'Daftar Permission', href: '/hr/access/permissions' },
-      { title: 'Unit Organisasi', href: '/hr/organizations' },
-      { title: 'Kategori Pekerjaan', href: '/hr/master-data/jobcategory' },
-      { title: 'Status Kepegawaian', href: '/hr/master-data/employmentstatus' },
-      { title: 'Tingkat Pendidikan', href: '/hr/master-data/educationlevel' },
-      { title: 'Jenis Cuti', href: '/hr/master-data/leavetype' },
-      { title: 'Lokasi Presensi (GPS)', href: '/hr/master-data/work-location' },
-      { title: 'Master Shift', href: '/hr/work-schedules' },
+      { title: 'Daftar User', href: '/hr/access/users', permission: 'user.view' },
+      { title: 'Daftar Role', href: '/hr/access/roles', permission: 'role.view' },
+      { title: 'Daftar Permission', href: '/hr/access/permissions', permission: 'permission.view' },
+      { title: 'Unit Organisasi', href: '/hr/organizations', permission: 'organization.view' },
+      { title: 'Kategori Pekerjaan', href: '/hr/master-data/jobcategory', permission: 'job_category.view' },
+      { title: 'Status Kepegawaian', href: '/hr/master-data/employmentstatus', permission: 'employment_status.view' },
+      { title: 'Tingkat Pendidikan', href: '/hr/master-data/educationlevel', permission: 'education_level.view' },
+      { title: 'Jenis Cuti', href: '/hr/master-data/leavetype', permission: 'leave_type.view' },
+      { title: 'Lokasi Presensi (GPS)', href: '/hr/master-data/work-location', permission: 'work_location.view' },
+      { title: 'Master Shift', href: '/hr/work-schedules', permission: 'work_schedule.view' },
     ],
   },
 ];
@@ -193,6 +196,7 @@ function NavMain() {
   const location = useLocation();
   const url = location.pathname;
   const [openMenu, setOpenMenu] = React.useState<string | null>(null);
+  const { hasPermission, isAdmin } = useAuth();
 
   React.useEffect(() => {
     // Set initial open menu based on active URL
@@ -214,10 +218,23 @@ function NavMain() {
     <SidebarGroup className="px-2 py-0">
       <SidebarMenu>
         {navItems.map((item) => {
-          const hasChildren = item.children && item.children.length > 0;
+          let itemChildren = item.children;
+          if (itemChildren && !isAdmin) {
+            itemChildren = itemChildren.filter((c: any) => !c.permission || hasPermission(c.permission));
+          }
+
+          if (itemChildren && itemChildren.length === 0) {
+            return null;
+          }
+
+          if (item.permission && !isAdmin && !hasPermission(item.permission)) {
+            return null;
+          }
+
+          const hasChildren = itemChildren && itemChildren.length > 0;
           let isActive = false;
           if (hasChildren) {
-            isActive = item.children!.some((c: any) => {
+            isActive = itemChildren!.some((c: any) => {
               const pathOnly = c.href.split('?')[0];
               return url === pathOnly || url.startsWith(pathOnly + '/');
             });
@@ -290,7 +307,17 @@ function NavMain() {
 function NavUser() {
   const { state } = useSidebar();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const isCollapsed = state === 'collapsed';
+
+  const name = user?.name || 'Pengguna';
+  const nipOrEmail = user?.nip || 'Pegawai';
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0].toUpperCase())
+    .join('') || 'US';
 
   return (
     <SidebarMenu className="px-2">
@@ -298,10 +325,10 @@ function NavUser() {
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent">
             <div className="flex items-center gap-2 flex-1 text-left text-sm leading-tight">
-              <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">AD</div>
+              <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">{initials}</div>
               <div className="grid flex-1">
-                <span className="truncate font-semibold">Admin</span>
-                <span className="truncate text-xs text-muted-foreground">admin@admin.com</span>
+                <span className="truncate font-semibold">{name}</span>
+                <span className="truncate text-xs text-muted-foreground">{nipOrEmail}</span>
               </div>
             </div>
             <ChevronsUpDown className="ml-auto size-4" />
@@ -314,10 +341,10 @@ function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
-                  <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">AD</div>
+                  <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">{initials}</div>
                   <div className="grid flex-1">
-                    <span className="truncate font-semibold">Admin</span>
-                    <span className="truncate text-xs text-muted-foreground">admin@admin.com</span>
+                    <span className="truncate font-semibold">{name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{nipOrEmail}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -330,10 +357,7 @@ function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {
-              localStorage.removeItem('token');
-              window.location.href = '/login';
-            }}>
+            <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>

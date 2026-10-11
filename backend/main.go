@@ -3,6 +3,7 @@ package main
 import (
 	"backend/config"
 	"backend/routes"
+	"backend/seeder"
 	"log"
 	"os"
 	"strconv"
@@ -34,6 +35,9 @@ func main() {
 
 	db := config.ConnectDB(dbCfg)
 	defer db.Close()
+
+	// Ensure all permissions across all modules are registered in database
+	_ = seeder.SeedAllPermissions(db)
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {

@@ -168,8 +168,8 @@ const navItems = [
     href: '/admin/meetings',
     icon: CalendarDays,
     children: [
-      { title: 'Daftar Rapat', href: '/admin/meetings' },
-      { title: 'Daftar Ruangan', href: '/admin/rooms' },
+      { title: 'Daftar Rapat', href: '/admin/meetings', permission: 'meeting.view' },
+      { title: 'Daftar Ruangan', href: '/admin/rooms', permission: 'room.view' },
     ],
   },
   {
@@ -177,9 +177,9 @@ const navItems = [
     href: '/hr/my-attendance',
     icon: Users,
     children: [
-      { title: 'Riwayat Absensi & Pulang Cepat', href: '/hr/attendances' },
-      { title: 'Izin & Cuti Karyawan', href: '/hr/leaves' },
-      { title: 'Data Karyawan', href: '/hr/employees' },
+      { title: 'Riwayat Absensi & Pulang Cepat', href: '/hr/attendances', permission: 'attendance.view' },
+      { title: 'Izin & Cuti Karyawan', href: '/hr/leaves', permission: 'leave.view' },
+      { title: 'Data Karyawan', href: '/hr/employees', permission: 'employee.view' },
     ],
   },
 ];
@@ -274,7 +274,17 @@ function NavMain() {
 function NavUser() {
   const { state } = useSidebar();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const isCollapsed = state === 'collapsed';
+
+  const name = user?.name || 'Pengguna';
+  const nipOrEmail = user?.nip || 'Pegawai';
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0].toUpperCase())
+    .join('') || 'US';
 
   return (
     <SidebarMenu className="px-2">
@@ -282,10 +292,10 @@ function NavUser() {
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent">
             <div className="flex items-center gap-2 flex-1 text-left text-sm leading-tight">
-              <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">AD</div>
+              <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">{initials}</div>
               <div className="grid flex-1">
-                <span className="truncate font-semibold">Admin</span>
-                <span className="truncate text-xs text-muted-foreground">admin@admin.com</span>
+                <span className="truncate font-semibold">{name}</span>
+                <span className="truncate text-xs text-muted-foreground">{nipOrEmail}</span>
               </div>
             </div>
             <ChevronsUpDown className="ml-auto size-4" />
@@ -298,10 +308,10 @@ function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
-                  <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">AD</div>
+                  <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">{initials}</div>
                   <div className="grid flex-1">
-                    <span className="truncate font-semibold">Admin</span>
-                    <span className="truncate text-xs text-muted-foreground">admin@admin.com</span>
+                    <span className="truncate font-semibold">{name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{nipOrEmail}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -314,10 +324,7 @@ function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {
-              localStorage.removeItem('token');
-              window.location.href = '/login';
-            }}>
+            <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>

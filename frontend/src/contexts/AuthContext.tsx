@@ -12,6 +12,7 @@ interface AuthContextType {
   user: User | null;
   permissions: string[];
   loading: boolean;
+  isAdmin: boolean;
   hasPermission: (permission: string) => boolean;
   logout: () => void;
 }
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   permissions: [],
   loading: true,
+  isAdmin: false,
   hasPermission: () => false,
   logout: () => {},
 });
@@ -53,7 +55,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     fetchMe();
   }, []);
 
+  const isAdmin = user
+    ? Number(user.role_id) === 1 || Number(user.role_id) === 7 || permissions.includes('*')
+    : false;
+
   const hasPermission = (permission: string) => {
+    if (isAdmin) return true;
     return permissions.includes(permission);
   };
 
@@ -65,7 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, permissions, loading, hasPermission, logout }}>
+    <AuthContext.Provider value={{ user, permissions, loading, isAdmin, hasPermission, logout }}>
       {children}
     </AuthContext.Provider>
   );

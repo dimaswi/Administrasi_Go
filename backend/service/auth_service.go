@@ -77,9 +77,18 @@ func (s *AuthService) GetMe(userID int) (*models.User, []string, error) {
 
 	var permissions []string
 	if user.RoleID != nil {
-		perms, err := s.roleRepo.GetPermissionsByRoleID(*user.RoleID)
-		if err == nil {
-			permissions = perms
+		if *user.RoleID == 1 || *user.RoleID == 7 {
+			allPerms, errPerm := s.roleRepo.GetAllPermissionNames()
+			if errPerm == nil && len(allPerms) > 0 {
+				permissions = allPerms
+			} else {
+				permissions = []string{"*"}
+			}
+		} else {
+			perms, err := s.roleRepo.GetPermissionsByRoleID(*user.RoleID)
+			if err == nil {
+				permissions = perms
+			}
 		}
 	}
 

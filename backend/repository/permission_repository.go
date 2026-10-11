@@ -2,6 +2,7 @@ package repository
 
 import (
 	"backend/models"
+	"backend/seeder"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -15,6 +16,9 @@ func NewPermissionRepository(db *sqlx.DB) *PermissionRepository {
 }
 
 func (r *PermissionRepository) GetAll() ([]models.Permission, error) {
+	// Auto-seed to ensure all modules are registered
+	_ = seeder.SeedAllPermissions(r.db)
+
 	permissions := []models.Permission{}
 	err := r.db.Select(&permissions, "SELECT * FROM permissions ORDER BY module, name")
 	return permissions, err
