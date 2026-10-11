@@ -148,6 +148,9 @@ export default function MyAttendancePortal() {
   const [scheduleCenterDate, setScheduleCenterDate] = useState<Date>(new Date());
   const [disciplineMonthDate, setDisciplineMonthDate] = useState<Date>(new Date());
   const [allAttendances, setAllAttendances] = useState<any[]>([]);
+  const [rosterSchedules, setRosterSchedules] = useState<any[]>([]);
+  const [employeeSchedules, setEmployeeSchedules] = useState<any[]>([]);
+  const [workSchedules, setWorkSchedules] = useState<any[]>([]);
 
   // Leave History & Form State
   const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
@@ -461,12 +464,46 @@ export default function MyAttendancePortal() {
     }
   };
 
+  // Fetch Roster Schedules, Employee Weekly Schedules, and Master Work Schedules
+  const fetchSchedules = async (empId?: number, usrId?: number) => {
+    const targetEmpId = empId || employee?.id;
+    const targetUserId = usrId || employee?.user_id || user?.id;
+    if (!targetEmpId) return;
+
+    try {
+      const [rosterRes, empSchedRes, wsRes] = await Promise.allSettled([
+        api.get(`/roster-schedules?employee_id=${targetEmpId}&per_page=1000`),
+        targetUserId ? api.get(`/employee-schedules?user_id=${targetUserId}`) : Promise.resolve({ data: [] } as any),
+        api.get('/work-schedules'),
+      ]);
+
+      if (rosterRes.status === 'fulfilled') {
+        const raw = rosterRes.value.data;
+        const list = Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : []);
+        setRosterSchedules(list);
+      }
+      if (empSchedRes.status === 'fulfilled') {
+        const raw = empSchedRes.value.data;
+        const list = Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : []);
+        setEmployeeSchedules(list);
+      }
+      if (wsRes.status === 'fulfilled') {
+        const raw = wsRes.value.data;
+        const list = Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : []);
+        setWorkSchedules(list);
+      }
+    } catch (e) {
+      console.error('Failed to load schedules', e);
+    }
+  };
+
   useEffect(() => {
     if (employee?.id) {
       fetchTodayData();
       fetchAttendanceHistory();
       fetchLeaveHistory();
       fetchAllAttendances();
+      fetchSchedules();
     }
   }, [employee, attendancePage, attendanceFilter]);
 
@@ -1089,6 +1126,61 @@ export default function MyAttendancePortal() {
 
           const selectedLeave = getLeaveForDay(selectedScheduleDate);
 
+          // Resolve schedule for any date (from roster or regular weekly shifts)
+          const getScheduleForDay = (date: Date) => {
+            const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+            // 1. Check roster schedule
+            const roster = rosterSchedules.find((r: any) => (r.date || '').substring(0, 10) === dateKey);
+            if (roster) {
+              const ws = workSchedules.find((w: any) => w.id === roster.work_schedule_id);
+              return {
+                name: roster.work_schedule_name || ws?.name || 'Shift Roster',
+                clockIn: roster.clock_in_time || ws?.clock_in_time || '08:00',
+                clockOut: roster.clock_out_time || ws?.clock_out_time || '16:00',
+                isRoster: true,
+              };
+            }
+
+            // 2. Check regular weekly employee schedule
+            const dayOfWeek = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            const shiftColMap = [
+              'sunday_shift_id',
+              'monday_shift_id',
+              'tuesday_shift_id',
+              'wednesday_shift_id',
+              'thursday_shift_id',
+              'friday_shift_id',
+              'saturday_shift_id',
+            ];
+            const colName = shiftColMap[dayOfWeek];
+
+            const matchedES = employeeSchedules.find((es: any) => {
+              const start = (es.start_date || '').substring(0, 10);
+              const end = (es.end_date || '').substring(0, 10);
+              if (start && dateKey < start) return false;
+              if (end && dateKey > end) return false;
+              return true;
+            });
+
+            if (matchedES && matchedES[colName]) {
+              const wsId = matchedES[colName];
+              const ws = workSchedules.find((w: any) => w.id === wsId);
+              if (ws) {
+                return {
+                  name: ws.name,
+                  clockIn: ws.clock_in_time,
+                  clockOut: ws.clock_out_time,
+                  isRoster: false,
+                };
+              }
+            }
+
+            return null;
+          };
+
+          const selectedSchedule = getScheduleForDay(selectedScheduleDate);
+
           const getDayStatusDot = (date: Date) => {
             const leaveOnDay = getLeaveForDay(date);
             if (leaveOnDay) return 'bg-amber-500';
@@ -1109,6 +1201,12 @@ export default function MyAttendancePortal() {
               if (todayAttendance?.clock_in) return 'bg-emerald-500';
               return 'bg-primary';
             }
+
+            const sched = getScheduleForDay(date);
+            if (sched) {
+              return 'bg-blue-500';
+            }
+
             return 'bg-slate-300 dark:bg-slate-700';
           };
 
@@ -1278,10 +1376,12 @@ export default function MyAttendancePortal() {
                           ) : todayStatusInfo?.is_day_off ? (
                             <span className="text-blue-600 dark:text-blue-400 font-medium">Libur (Tidak Ada Jadwal)</span>
                           ) : (
-                            todayAttendance?.work_schedule_name || todayStatusInfo?.shift_name || todaySchedule?.work_schedule_name || 'Shift Terjadwal'
+                            todayAttendance?.work_schedule_name || todayStatusInfo?.shift_name || todaySchedule?.work_schedule_name || selectedSchedule?.name || 'Shift Terjadwal'
                           )
                         ) : selectedAtt ? (
-                          selectedAtt.work_schedule_name || 'Shift Terjadwal'
+                          selectedAtt.work_schedule_name || selectedSchedule?.name || 'Shift Terjadwal'
+                        ) : selectedSchedule ? (
+                          <span className="text-foreground">{selectedSchedule.name}</span>
                         ) : (
                           <span className="text-muted-foreground">Tidak Ada Jadwal / Libur</span>
                         )}
@@ -1292,19 +1392,25 @@ export default function MyAttendancePortal() {
                       <span className="font-semibold text-foreground font-mono block mt-0.5">
                         {selectedLeave ? (
                           <span className="text-xs text-amber-600 font-sans">--:-- (Cuti)</span>
-                        ) : selectedAtt?.clock_in
-                          ? formatTime(selectedAtt.clock_in)
-                          : isSelectedDateToday
-                            ? todayAttendance?.clock_in
-                              ? formatTime(todayAttendance.clock_in)
-                              : todayStatusInfo?.is_on_leave
-                                ? '--:-- (Cuti)'
-                                : todayStatusInfo?.is_day_off
+                        ) : isSelectedDateToday ? (
+                          todayAttendance?.clock_in
+                            ? formatTime(todayAttendance.clock_in)
+                            : todayStatusInfo?.is_on_leave
+                              ? '--:-- (Cuti)'
+                              : todayStatusInfo?.is_day_off
                                 ? '--:--'
                                 : todayStatusInfo?.clock_in_time
                                   ? formatTime(todayStatusInfo.clock_in_time)
-                                  : '--:--'
-                            : '--:--'}
+                                  : selectedSchedule?.clockIn
+                                    ? formatTime(selectedSchedule.clockIn)
+                                    : '--:--'
+                        ) : selectedAtt?.clock_in ? (
+                          formatTime(selectedAtt.clock_in)
+                        ) : selectedSchedule?.clockIn ? (
+                          formatTime(selectedSchedule.clockIn)
+                        ) : (
+                          '--:--'
+                        )}
                         {selectedAtt?.late_minutes > 0 && (
                           <span className="text-[10px] text-amber-600 font-sans block">
                             +{selectedAtt.late_minutes}m terlambat
@@ -1317,19 +1423,25 @@ export default function MyAttendancePortal() {
                       <span className="font-semibold text-foreground font-mono block mt-0.5">
                         {selectedLeave ? (
                           <span className="text-xs text-amber-600 font-sans">--:-- (Cuti)</span>
-                        ) : selectedAtt?.clock_out
-                          ? formatTime(selectedAtt.clock_out)
-                          : isSelectedDateToday
-                            ? todayAttendance?.clock_out
-                              ? formatTime(todayAttendance.clock_out)
-                              : todayStatusInfo?.is_on_leave
-                                ? '--:-- (Cuti)'
-                                : todayStatusInfo?.is_day_off
+                        ) : isSelectedDateToday ? (
+                          todayAttendance?.clock_out
+                            ? formatTime(todayAttendance.clock_out)
+                            : todayStatusInfo?.is_on_leave
+                              ? '--:-- (Cuti)'
+                              : todayStatusInfo?.is_day_off
                                 ? '--:--'
                                 : todayStatusInfo?.clock_out_time
                                   ? formatTime(todayStatusInfo.clock_out_time)
-                                  : '--:--'
-                            : '--:--'}
+                                  : selectedSchedule?.clockOut
+                                    ? formatTime(selectedSchedule.clockOut)
+                                    : '--:--'
+                        ) : selectedAtt?.clock_out ? (
+                          formatTime(selectedAtt.clock_out)
+                        ) : selectedSchedule?.clockOut ? (
+                          formatTime(selectedSchedule.clockOut)
+                        ) : (
+                          '--:--'
+                        )}
                       </span>
                     </div>
                   </div>

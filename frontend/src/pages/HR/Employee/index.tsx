@@ -195,6 +195,17 @@ export default function EmployeeIndex() {
         setAccountPasswordConfirm("");
         setAccountLinkMode("new");
         setSelectedUserIdToLink("");
+
+        // Populate role from linked user or default
+        const linkedUser = users.find(u => u.id === emp.user_id);
+        if (linkedUser && linkedUser.role_id) {
+            setAccountRoleId(linkedUser.role_id);
+        } else if (roles.length > 0) {
+            setAccountRoleId(roles[0].id);
+        } else {
+            setAccountRoleId(0);
+        }
+
         setAccountModalOpen(true);
     };
 
@@ -210,13 +221,17 @@ export default function EmployeeIndex() {
             }
             payload = { user_id: parseInt(selectedUserIdToLink) };
         } else {
+            if (!selectedEmployeeForAccount.user_id && (!accountRoleId || accountRoleId <= 0)) {
+                toast.error("Silakan pilih Role Akses terlebih dahulu!");
+                return;
+            }
             if (accountPassword !== accountPasswordConfirm) {
                 toast.error("Password dan Konfirmasi Password tidak cocok!");
                 return;
             }
             payload = {
                 password: accountPassword,
-                role_id: accountRoleId
+                role_id: accountRoleId > 0 ? accountRoleId : undefined
             };
         }
 
@@ -225,11 +240,12 @@ export default function EmployeeIndex() {
             await api.post(`/employees/${selectedEmployeeForAccount.id}/account`, payload);
             toast.success(
                 selectedEmployeeForAccount.user_id 
-                ? "Password berhasil diupdate!" 
+                ? "Password dan role berhasil diupdate!" 
                 : (accountLinkMode === "link" ? "Akun berhasil ditautkan!" : "Akun berhasil dibuat dan disambungkan!")
             );
             setAccountModalOpen(false);
             fetchData();
+            fetchUsers();
         } catch (error: any) {
             toast.error(error.response?.data?.error || "Gagal mengelola akun");
         } finally {
@@ -552,7 +568,7 @@ export default function EmployeeIndex() {
                                     <div className="space-y-2">
                                         <Label>Role Akses</Label>
                                         <SearchableSelect 
-                                            value={accountRoleId.toString()}
+                                            value={accountRoleId && accountRoleId > 0 ? accountRoleId.toString() : ""}
                                             onValueChange={(val) => setAccountRoleId(Number(val))}
                                             placeholder="Pilih Role..."
                                             options={roles.map(r => ({ value: r.id.toString(), label: r.name }))}

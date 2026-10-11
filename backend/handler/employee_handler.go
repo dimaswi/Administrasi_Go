@@ -187,20 +187,19 @@ func (h *EmployeeHandler) ManageAccount(c *gin.Context) {
 		return
 	}
 
-	// Otherwise, password and role_id are required
-	if req.Password == nil || req.RoleID == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password and Role ID are required"})
-		return
-	}
-
-	// hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-		return
-	}
-
 	if emp.UserID == nil {
+		// Creating new user requires password and valid role_id
+		if req.Password == nil || *req.Password == "" || req.RoleID == nil || *req.RoleID <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Password dan Role ID wajib diisi untuk membuat akun baru"})
+			return
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+			return
+		}
+
 		// Create new user
 		lastName := ""
 		if emp.LastName != nil {
@@ -217,13 +216,13 @@ func (h *EmployeeHandler) ManageAccount(c *gin.Context) {
 		}
 
 		if err := h.userRepo.Create(newUser); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user account"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user account: " + err.Error()})
 			return
 		}
 
 		// Link user to employee
 		if err := h.repo.UpdateUserID(employeeID, newUser.ID); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to link user to employee"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to link user to employee: " + err.Error()})
 			return
 		}
 
@@ -236,12 +235,23 @@ func (h *EmployeeHandler) ManageAccount(c *gin.Context) {
 			return
 		}
 
-		user.Password = string(hashedPassword)
-		user.RoleID = req.RoleID
+		if req.Password != nil && *req.Password != "" {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+				return
+			}
+			user.Password = string(hashedPassword)
+		}
+
+		if req.RoleID != nil && *req.RoleID > 0 {
+			user.RoleID = req.RoleID
+		}
+
 		user.UpdatedAt = time.Now()
 
 		if err := h.userRepo.Update(user); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password and role"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password and role: " + err.Error()})
 			return
 		}
 
