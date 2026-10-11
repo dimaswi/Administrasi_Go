@@ -276,7 +276,7 @@ function NavMain() {
                 </SidebarMenuButton>} />
                 <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
                   <SidebarMenuSub>
-                    {item.children.map((child) => {
+                    {itemChildren!.map((child) => {
                       const fullPath = location.pathname + location.search;
                       const childActive = child.href.includes('?')
                         ? (fullPath === child.href || (location.pathname === child.href.split('?')[0] && location.search === '' && child.href.endsWith('?tab=daily')))

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Eye, EyeOff } from 'lucide-react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
@@ -8,18 +8,19 @@ import { Button, Input, Label } from '../components/ui/ui';
 import AppLogoIcon from '../components/AppLogoIcon';
 
 function InputError({ message }: { message?: string }) {
-  return message ? (
-    <p className="text-sm text-red-600">{message}</p>
-  ) : null;
+    return message ? (
+        <p className="text-sm text-red-600">{message}</p>
+    ) : null;
 }
 
 export default function Login() {
     const [nip, setNip] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [status, setStatus] = useState('');
-    const [errors, setErrors] = useState<{nip?: string, password?: string}>({});
-    
+    const [errors, setErrors] = useState<{ nip?: string, password?: string }>({});
+
     const navigate = useNavigate();
 
     const panelRef = useRef<HTMLDivElement>(null);
@@ -49,7 +50,7 @@ export default function Login() {
         setProcessing(true);
         setErrors({});
         setStatus('');
-        
+
         try {
             const response = await api.post('/auth/login', { nip, password });
             localStorage.setItem('token', response.data.token);
@@ -176,17 +177,32 @@ export default function Login() {
                             <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                                 Password
                             </Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                required
-                                tabIndex={2}
-                                autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder=""
-                                className="h-11 border-gray-200 bg-gray-50 focus:bg-white transition-colors"
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    tabIndex={2}
+                                    autoComplete="current-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="********"
+                                    className="h-11 border-gray-200 bg-gray-50 focus:bg-white transition-colors pr-11"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    tabIndex={-1}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors p-1"
+                                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="size-5" />
+                                    ) : (
+                                        <Eye className="size-5" />
+                                    )}
+                                </button>
+                            </div>
                             <InputError message={errors.password} />
                         </div>
 
