@@ -87,8 +87,8 @@ import WorkLocationIndex from './pages/HR/MasterData/WorkLocation/index';
 import AttendanceReport from './pages/HR/Reports/AttendanceReport';
 
 // Protected Route wrapper
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { loading, user } = useAuth();
+function ProtectedRoute({ children, permission }: { children: React.ReactNode; permission?: string }) {
+  const { loading, user, hasPermission, isAdmin } = useAuth();
 
   if (loading) {
     return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>;
@@ -97,6 +97,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  if (permission && !isAdmin && !hasPermission(permission)) {
+    return <Navigate to="/hr/my-attendance" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -121,7 +126,7 @@ function App() {
           <Route path="/hr/dashboard" element={<ProtectedRoute><HrDashboard /></ProtectedRoute>} />
 
           {/* Admin/Settings */}
-          <Route path="/admin/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute permission="settings.view"><SettingsPage /></ProtectedRoute>} />
 
           {/* Admin Routes */}
           <Route path="/admin/rooms" element={<ProtectedRoute><RoomIndex /></ProtectedRoute>} />

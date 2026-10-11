@@ -388,9 +388,9 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 			// Settings
 			settings := protected.Group("/settings")
 			{
-				settings.PUT("", settingHandler.Update)
-				settings.POST("/upload-logo", settingHandler.UploadLogo)
-				settings.POST("/upload-icon", settingHandler.UploadIcon)
+				settings.PUT("", middleware.RequirePermission(roleRepo, "settings.edit"), settingHandler.Update)
+				settings.POST("/upload-logo", middleware.RequirePermission(roleRepo, "settings.edit"), settingHandler.UploadLogo)
+				settings.POST("/upload-icon", middleware.RequirePermission(roleRepo, "settings.edit"), settingHandler.UploadIcon)
 			}
 		}
 	}

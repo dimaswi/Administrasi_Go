@@ -10,9 +10,12 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SettingsPage() {
     const navigate = useNavigate();
+    const { hasPermission, isAdmin } = useAuth();
+    const canEdit = isAdmin || hasPermission('settings.edit');
     const { appName, appLogo, appIcon, refreshSettings } = useSettings();
     const [name, setName] = useState(appName);
     const [processing, setProcessing] = useState(false);
@@ -325,12 +328,14 @@ export default function SettingsPage() {
                     </Card>
 
                     {/* Form Actions (Sticky Footer) */}
-                    <div className="sticky bottom-0 z-40 mt-auto -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="submit" size="sm" className="h-9 px-6 bg-teal-600 hover:bg-teal-700" disabled={processing}>
-                            <Save className="mr-2 h-4 w-4" />
-                            {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
-                        </Button>
-                    </div>
+                    {canEdit && (
+                        <div className="sticky bottom-0 z-40 mt-auto -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
+                            <Button type="submit" size="sm" className="h-9 px-6 bg-teal-600 hover:bg-teal-700" disabled={processing}>
+                                <Save className="mr-2 h-4 w-4" />
+                                {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                            </Button>
+                        </div>
+                    )}
                 </form>
             </div>
         </AdminLayout>

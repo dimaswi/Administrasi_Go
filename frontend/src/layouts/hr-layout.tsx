@@ -307,7 +307,7 @@ function NavMain() {
 function NavUser() {
   const { state } = useSidebar();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission, isAdmin } = useAuth();
   const isCollapsed = state === 'collapsed';
 
   const name = user?.name || 'Pengguna';
@@ -318,6 +318,8 @@ function NavUser() {
     .slice(0, 2)
     .map((w: string) => w[0].toUpperCase())
     .join('') || 'US';
+
+  const canAccessSettings = isAdmin || hasPermission('settings.view') || hasPermission('settings.edit');
 
   return (
     <SidebarMenu className="px-2">
@@ -350,13 +352,17 @@ function NavUser() {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            {canAccessSettings && (
+              <>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
