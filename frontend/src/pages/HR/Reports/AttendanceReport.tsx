@@ -902,7 +902,7 @@ export default function AttendanceReport() {
               variant="outline"
               size="sm"
               className="h-8 gap-1.5 text-xs"
-              onClick={fetchAttendanceData}
+              onClick={() => fetchAttendanceData()}
               disabled={loading}
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />

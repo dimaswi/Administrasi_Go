@@ -53,6 +53,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AppLogoIcon from '@/components/AppLogoIcon';
 import { useSettings } from '@/contexts/SettingsContext';
+import { EmployeeSearchDialog } from '@/components/EmployeeSearchDialog';
 
 // --- Workspace Switcher ---
 const workspaces = [
@@ -171,7 +172,7 @@ const navItems = [
   },
   {
     title: 'Master Data',
-    href: '/hr',
+    href: '/hr/access/users',
     icon: Settings2,
     children: [
       { title: 'Daftar User', href: '/hr/access/users' },
@@ -343,6 +344,116 @@ function NavUser() {
   );
 }
 
+function HrBreadcrumbs() {
+  const location = useLocation();
+  const path = location.pathname;
+
+  const crumbs = React.useMemo(() => {
+    const list: { title: string; href?: string }[] = [
+      { title: 'Administrasi', href: '/admin/dashboard' },
+      { title: 'HR', href: '/hr/dashboard' },
+    ];
+
+    if (path === '/hr/dashboard') {
+      list.push({ title: 'Dashboard' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/employees')) {
+      list.push({ title: 'Data Karyawan', href: '/hr/employees' });
+      if (path === '/hr/employees/create') {
+        list.push({ title: 'Tambah' });
+      } else if (path.endsWith('/edit')) {
+        list.push({ title: 'Edit' });
+      } else if (path !== '/hr/employees') {
+        list.push({ title: 'Detail Karyawan' });
+      }
+      return list;
+    }
+
+    if (path.startsWith('/hr/reports/attendance')) {
+      list.push({ title: 'Rekap Absensi' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/attendances')) {
+      list.push({ title: 'Riwayat Absensi' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/leaves')) {
+      list.push({ title: 'Izin & Cuti Karyawan' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/rosters')) {
+      list.push({ title: 'Jadwal Roster' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/shift-exchanges')) {
+      list.push({ title: 'Tukar Shift' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/access/users')) {
+      list.push({ title: 'Master Data', href: '/hr/access/users' });
+      list.push({ title: 'Daftar User' });
+      return list;
+    }
+    if (path.startsWith('/hr/access/roles')) {
+      list.push({ title: 'Master Data', href: '/hr/access/roles' });
+      list.push({ title: 'Daftar Role' });
+      return list;
+    }
+    if (path.startsWith('/hr/access/permissions')) {
+      list.push({ title: 'Master Data', href: '/hr/access/permissions' });
+      list.push({ title: 'Daftar Permission' });
+      return list;
+    }
+    if (path.startsWith('/hr/organizations')) {
+      list.push({ title: 'Master Data', href: '/hr/organizations' });
+      list.push({ title: 'Unit Organisasi' });
+      return list;
+    }
+    if (path.startsWith('/hr/work-schedules')) {
+      list.push({ title: 'Master Data', href: '/hr/work-schedules' });
+      list.push({ title: 'Master Shift' });
+      return list;
+    }
+    if (path.startsWith('/hr/master-data/')) {
+      list.push({ title: 'Master Data' });
+      return list;
+    }
+
+    return list;
+  }, [path]);
+
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        {crumbs.map((crumb, idx) => {
+          const isLast = idx === crumbs.length - 1;
+          return (
+            <React.Fragment key={idx}>
+              <BreadcrumbItem>
+                {isLast || !crumb.href ? (
+                  <BreadcrumbPage>{crumb.title}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink render={<Link to={crumb.href} />}>
+                    {crumb.title}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {!isLast && <BreadcrumbSeparator />}
+            </React.Fragment>
+          );
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}
+
 // --- Layout ---
 export default function HrLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -366,19 +477,10 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <div className="h-4 w-px bg-border" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink render={<Link to="/hr" />}>
-                    Administrasi
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>HR</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            <HrBreadcrumbs />
+          </div>
+          <div className="flex items-center gap-3">
+            <EmployeeSearchDialog />
           </div>
         </header>
         <div className="flex-1 flex flex-col px-4 py-2 md:px-4 md:py-2 bg-background min-w-0">

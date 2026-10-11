@@ -116,6 +116,7 @@ function App() {
           <Route path="/checkin" element={<CheckinPage />} />
 
           <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/hr" element={<Navigate to="/hr/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/hr/dashboard" element={<ProtectedRoute><HrDashboard /></ProtectedRoute>} />
 

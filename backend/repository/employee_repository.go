@@ -28,8 +28,9 @@ func (r *EmployeeRepository) GetAll(page int, perPage int, search string) (model
 	argId := 1
 
 	if search != "" {
-		query += " AND (first_name ILIKE $" + strconv.Itoa(argId) + " OR employee_id ILIKE $" + strconv.Itoa(argId) + ")"
-		countQuery += " AND (first_name ILIKE $" + strconv.Itoa(argId) + " OR employee_id ILIKE $" + strconv.Itoa(argId) + ")"
+		condition := " AND (first_name ILIKE $" + strconv.Itoa(argId) + " OR COALESCE(last_name, '') ILIKE $" + strconv.Itoa(argId) + " OR (first_name || ' ' || COALESCE(last_name, '')) ILIKE $" + strconv.Itoa(argId) + " OR employee_id ILIKE $" + strconv.Itoa(argId) + " OR COALESCE(nik, '') ILIKE $" + strconv.Itoa(argId) + " OR COALESCE(position, '') ILIKE $" + strconv.Itoa(argId) + ")"
+		query += condition
+		countQuery += condition
 		args = append(args, "%"+search+"%")
 		argId++
 	}
