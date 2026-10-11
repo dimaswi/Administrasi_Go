@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,46 @@ interface EmployeeItem {
   unit_name?: string;
 }
 
+function getInitials(firstName?: string, lastName?: string): string {
+  const f = (firstName || '').trim();
+  const l = (lastName || '').trim();
+  if (f && l) {
+    return `${f[0]}${l[0]}`.toUpperCase();
+  }
+  if (f) {
+    const parts = f.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return f.slice(0, Math.min(2, f.length)).toUpperCase();
+  }
+  return 'K';
+}
+
 export function EmployeeSearchDialog() {
+  const { hasPermission, user } = useAuth();
+
+  // Permission check for global employee search
+  const canSearch =
+    user?.role_id === 1 ||
+    user?.name?.toLowerCase().includes('admin') ||
+    hasPermission('global_search') ||
+    hasPermission('global.search') ||
+    hasPermission('employee.search') ||
+    hasPermission('hr.employee.search') ||
+    hasPermission('employee.view') ||
+    hasPermission('employee.read') ||
+    hasPermission('employee.index') ||
+    hasPermission('employee.list') ||
+    hasPermission('employee_view') ||
+    hasPermission('employees.view') ||
+    hasPermission('employees.index') ||
+    hasPermission('hr.employee.view') ||
+    hasPermission('hr.employee.read') ||
+    hasPermission('hr.employee.index') ||
+    hasPermission('hr.employees.index') ||
+    hasPermission('hr.employees.view');
+
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +90,7 @@ export function EmployeeSearchDialog() {
 
   // Load Organization Units once for mapping unit names
   useEffect(() => {
+    if (!canSearch) return;
     api.get('/org-units')
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
@@ -58,10 +99,12 @@ export function EmployeeSearchDialog() {
         setUnitsMap(map);
       })
       .catch(() => {});
-  }, []);
+  }, [canSearch]);
 
-  // Global Keyboard shortcut: '/' or 'Ctrl+K' / 'Cmd+K' to open search
+  // Global Keyboard shortcut: '/' or 'Ctrl+K' / 'Cmd+K' to open search (only if user has permission)
   useEffect(() => {
+    if (!canSearch) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInput =
@@ -77,7 +120,7 @@ export function EmployeeSearchDialog() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [canSearch]);
 
   // Focus input when dialog opens & reset state
   useEffect(() => {
@@ -174,21 +217,26 @@ export function EmployeeSearchDialog() {
     }
   }, [selectedIndex, results.length]);
 
+  if (!canSearch) {
+    return null;
+  }
+
   return (
     <>
-      {/* Search Bar Button in Header (matching Gambar 1) */}
+      {/* Search Bar Button in Header (Responsive: compact icon on mobile, full bar on desktop) */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative flex items-center h-9 w-44 sm:w-60 md:w-72 lg:w-80 rounded-full border border-input/60 bg-muted/40 hover:bg-muted/70 px-3.5 text-xs text-muted-foreground shadow-xs transition-all hover:border-primary/40 cursor-pointer justify-between group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="relative flex items-center justify-center sm:justify-between h-8 w-8 sm:w-48 md:w-60 lg:w-72 rounded-full border border-input/60 bg-muted/40 hover:bg-muted/70 p-0 sm:px-3 text-xs text-muted-foreground shadow-xs transition-all hover:border-primary/40 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+        title="Cari karyawan (/ atau Ctrl+K)"
       >
         <div className="flex items-center gap-2 truncate">
           <Search className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-          <span className="truncate text-muted-foreground group-hover:text-foreground transition-colors">
+          <span className="hidden sm:inline truncate text-muted-foreground group-hover:text-foreground transition-colors">
             Cari karyawan...
           </span>
         </div>
-        <kbd className="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border/80 bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground group-hover:text-foreground shadow-2xs">
+        <kbd className="pointer-events-none hidden sm:inline-flex h-4.5 select-none items-center gap-0.5 rounded border border-border/80 bg-background px-1 font-mono text-[9px] font-medium text-muted-foreground group-hover:text-foreground shadow-2xs">
           /
         </kbd>
       </button>
@@ -304,27 +352,16 @@ export function EmployeeSearchDialog() {
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        {/* Avatar */}
+                        {/* Avatar Huruf Depan / Inisial Nama (Tanpa Foto) */}
                         <div
                           className={cn(
-                            'h-10 w-10 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 overflow-hidden border',
+                            'h-9 w-9 rounded-md flex items-center justify-center font-bold text-xs tracking-wider shrink-0 select-none border transition-colors',
                             isSelected
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-muted text-muted-foreground border-border'
+                              ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                              : 'bg-muted/80 text-foreground border-border/80'
                           )}
                         >
-                          {emp.photo ? (
-                            <img
-                              src={emp.photo}
-                              alt={fullName}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span>
-                              {emp.first_name?.[0]?.toUpperCase() || 'E'}
-                              {emp.last_name?.[0]?.toUpperCase() || ''}
-                            </span>
-                          )}
+                          {getInitials(emp.first_name, emp.last_name)}
                         </div>
 
                         {/* Name & Details */}

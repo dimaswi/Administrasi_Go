@@ -25,7 +25,7 @@ import {
   ChevronsRight,
   X,
 } from 'lucide-react';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 // Helper to format date in Indonesian (e.g. 11 Januari 2001)
@@ -223,6 +223,7 @@ export default function EmployeeShow() {
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [photoError, setPhotoError] = useState(false);
 
   // Active Tab state
   const [activeTab, setActiveTab] = useState<'profile' | 'attendance' | 'leave' | 'roster' | 'history'>('profile');
@@ -263,6 +264,7 @@ export default function EmployeeShow() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    setPhotoError(false);
 
     Promise.allSettled([
       api.get(`/employees/${id}`),
@@ -681,14 +683,19 @@ export default function EmployeeShow() {
 
                 <div className="flex flex-col items-center text-center mt-0.5">
                   <div className="h-20 w-20 overflow-hidden border border-border bg-muted/40 flex items-center justify-center rounded-none shadow-2xs">
-                    {data.photo ? (
+                    {data.photo && !photoError ? (
                       <img
-                        src={data.photo}
+                        src={data.photo.startsWith('http') || data.photo.startsWith('data:') ? data.photo : getApiUrl(data.photo)}
                         alt={fullName}
                         className="h-full w-full object-cover"
+                        onError={() => setPhotoError(true)}
                       />
                     ) : (
-                      <User className="h-10 w-10 text-muted-foreground/40" />
+                      <div className="h-full w-full flex items-center justify-center bg-muted/60 text-foreground font-extrabold text-xl select-none tracking-wider">
+                        <span>
+                          {((data.first_name?.[0] || '') + (data.last_name?.[0] || '')).toUpperCase() || (fullName?.[0]?.toUpperCase() || 'K')}
+                        </span>
+                      </div>
                     )}
                   </div>
 

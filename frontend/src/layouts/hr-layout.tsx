@@ -434,9 +434,10 @@ function HrBreadcrumbs() {
       <BreadcrumbList>
         {crumbs.map((crumb, idx) => {
           const isLast = idx === crumbs.length - 1;
+          const isEarlyCrumb = idx < crumbs.length - 2; // hide root levels on mobile (Administrasi, HR)
           return (
             <React.Fragment key={idx}>
-              <BreadcrumbItem>
+              <BreadcrumbItem className={cn(isEarlyCrumb ? 'hidden sm:inline-flex' : '')}>
                 {isLast || !crumb.href ? (
                   <BreadcrumbPage>{crumb.title}</BreadcrumbPage>
                 ) : (
@@ -445,7 +446,9 @@ function HrBreadcrumbs() {
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-              {!isLast && <BreadcrumbSeparator />}
+              {!isLast && (
+                <BreadcrumbSeparator className={cn(isEarlyCrumb ? 'hidden sm:inline-flex' : '')} />
+              )}
             </React.Fragment>
           );
         })}
