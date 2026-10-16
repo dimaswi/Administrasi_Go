@@ -105,7 +105,7 @@ func (h *IncomingLetterHandler) Create(c *gin.Context) {
 		defer file.Close()
 		
 		// Create uploads directory if not exists
-		uploadDir := "public/uploads/incoming_letters"
+		uploadDir := filepath.Join("uploads", "incoming_letters")
 		os.MkdirAll(uploadDir, os.ModePerm)
 
 		// Generate filename
@@ -232,7 +232,7 @@ func (h *IncomingLetterHandler) Update(c *gin.Context) {
 	file, fileHeader, err := c.Request.FormFile("file")
 	if err == nil {
 		defer file.Close()
-		uploadDir := "public/uploads/incoming_letters"
+		uploadDir := filepath.Join("uploads", "incoming_letters")
 		os.MkdirAll(uploadDir, os.ModePerm)
 		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), fileHeader.Filename)
 		filePath := filepath.Join(uploadDir, filename)
