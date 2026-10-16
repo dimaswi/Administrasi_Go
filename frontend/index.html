@@ -6,9 +6,27 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link id="app-favicon" rel="icon" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Klinik Muhammadiyah Kedungadem</title>
+  <title>SIMKEP</title>
+  <script>
+    (function () {
+      try {
+        var cachedIcon = localStorage.getItem('app_icon');
+        if (cachedIcon) {
+          var link = document.getElementById('app-favicon') || document.querySelector("link[rel*='icon']");
+          if (link) {
+            link.href = cachedIcon;
+            link.removeAttribute('type');
+          }
+        }
+        var cachedTitle = localStorage.getItem('app_name');
+        if (cachedTitle) {
+          document.title = cachedTitle;
+        }
+      } catch (e) { }
+    })();
+  </script>
 </head>
 
 <body>
