@@ -4,6 +4,7 @@ import (
 	"backend/models"
 	"backend/repository"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -25,14 +26,30 @@ func NewAuthService(userRepo *repository.UserRepository, roleRepo *repository.Ro
 }
 
 func (s *AuthService) Login(nip, password string) (string, error) {
-	user, err := s.userRepo.GetByNip(nip)
+	cleanNip := strings.TrimSpace(nip)
+	user, err := s.userRepo.GetByNip(cleanNip)
 	if err != nil {
 		return "", errors.New("invalid credentials")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		// Handle legacy plaintext passwords or accounts created when UserHandler ignored password JSON field
+		isBcryptHash := strings.HasPrefix(user.Password, "$2a$") ||
+			strings.HasPrefix(user.Password, "$2b$") ||
+			strings.HasPrefix(user.Password, "$2y$")
+
+		if !isBcryptHash && (user.Password == password || user.Password == "") {
+			hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if hashErr != nil {
+				return "", errors.New("invalid credentials")
+			}
+			user.Password = string(hashedPassword)
+			user.UpdatedAt = time.Now()
+			_ = s.userRepo.Update(user)
+		} else {
+			return "", errors.New("invalid credentials")
+		}
 	}
 
 	var roleID int = 0
@@ -94,4 +111,3 @@ func (s *AuthService) GetMe(userID int) (*models.User, []string, error) {
 
 	return user, permissions, nil
 }
-

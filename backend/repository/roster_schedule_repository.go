@@ -28,7 +28,7 @@ func (r *RosterScheduleRepository) GetAll(page, perPage int, search string, empl
 		SELECT 
 			r.id, COALESCE(e.id, r.employee_id) AS employee_id, r.work_schedule_id, r.date, r.notes, r.created_at, r.updated_at,
 			TRIM(COALESCE(e.first_name, '') || ' ' || COALESCE(e.last_name, '')) AS employee_name,
-			COALESCE(w.name, 'Reguler') AS work_schedule_name,
+			COALESCE(w.name, '-') AS work_schedule_name,
 			COALESCE(w.clock_in_time::text, '08:00') AS clock_in_time,
 			COALESCE(w.clock_out_time::text, '16:00') AS clock_out_time
 		FROM roster_schedules r

@@ -240,7 +240,7 @@ export default function AttendanceReport() {
       if (currentTab === 'daily') {
         startDate = selectedDate;
         endDate = selectedDate;
-      } else if (currentTab === 'monthly') {
+      } else if (currentTab === 'monthly' || currentTab === 'unit') {
         startDate = `${selectedMonth}-01`;
         const [year, month] = selectedMonth.split('-').map(Number);
         const lastDay = new Date(year, month, 0).getDate();
@@ -319,7 +319,7 @@ export default function AttendanceReport() {
         const effectiveWorkScheduleId = r.work_schedule_id || roster?.work_schedule_id;
         let effectiveWorkScheduleName = (r.work_schedule_name && r.work_schedule_name !== 'Reguler')
           ? r.work_schedule_name
-          : (roster?.work_schedule_name || (effectiveWorkScheduleId ? shiftMap.get(effectiveWorkScheduleId) : undefined) || 'Reguler');
+          : (roster?.work_schedule_name || (effectiveWorkScheduleId ? shiftMap.get(effectiveWorkScheduleId) : undefined) || '-');
 
         return {
           ...r,
@@ -488,8 +488,8 @@ export default function AttendanceReport() {
       const leave = getEmployeeLeaveForDate(emp.id, selectedDate);
       const roster = getEmployeeRosterForDate(emp, selectedDate);
 
-      let status = 'Belum Hadir';
-      let badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+      let status = 'Libur';
+      let badgeClass = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
       let clockIn = att?.clock_in || null;
       let clockOut = att?.clock_out || null;
       let lateMinutes = att?.late_minutes || 0;
@@ -497,7 +497,7 @@ export default function AttendanceReport() {
       let workDuration = '-';
 
       // Pick accurate shift name: roster schedule first, then attendance record, else matching shift from master
-      let shiftName = roster?.work_schedule_name || (att?.work_schedule_name && att.work_schedule_name !== 'Reguler' ? att.work_schedule_name : '');
+      let shiftName = roster?.work_schedule_name || (att?.work_schedule_name && att.work_schedule_name !== 'Reguler' && att.work_schedule_name !== '-' ? att.work_schedule_name : '');
       if (!shiftName && roster?.work_schedule_id) {
         const s = shifts.find((sh) => sh.id === roster.work_schedule_id);
         if (s) shiftName = s.name;
@@ -510,11 +510,8 @@ export default function AttendanceReport() {
         const s = shifts.find((sh) => String(sh.id) === selectedShift);
         if (s) shiftName = s.name;
       }
-      if (!shiftName) {
-        shiftName = 'Reguler';
-      }
 
-      const schedOut = roster?.clock_out_time || att?.schedule_clock_out || '16:00';
+      const schedOut = roster?.clock_out_time || att?.schedule_clock_out || null;
 
       if (clockIn && clockOut) {
         const diff = calculateDurationMinutes(clockIn, clockOut);
@@ -535,9 +532,24 @@ export default function AttendanceReport() {
           status = 'Hadir';
           badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
         }
+        if (!shiftName) {
+          shiftName = att.work_schedule_name || 'Shift';
+        }
       } else if (leave) {
         status = leave.leave_type_name || 'Cuti / Izin';
         badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
+        if (!shiftName) {
+          shiftName = leave.leave_type_name || 'Cuti';
+        }
+      } else if (roster) {
+        // Pegawai punya jadwal shift tapi belum absen
+        status = 'Belum Hadir';
+        badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+      } else {
+        // Tidak ada jadwal shift hari ini => LIBUR
+        shiftName = 'Libur';
+        status = 'Libur';
+        badgeClass = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
       }
 
       return {
@@ -584,12 +596,17 @@ export default function AttendanceReport() {
       return true;
     });
 
+    const totalOff = currentTab === 'daily' ? dailyRows.filter(r => r.status === 'Libur').length : 0;
+    const totalPending = currentTab === 'daily' ? dailyRows.filter(r => r.status === 'Belum Hadir').length : 0;
+
     return {
       totalStaff,
       totalPresent: presentRecords.length,
       totalLate: lateRecords.length,
       totalEarly: earlyRecords.length,
       totalLeaves: activeLeaves.length,
+      totalOff,
+      totalPending,
       totalWorkHours: formatMinutesToHours(totalWorkMinutes),
     };
   }, [employees, dailyRows, filteredAttendances, leaves, currentTab, selectedDate]);
@@ -685,7 +702,113 @@ export default function AttendanceReport() {
     return employees.find((e) => e.id === Number(selectedEmployeeId));
   }, [employees, selectedEmployeeId]);
 
-  // 4. Rekap Per Unit
+  // 4. Rekap Per Unit (Matriks 1-31)
+  const unitMatrixData = useMemo(() => {
+    let targetUnits = units;
+    if (selectedUnit !== 'all') {
+      targetUnits = units.filter((u) => u.id === Number(selectedUnit));
+    }
+
+    const attMap = new Map<string, AttendanceRecord>();
+    attendances.forEach((a) => {
+      const dStr = a.date ? a.date.substring(0, 10) : '';
+      if (dStr && a.employee_id) {
+        attMap.set(`${a.employee_id}_${dStr}`, a);
+      }
+    });
+
+    return targetUnits.map((unit) => {
+      let staffInUnit = employees.filter((e) => e.organization_unit_id === unit.id);
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        staffInUnit = staffInUnit.filter(
+          (e) =>
+            e.first_name.toLowerCase().includes(q) ||
+            (e.last_name || '').toLowerCase().includes(q) ||
+            e.employee_id.toLowerCase().includes(q)
+        );
+      }
+
+      const rows = staffInUnit.map((emp) => {
+        let presentDays = 0;
+        let lateDays = 0;
+        let offDays = 0;
+        let leaveDays = 0;
+        let absentDays = 0;
+
+        const dayCells = daysInSelectedMonth.map((d) => {
+          const att = attMap.get(`${emp.id}_${d.dateStr}`);
+          const leave = getEmployeeLeaveForDate(emp.id, d.dateStr);
+          const roster = getEmployeeRosterForDate(emp, d.dateStr);
+
+          let label = 'L';
+          let title = `Libur (${d.dateStr})`;
+          let cellClass = 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 font-medium';
+
+          if (att) {
+            if (att.late_minutes > 0 || att.status === 'late') {
+              label = 'T';
+              title = `Terlambat +${att.late_minutes}m (Masuk: ${formatClockTime(att.clock_in)})`;
+              cellClass = 'bg-amber-400 text-amber-950 dark:bg-amber-500 dark:text-amber-950 font-bold';
+              lateDays++;
+              presentDays++;
+            } else {
+              label = 'H';
+              title = `Hadir Tepat Waktu (Masuk: ${formatClockTime(att.clock_in)})`;
+              cellClass = 'bg-emerald-500 text-white dark:bg-emerald-600 dark:text-white font-bold';
+              presentDays++;
+            }
+          } else if (leave) {
+            label = 'C';
+            title = `${leave.leave_type_name || 'Cuti/Izin'}: ${leave.reason || '-'}`;
+            cellClass = 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white font-bold';
+            leaveDays++;
+          } else if (roster) {
+            label = 'A';
+            title = `Shift: ${roster.work_schedule_name || '-'} (Belum Hadir)`;
+            cellClass = 'bg-rose-500 text-white dark:bg-rose-600 dark:text-white font-bold';
+            absentDays++;
+          } else {
+            label = 'L';
+            title = `Libur (Tidak ada shift)`;
+            cellClass = 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 font-medium';
+            offDays++;
+          }
+
+          return {
+            dayNum: d.dayNum,
+            dateStr: d.dateStr,
+            isWeekend: d.isWeekend,
+            label,
+            title,
+            cellClass,
+          };
+        });
+
+        return {
+          id: emp.id,
+          employee_code: emp.employee_id,
+          employee_name: `${emp.first_name} ${emp.last_name || ''}`.trim(),
+          position: emp.position || '-',
+          presentDays,
+          lateDays,
+          offDays,
+          leaveDays,
+          absentDays,
+          dayCells,
+        };
+      });
+
+      return {
+        unit_id: unit.id,
+        unit_name: unit.name,
+        staffCount: staffInUnit.length,
+        rows,
+      };
+    });
+  }, [units, selectedUnit, employees, searchQuery, attendances, daysInSelectedMonth, leaves, rosterMap]);
+
+  // 4. Rekap Per Unit (Kumulatif Ringkasan)
   const unitSummaries = useMemo(() => {
     return units.map((u) => {
       const staffInUnit = employees.filter((e) => e.organization_unit_id === u.id);
@@ -1055,7 +1178,19 @@ export default function AttendanceReport() {
             </div>
           )}
 
-          {['unit', 'shift', 'late', 'early', 'absence', 'overtime', 'workhours'].includes(currentTab) && (
+          {currentTab === 'unit' && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Bulan:</span>
+              <Input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="h-8 text-xs w-36"
+              />
+            </div>
+          )}
+
+          {['shift', 'late', 'early', 'absence', 'overtime', 'workhours'].includes(currentTab) && (
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground">Periode:</span>
               <Input
@@ -1115,6 +1250,18 @@ export default function AttendanceReport() {
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium">
               Cuti/Izin: <strong>{kpiStats.totalLeaves}</strong>
             </span>
+            {currentTab === 'daily' && (
+              <>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                  Libur: <strong>{kpiStats.totalOff}</strong>
+                </span>
+                {kpiStats.totalPending > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-medium">
+                    Belum Hadir: <strong>{kpiStats.totalPending}</strong>
+                  </span>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -1396,42 +1543,122 @@ export default function AttendanceReport() {
             </div>
           )}
 
-          {/* 4. REKAP PER UNIT */}
+          {/* 4. REKAP PER UNIT (Matriks 1-31) */}
           {currentTab === 'unit' && (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="w-12 text-center text-xs">No</TableHead>
-                  <TableHead className="text-xs">Unit Organisasi</TableHead>
-                  <TableHead className="text-center text-xs">Jumlah Pegawai</TableHead>
-                  <TableHead className="text-center text-xs text-emerald-600 font-semibold">Total Hadir</TableHead>
-                  <TableHead className="text-center text-xs text-amber-600 font-semibold">Terlambat</TableHead>
-                  <TableHead className="text-center text-xs text-blue-600 font-semibold">Cuti / Izin</TableHead>
-                  <TableHead className="text-center text-xs text-rose-600 font-semibold">Alpa</TableHead>
-                  <TableHead className="text-xs">Tingkat Kehadiran (%)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {unitSummaries.map((u, idx) => (
-                  <TableRow key={u.unit_id}>
-                    <TableCell className="text-center text-xs text-muted-foreground">{idx + 1}</TableCell>
-                    <TableCell className="font-medium text-xs text-foreground">{u.unit_name}</TableCell>
-                    <TableCell className="text-center font-mono text-xs">{u.staffCount} Pegawai</TableCell>
-                    <TableCell className="text-center font-mono font-semibold text-emerald-600 text-xs">
-                      {u.presentCount}
-                    </TableCell>
-                    <TableCell className="text-center font-mono font-semibold text-amber-600 text-xs">
-                      {u.lateCount}
-                    </TableCell>
-                    <TableCell className="text-center font-mono text-xs">{u.leaveCount}</TableCell>
-                    <TableCell className="text-center font-mono text-xs text-rose-600">{u.absentCount}</TableCell>
-                    <TableCell className="text-xs font-mono font-bold">
-                      <span className={u.rate >= 80 ? 'text-emerald-600' : 'text-amber-600'}>{u.rate}%</span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="space-y-4">
+              {/* Legend Bar */}
+              <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 bg-muted/40 border-b border-border text-xs">
+                <span className="font-semibold text-foreground">Keterangan:</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded bg-emerald-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs">H</span>
+                  <span className="text-muted-foreground">Hadir Tepat Waktu (Hijau)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded bg-amber-400 text-amber-950 flex items-center justify-center font-bold text-[11px] shadow-xs">T</span>
+                  <span className="text-muted-foreground">Terlambat (Kuning)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center font-semibold text-[11px] border border-border/50">L</span>
+                  <span className="text-muted-foreground">Libur (Abu-abu)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded bg-blue-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs">C</span>
+                  <span className="text-muted-foreground">Cuti / Izin (Biru)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded bg-rose-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs">A</span>
+                  <span className="text-muted-foreground">Jadwal Shift / Belum Hadir (Merah)</span>
+                </span>
+              </div>
+
+              {unitMatrixData.length === 0 ? (
+                <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">
+                  Tidak ada data unit kerja.
+                </div>
+              ) : (
+                unitMatrixData.map((unit) => (
+                  <div key={unit.unit_id} className="border-b last:border-b-0 border-border">
+                    {/* Unit Header */}
+                    <div className="px-4 py-2.5 bg-muted/60 border-y border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-primary" />
+                        <span className="font-bold text-sm text-foreground">{unit.unit_name}</span>
+                        <Badge variant="outline" className="text-[11px] font-normal bg-background">
+                          {unit.staffCount} Pegawai
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {unit.rows.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-muted-foreground">
+                        Belum ada pegawai terdaftar di unit ini.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-center text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-muted/30 border-b border-border">
+                              <th className="py-2.5 px-3 text-left sticky left-0 bg-muted/95 min-w-56 z-10 text-xs font-semibold text-foreground border-r border-border">
+                                Nama Pegawai
+                              </th>
+                              {daysInSelectedMonth.map((d) => (
+                                <th
+                                  key={d.dayNum}
+                                  className={`py-2 px-1 min-w-7 text-[11px] font-semibold border-r border-border/40 ${
+                                    d.isWeekend ? 'bg-rose-500/10 text-rose-600 font-bold' : 'text-muted-foreground'
+                                  }`}
+                                >
+                                  {d.dayNum}
+                                </th>
+                              ))}
+                              <th className="py-2 px-2 text-center text-xs font-semibold text-emerald-600 min-w-10">H</th>
+                              <th className="py-2 px-2 text-center text-xs font-semibold text-amber-600 min-w-10">T</th>
+                              <th className="py-2 px-2 text-center text-xs font-semibold text-slate-500 min-w-10">L</th>
+                              <th className="py-2 px-2 text-center text-xs font-semibold text-blue-600 min-w-10">C</th>
+                              <th className="py-2 px-2 text-center text-xs font-semibold text-rose-600 min-w-10">A</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {unit.rows.map((row) => (
+                              <tr key={row.id} className="hover:bg-muted/10">
+                                <td className="py-2 px-3 text-left sticky left-0 bg-card z-10 border-r border-border min-w-56">
+                                  <div className="font-medium text-xs text-foreground truncate">{row.employee_name}</div>
+                                  <div className="text-[10px] text-muted-foreground font-mono">{row.employee_code} • {row.position}</div>
+                                </td>
+                                {row.dayCells.map((cell) => (
+                                  <td
+                                    key={cell.dayNum}
+                                    title={cell.title}
+                                    className={`py-1 px-0.5 border-r border-border/40 text-[11px] cursor-default transition-colors ${cell.cellClass}`}
+                                  >
+                                    {cell.label}
+                                  </td>
+                                ))}
+                                <td className="py-2 px-1 text-center font-mono font-bold text-emerald-600 text-xs border-r border-border/40">
+                                  {row.presentDays}
+                                </td>
+                                <td className="py-2 px-1 text-center font-mono font-bold text-amber-600 text-xs border-r border-border/40">
+                                  {row.lateDays}
+                                </td>
+                                <td className="py-2 px-1 text-center font-mono font-medium text-slate-500 text-xs border-r border-border/40">
+                                  {row.offDays}
+                                </td>
+                                <td className="py-2 px-1 text-center font-mono font-bold text-blue-600 text-xs border-r border-border/40">
+                                  {row.leaveDays}
+                                </td>
+                                <td className="py-2 px-1 text-center font-mono font-bold text-rose-600 text-xs">
+                                  {row.absentDays}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           )}
 
           {/* 5. REKAP PER SHIFT */}

@@ -1,11 +1,11 @@
 # ============================================================
-# Face Service — Python OpenCV Face Recognition Microservice
+# Face Service — Python DeepFace + OpenCV Face Recognition Microservice
 # ============================================================
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install lightweight system dependencies for image processing
+# Install system dependencies for image processing & networking
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
@@ -19,8 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source code
 COPY . .
 
-# Buat folder uploads untuk mount data sinkron dari backend
-RUN mkdir -p /app/uploads
+# Buat folder uploads dan folder cache model DeepFace
+RUN mkdir -p /app/uploads /root/.deepface/weights
 
 EXPOSE 5000
 

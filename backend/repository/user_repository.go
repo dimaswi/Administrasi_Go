@@ -28,7 +28,17 @@ func (r *UserRepository) GetByID(id int) (*models.User, error) {
 
 func (r *UserRepository) GetByNip(nip string) (*models.User, error) {
 	var user models.User
-	err := r.db.Get(&user, "SELECT id, name, nip, password, role_id, remember_token, created_at, updated_at FROM users WHERE nip = $1 LIMIT 1", nip)
+	query := `
+		SELECT u.id, u.name, u.nip, u.password, u.role_id, u.remember_token, u.created_at, u.updated_at
+		FROM users u
+		LEFT JOIN employees e ON e.user_id = u.id AND e.deleted_at IS NULL
+		WHERE LOWER(TRIM(u.nip)) = LOWER(TRIM($1))
+		   OR LOWER(TRIM(COALESCE(e.employee_id, ''))) = LOWER(TRIM($1))
+		   OR LOWER(TRIM(COALESCE(e.nik, ''))) = LOWER(TRIM($1))
+		   OR LOWER(TRIM(COALESCE(e.email, ''))) = LOWER(TRIM($1))
+		LIMIT 1
+	`
+	err := r.db.Get(&user, query, nip)
 	if err != nil {
 		return nil, err
 	}

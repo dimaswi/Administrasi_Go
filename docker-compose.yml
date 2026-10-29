@@ -1,6 +1,6 @@
 # ============================================================
 # docker-compose.yml — Production
-# Menjalankan: PostgreSQL + Go Backend + React Frontend
+# Menjalankan: PostgreSQL + Go Backend + Face Service (DeepFace) + React Frontend
 #
 # Cara pakai:
 #   1. Copy .env.example ke .env dan isi nilai variabelnya
@@ -41,7 +41,7 @@ services:
       - administrasi_net
 
   # ─────────────────────────────────────────
-  # Face Service — Python Microservice
+  # Face Service — Python Microservice (DeepFace)
   # ─────────────────────────────────────────
   face_service:
     build:
@@ -51,14 +51,15 @@ services:
     restart: unless-stopped
     volumes:
       - uploads_data:/app/uploads
+      - face_models:/root/.deepface
     ports:
       - "${FACE_SERVICE_PORT:-5005}:5000"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     networks:
       - administrasi_net
 
@@ -126,6 +127,8 @@ volumes:
     name: administrasi_postgres_data
   uploads_data:
     name: administrasi_uploads_data
+  face_models:
+    name: administrasi_face_models
 
 # ─────────────────────────────────────────
 # Networks

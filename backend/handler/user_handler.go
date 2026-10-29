@@ -5,9 +5,11 @@ import (
 	"backend/repository"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
@@ -55,18 +57,44 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
+type UserPayload struct {
+	Name     string `json:"name" binding:"required"`
+	Nip      string `json:"nip" binding:"required"`
+	Password string `json:"password"`
+	RoleID   *int   `json:"role_id"`
+}
+
 func (h *UserHandler) Create(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req UserPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
+	if strings.TrimSpace(req.Password) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password wajib diisi"})
+		return
+	}
 
-	// In a real app, you should hash the password here before saving
-	// user.Password = hash(user.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi password"})
+		return
+	}
+
+	var roleID *int
+	if req.RoleID != nil && *req.RoleID > 0 {
+		roleID = req.RoleID
+	}
+
+	user := models.User{
+		Name:      strings.TrimSpace(req.Name),
+		Nip:       strings.TrimSpace(req.Nip),
+		Password:  string(hashedPassword),
+		RoleID:    roleID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 
 	if err := h.repo.Create(&user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -83,14 +111,33 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req UserPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user.ID = id
-	user.UpdatedAt = time.Now()
+	var roleID *int
+	if req.RoleID != nil && *req.RoleID > 0 {
+		roleID = req.RoleID
+	}
+
+	user := models.User{
+		ID:        id,
+		Name:      strings.TrimSpace(req.Name),
+		Nip:       strings.TrimSpace(req.Nip),
+		RoleID:    roleID,
+		UpdatedAt: time.Now(),
+	}
+
+	if strings.TrimSpace(req.Password) != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi password"})
+			return
+		}
+		user.Password = string(hashedPassword)
+	}
 
 	if err := h.repo.Update(&user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

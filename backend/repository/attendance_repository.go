@@ -99,7 +99,7 @@ func (r *AttendanceRepository) GetAllWithFilters(page int, perPage int, search s
 			e.first_name || ' ' || COALESCE(e.last_name, '') as employee_name,
 			COALESCE(ou.name, '-') as unit_name,
 			COALESCE(e.position, '-') as position,
-			COALESCE(ws.name, ws_r.name, 'Reguler') as work_schedule_name,
+			COALESCE(ws.name, ws_r.name, '-') as work_schedule_name,
 			COALESCE(ws.clock_in_time::text, ws_r.clock_in_time::text, '08:00') as schedule_clock_in,
 			COALESCE(ws.clock_out_time::text, ws_r.clock_out_time::text, '16:00') as schedule_clock_out
 	` + baseQuery + " ORDER BY a.date DESC, a.clock_in DESC LIMIT $" + strconv.Itoa(argId) + " OFFSET $" + strconv.Itoa(argId+1)

@@ -254,7 +254,7 @@ func compareFacePhotos(regPath, livePhoto string) (float64, bool, error) {
 		if faceServiceURL == "" {
 			faceServiceURL = "http://localhost:5000/api/verify-face"
 		}
-		client := &http.Client{Timeout: 6 * time.Second}
+		client := &http.Client{Timeout: 15 * time.Second}
 		resp, err := client.Post(faceServiceURL, "application/json", bytes.NewBuffer(jsonBytes))
 		if err == nil && resp.StatusCode == http.StatusOK {
 			var pyRes struct {
