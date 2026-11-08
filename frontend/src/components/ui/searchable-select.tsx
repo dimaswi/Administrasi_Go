@@ -67,7 +67,7 @@ export function SearchableSelect({
         </Button>
       } />
       <PopoverContent 
-        className="p-0" 
+        className="p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none" 
         align="start"
         style={{ width: triggerWidth ? `${triggerWidth}px` : 'auto' }}
       >

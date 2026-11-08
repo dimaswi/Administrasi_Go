@@ -62,6 +62,7 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	shiftExchangeRepo := repository.NewShiftExchangeRepository(db)
 	documentTemplateRepo := repository.NewDocumentTemplateRepository(db)
 	outgoingLetterRepo := repository.NewOutgoingLetterRepository(db)
+	kpiRepo := repository.NewKpiRepository(db)
 
 	// Setup Services
 	authService := service.NewAuthService(userRepo, roleRepo, jwtSecret)
@@ -95,6 +96,11 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 	meetingHandler := handler.NewMeetingHandler(meetingRepo)
 	settingHandler := handler.NewSettingHandler(settingRepo)
 	shiftExchangeHandler := handler.NewShiftExchangeHandler(shiftExchangeRepo, rosterScheduleRepo)
+	kpiHandler := handler.NewKpiHandler(kpiRepo)
+	trainingRepo := repository.NewTrainingRepository(db)
+	trainingHandler := handler.NewTrainingHandler(trainingRepo)
+	performanceRepo := repository.NewPerformanceRepository(db)
+	performanceHandler := handler.NewPerformanceHandler(performanceRepo)
 
 	employeeDetailRepo := repository.NewEmployeeDetailRepository(db)
 	employeeDetailHandler := handler.NewEmployeeDetailHandler(employeeDetailRepo)
@@ -391,6 +397,84 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				settings.PUT("", middleware.RequirePermission(roleRepo, "settings.edit"), settingHandler.Update)
 				settings.POST("/upload-logo", middleware.RequirePermission(roleRepo, "settings.edit"), settingHandler.UploadLogo)
 				settings.POST("/upload-icon", middleware.RequirePermission(roleRepo, "settings.edit"), settingHandler.UploadIcon)
+			}
+
+			// KPI Management
+			kpi := protected.Group("/kpi")
+			{
+				// Categories
+				kpi.GET("/categories", kpiHandler.GetAllCategories)
+				kpi.GET("/categories/:id", kpiHandler.GetCategoryByID)
+				kpi.POST("/categories", kpiHandler.CreateCategory)
+				kpi.PUT("/categories/:id", kpiHandler.UpdateCategory)
+				kpi.DELETE("/categories/:id", kpiHandler.DeleteCategory)
+
+				// Templates
+				kpi.GET("/templates", kpiHandler.GetAllTemplates)
+				kpi.GET("/templates/:id", kpiHandler.GetTemplateByID)
+				kpi.POST("/templates", kpiHandler.CreateTemplate)
+				kpi.PUT("/templates/:id", kpiHandler.UpdateTemplate)
+				kpi.DELETE("/templates/:id", kpiHandler.DeleteTemplate)
+			}
+
+			// Trainings (Master Data Program Training)
+			trainings := protected.Group("/trainings")
+			{
+				trainings.GET("", trainingHandler.GetAllTrainings)
+				trainings.GET("/:id", trainingHandler.GetTrainingByID)
+				trainings.POST("", trainingHandler.CreateTraining)
+				trainings.PUT("/:id", trainingHandler.UpdateTraining)
+				trainings.DELETE("/:id", trainingHandler.DeleteTraining)
+			}
+
+			// Employee Trainings (Peserta Training)
+			employeeTrainings := protected.Group("/employee-trainings")
+			{
+				employeeTrainings.GET("", trainingHandler.GetAllEmployeeTrainings)
+				employeeTrainings.GET("/:id", trainingHandler.GetEmployeeTrainingByID)
+				employeeTrainings.POST("", trainingHandler.CreateEmployeeTraining)
+				employeeTrainings.PUT("/:id", trainingHandler.UpdateEmployeeTraining)
+				employeeTrainings.DELETE("/:id", trainingHandler.DeleteEmployeeTraining)
+			}
+
+			// Performance Periods (Periode Penilaian)
+			performancePeriods := protected.Group("/performance-periods")
+			{
+				performancePeriods.GET("", performanceHandler.GetAllPeriods)
+				performancePeriods.GET("/:id", performanceHandler.GetPeriodByID)
+				performancePeriods.POST("", performanceHandler.CreatePeriod)
+				performancePeriods.PUT("/:id", performanceHandler.UpdatePeriod)
+				performancePeriods.DELETE("/:id", performanceHandler.DeletePeriod)
+			}
+
+			// Performance Reviews (Penilaian Kinerja)
+			performanceReviews := protected.Group("/performance-reviews")
+			{
+				performanceReviews.GET("", performanceHandler.GetAllReviews)
+				performanceReviews.GET("/:id", performanceHandler.GetReviewByID)
+				performanceReviews.POST("", performanceHandler.CreateReview)
+				performanceReviews.PUT("/:id", performanceHandler.UpdateReview)
+				performanceReviews.DELETE("/:id", performanceHandler.DeleteReview)
+			}
+
+			// 360 Feedback Sessions
+			feedback360 := protected.Group("/feedback360")
+			{
+				feedback360.GET("", performanceHandler.GetAllFeedback360Sessions)
+				feedback360.GET("/:id", performanceHandler.GetFeedback360SessionByID)
+				feedback360.POST("", performanceHandler.CreateFeedback360Session)
+				feedback360.PUT("/:id", performanceHandler.UpdateFeedback360Session)
+				feedback360.DELETE("/:id", performanceHandler.DeleteFeedback360Session)
+			}
+
+			// Calibration Sessions
+			calibration := protected.Group("/calibration")
+			{
+				calibration.GET("", performanceHandler.GetAllCalibrationSessions)
+				calibration.GET("/:id", performanceHandler.GetCalibrationSessionByID)
+				calibration.POST("", performanceHandler.CreateCalibrationSession)
+				calibration.PUT("/:id", performanceHandler.UpdateCalibrationSession)
+				calibration.DELETE("/:id", performanceHandler.DeleteCalibrationSession)
 			}
 		}
 	}

@@ -49,6 +49,9 @@ import {
   Mail,
   UserCheck,
   FileSpreadsheet,
+  Target,
+  GraduationCap,
+  Award,
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AppLogoIcon from '@/components/AppLogoIcon';
@@ -172,6 +175,27 @@ const navItems = [
     href: '/hr/reports/attendance',
     icon: FileSpreadsheet,
     permission: 'report.view',
+  },
+  {
+    title: 'Training',
+    href: '/hr/trainings',
+    icon: GraduationCap,
+    children: [
+      { title: 'Daftar Training', href: '/hr/trainings', permission: 'training.view' },
+      { title: 'Peserta Training', href: '/hr/employee-trainings', permission: 'employee_training.view' },
+    ],
+  },
+  {
+    title: 'Kinerja',
+    href: '/hr/performance-reviews',
+    icon: Award,
+    children: [
+      { title: 'Penilaian Kinerja', href: '/hr/performance-reviews', permission: 'performance_review.view' },
+      { title: '360 Feedback', href: '/hr/feedback360', permission: 'feedback_360.view' },
+      { title: 'Kalibrasi', href: '/hr/calibration', permission: 'calibration.view' },
+      { title: 'Periode Penilaian', href: '/hr/performance-periods', permission: 'performance_period.view' },
+      { title: 'Kategori & KPI', href: '/hr/kpi', permission: 'kpi.view' },
+    ],
   },
   {
     title: 'Master Data',

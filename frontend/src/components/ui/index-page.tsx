@@ -187,308 +187,353 @@ export function IndexPage<T extends { id: number | string }>({
     ).length;
 
     return (
-        <div className="w-full space-y-3">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                    <h2 className="text-lg font-semibold leading-tight">{title}</h2>
-                    {description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-                    )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                    {headerExtra}
-                    {actions && actions.map((action, index) => {
-                        const Icon = action.icon || Plus;
-                        if (action.href) {
-                            return (
-                                <Link key={index} to={action.href} className={buttonVariants({ variant: action.variant || "default", size: "sm" })}>
-                                    <Icon className="h-3.5 w-3.5 mr-1.5" />
-                                    {action.label}
-                                </Link>
-                            );
-                        }
-                        return (
-                            <Button key={index} variant={action.variant || "default"} size="sm" onClick={action.onClick}>
-                                <Icon className="h-3.5 w-3.5 mr-1.5" />
-                                {action.label}
-                            </Button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Toolbar: Search + Filter */}
-            {(onSearchChange || (filterFields && filterFields.length > 0)) && (
-                <div className="flex items-center gap-2">
-                    {onSearchChange && (
-                        <div className="relative flex-1 max-w-xs">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                            <Input
-                                value={searchValue || ""}
-                                onChange={(e) => onSearchChange(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && onFilterSubmit?.()}
-                                placeholder={searchPlaceholder}
-                                className={cn("h-8 pl-8 text-sm", searchValue && "pr-8")}
-                            />
-                            {searchValue && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        onSearchChange("");
-                                        const newParams = new URLSearchParams(searchParams);
-                                        newParams.delete('search');
-                                        navigate(`?${newParams.toString()}`);
-                                    }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                    aria-label="Hapus pencarian"
-                                >
-                                    <X className="h-3.5 w-3.5" />
-                                </button>
+        <div className="w-full max-w-full space-y-4">
+            {/* ─── Unified Card Container: KOTAK (rounded-none border border-neutral-200) ─── */}
+            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
+                
+                {/* ─── Card Header: Icon + Title (Left) & Search + Filters + Actions (Right) ──────── */}
+                <div className="px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+                    <div className="flex items-center gap-2.5">
+                        <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+                            {EmptyIcon ? <EmptyIcon className="size-4" /> : <Search className="size-4" />}
+                        </div>
+                        <div>
+                            <h2 className="text-sm md:text-base font-bold uppercase tracking-tight text-neutral-900 dark:text-white leading-tight">
+                                {title}
+                            </h2>
+                            {description && (
+                                <p className="text-[11px] text-neutral-500 font-mono mt-0.5">
+                                    {description}
+                                </p>
                             )}
                         </div>
-                    )}
-                    {filterFields && filterFields.length > 0 && (
-                        <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
-                            <CollapsibleTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 gap-1.5 text-xs")}>
-                                <Filter className="h-3.5 w-3.5" />
-                                Filter
-                                {activeFilterCount > 0 && (
-                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-medium">
-                                        {activeFilterCount}
-                                    </span>
-                                )}
-                                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", filterOpen && "rotate-180")} />
-                            </CollapsibleTrigger>
-                        </Collapsible>
-                    )}
-                    {/* total count */}
-                    {pagination && (
-                        <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
-                            {pagination.total} total data
-                        </span>
-                    )}
-                </div>
-            )}
+                    </div>
 
-            {/* Collapsible Filter Panel */}
-            {filterFields && filterFields.length > 0 && (
-                <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
-                    <CollapsibleContent>
-                        <div className="rounded-md border bg-muted/20 px-4 py-4 mt-2">
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-4">
-                                {filterFields.map((field) => (
-                                    <div key={field.key} className="space-y-1">
-                                        {field.label && (
-                                            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                                                {field.label}
-                                            </label>
-                                        )}
-                                        {field.type === "select" && field.options && (
-                                            <SearchableSelect
-                                                options={field.options}
-                                                value={filterValues[field.key] || "all"}
-                                                onChange={(val) => onFilterChange?.(field.key, val === "all" || !val ? "" : val)}
-                                                placeholder={field.placeholder || "Pilih..."}
-                                                className={field.className}
-                                            />
-                                        )}
-                                        {field.type === "text" && (
-                                            <Input
-                                                value={filterValues[field.key] || ""}
-                                                onChange={(e) => onFilterChange?.(field.key, e.target.value)}
-                                                onKeyDown={(e) => e.key === "Enter" && onFilterSubmit?.()}
-                                                placeholder={field.placeholder}
-                                                className={cn("h-8 w-[160px] text-xs", field.className)}
-                                            />
-                                        )}
-                                        {field.type === "date" && (
-                                            <div className="relative">
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Search Input */}
+                        {onSearchChange && (
+                            <div className="relative w-44 sm:w-56 md:w-60">
+                                <Input
+                                    placeholder={searchPlaceholder}
+                                    value={searchValue || ""}
+                                    onChange={(e) => onSearchChange(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && onFilterSubmit?.()}
+                                    className="h-8 rounded-none border border-neutral-200 text-xs bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+                                />
+                                {searchValue && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onSearchChange("");
+                                            const newParams = new URLSearchParams(searchParams);
+                                            newParams.delete('search');
+                                            navigate(`?${newParams.toString()}`);
+                                        }}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Extra Toolbar Actions */}
+                        {headerExtra}
+
+                        {/* Filter Trigger */}
+                        {filterFields && filterFields.length > 0 && (
+                            <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
+                                <CollapsibleTrigger 
+                                    className={cn(
+                                        buttonVariants({ variant: "outline", size: "sm" }), 
+                                        "h-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-xs font-medium gap-1.5 px-3 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 shadow-none",
+                                        filterOpen && "bg-neutral-50"
+                                    )}
+                                >
+                                    <Filter className="h-3.5 w-3.5" />
+                                    <span>Filter</span>
+                                    {activeFilterCount > 0 && (
+                                        <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-none bg-neutral-900 text-[10px] text-white font-mono font-bold">
+                                            {activeFilterCount}
+                                        </span>
+                                    )}
+                                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", filterOpen && "rotate-180")} />
+                                </CollapsibleTrigger>
+                            </Collapsible>
+                        )}
+
+                        {/* Header Action Buttons (misal: Tambah Data) */}
+                        {actions && actions.map((action, index) => {
+                            const Icon = action.icon || Plus;
+                            const isPrimary = !action.variant || action.variant === "default";
+                            const btnClass = cn(
+                                "h-8 px-3 rounded-none text-xs font-semibold gap-1.5 shadow-none transition-colors inline-flex items-center justify-center",
+                                isPrimary
+                                    ? "bg-black text-white hover:bg-neutral-800"
+                                    : "border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50"
+                            );
+
+                            if (action.href) {
+                                return (
+                                    <Link key={index} to={action.href} className={btnClass}>
+                                        <Icon className="size-3.5" />
+                                        {action.label}
+                                    </Link>
+                                );
+                            }
+                            return (
+                                <Button 
+                                    key={index} 
+                                    variant={action.variant || "default"} 
+                                    size="sm" 
+                                    onClick={action.onClick}
+                                    className={btnClass}
+                                >
+                                    <Icon className="size-3.5" />
+                                    {action.label}
+                                </Button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+
+                {/* Collapsible Filter Panel */}
+                {filterFields && filterFields.length > 0 && (
+                    <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
+                        <CollapsibleContent>
+                            <div className="border-b border-border bg-muted/20 p-3.5 px-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    {filterFields.map((field) => (
+                                        <div key={field.key} className="space-y-1">
+                                            {field.label && (
+                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                    {field.label}
+                                                </label>
+                                            )}
+                                            {field.type === "select" && field.options && (
+                                                <SearchableSelect
+                                                    options={field.options}
+                                                    value={filterValues[field.key] || "all"}
+                                                    onChange={(val) => onFilterChange?.(field.key, val === "all" || !val ? "" : val)}
+                                                    placeholder={field.placeholder || "Pilih..."}
+                                                    className={field.className}
+                                                />
+                                            )}
+                                            {field.type === "text" && (
                                                 <Input
-                                                    type="date"
                                                     value={filterValues[field.key] || ""}
                                                     onChange={(e) => onFilterChange?.(field.key, e.target.value)}
-                                                    className={cn("h-8 w-full text-xs flex items-center justify-between", field.className)}
+                                                    onKeyDown={(e) => e.key === "Enter" && onFilterSubmit?.()}
+                                                    placeholder={field.placeholder}
+                                                    className={cn("h-8 rounded-none text-xs bg-background border-neutral-200", field.className)}
                                                 />
-                                            </div>
+                                            )}
+                                            {field.type === "date" && (
+                                                <div className="relative">
+                                                    <Input
+                                                        type="date"
+                                                        value={filterValues[field.key] || ""}
+                                                        onChange={(e) => onFilterChange?.(field.key, e.target.value)}
+                                                        className={cn("h-8 w-full rounded-none text-xs bg-background border-neutral-200 flex items-center justify-between", field.className)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <div className="col-span-full flex items-center gap-2 justify-end pt-1">
+                                        {hasActiveFilters && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={onFilterReset} 
+                                                className="h-7 rounded-none text-xs gap-1 border-neutral-200"
+                                            >
+                                                <RotateCcw className="h-3 w-3" />
+                                                Reset
+                                            </Button>
                                         )}
-                                    </div>
-                                ))}
-                                <div className="col-span-full flex gap-2 justify-end mt-2">
-                                    <Button onClick={onFilterSubmit} size="sm" className="h-8 text-xs">
-                                        Terapkan
-                                    </Button>
-                                    {hasActiveFilters && (
-                                        <Button variant="outline" size="sm" onClick={onFilterReset} className="h-8 text-xs gap-1.5">
-                                            <RotateCcw className="h-3 w-3" />
-                                            Reset
+                                        <Button 
+                                            onClick={onFilterSubmit} 
+                                            size="sm" 
+                                            className="h-7 rounded-none text-xs font-semibold bg-black text-white hover:bg-neutral-800"
+                                        >
+                                            Terapkan Filter
                                         </Button>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </CollapsibleContent>
-                </Collapsible>
-            )}
+                        </CollapsibleContent>
+                    </Collapsible>
+                )}
 
-            {/* Table or custom content */}
-            {tableContent ?? (
-                <div className="overflow-x-auto rounded-md border border-border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="border-b border-border hover:bg-transparent bg-muted/40">
-                                {columns.map((column) => (
-                                    <TableHead
-                                        key={column.key}
-                                        className={cn(
-                                            "h-9 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider py-0 select-none",
-                                            column.sortable !== false && column.label && "cursor-pointer hover:text-foreground transition-colors",
-                                            column.className
-                                        )}
-                                        onClick={() => column.sortable !== false && column.label ? handleSort(column.key) : undefined}
-                                    >
-                                        {column.label ? (
-                                            <span className="inline-flex items-center gap-1">
-                                                {column.label}
-                                                {column.sortable !== false && (
-                                                    sortKey === column.key ? (
-                                                        sortDir === "asc"
-                                                            ? <ArrowUp className="h-3 w-3 text-primary" />
-                                                            : <ArrowDown className="h-3 w-3 text-primary" />
-                                                    ) : (
-                                                        <ArrowUpDown className="h-3 w-3 opacity-30" />
-                                                    )
-                                                )}
-                                            </span>
-                                        ) : null}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                <TableRow className="border-0">
-                                    <TableCell colSpan={columns.length} className="h-32 text-center">
-                                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                            Memuat data...
-                                        </div>
-                                    </TableCell>
+                {/* Table or custom content */}
+                {tableContent ?? (
+                    <div className="relative w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <Table className="w-full">
+                            <TableHeader>
+                                <TableRow className="border-b border-border hover:bg-transparent bg-transparent">
+                                    {columns.map((column) => (
+                                        <TableHead
+                                            key={column.key}
+                                            className={cn(
+                                                "h-8 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider select-none",
+                                                column.sortable !== false && column.label && "cursor-pointer hover:text-foreground transition-colors",
+                                                column.className
+                                            )}
+                                            onClick={() => column.sortable !== false && column.label ? handleSort(column.key) : undefined}
+                                        >
+                                            {column.label ? (
+                                                <span className="inline-flex items-center gap-1">
+                                                    {column.label}
+                                                    {column.sortable !== false && (
+                                                        sortKey === column.key ? (
+                                                            sortDir === "asc"
+                                                                ? <ArrowUp className="h-3 w-3 text-foreground" />
+                                                                : <ArrowDown className="h-3 w-3 text-foreground" />
+                                                        ) : (
+                                                            <ArrowUpDown className="h-3 w-3 opacity-30 hover:opacity-70 transition-opacity" />
+                                                        )
+                                                    )}
+                                                </span>
+                                            ) : null}
+                                        </TableHead>
+                                    ))}
                                 </TableRow>
-                            ) : sortedData.length === 0 ? (
-                                <TableRow className="border-0">
-                                    <TableCell colSpan={columns.length} className="h-36 text-center">
-                                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                            {EmptyIcon && <EmptyIcon className="h-8 w-8 opacity-30" />}
-                                            <span className="text-sm">{emptyMessage}</span>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                sortedData.map((item) => (
-                                    <TableRow
-                                        key={item.id}
-                                        className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors h-[46px]"
-                                    >
-                                        {columns.map((column) => (
-                                            <TableCell key={column.key} className={cn("py-2 text-sm", column.className)}>
-                                                {column.render
-                                                    ? column.render(item)
-                                                    : (item as any)[column.key]}
-                                            </TableCell>
-                                        ))}
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow className="border-0">
+                                        <TableCell colSpan={columns.length} className="h-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                                                <span className="text-xs font-mono">Memuat data...</span>
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
+                                ) : sortedData.length === 0 ? (
+                                    <TableRow className="border-0">
+                                        <TableCell colSpan={columns.length} className="h-36 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+                                                {EmptyIcon ? (
+                                                    <EmptyIcon className="h-8 w-8 opacity-30 mb-0.5" />
+                                                ) : (
+                                                    <div className="size-9 rounded-sm bg-muted/50 flex items-center justify-center mb-0.5">
+                                                        <Search className="size-4 opacity-40" />
+                                                    </div>
+                                                )}
+                                                <span className="text-xs font-bold uppercase tracking-wider text-foreground">{emptyMessage}</span>
+                                                <p className="text-[11px] text-muted-foreground font-mono max-w-sm">
+                                                    Tidak ada data yang cocok dengan kriteria pencarian atau filter yang dipilih.
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    sortedData.map((item) => (
+                                        <TableRow
+                                            key={item.id}
+                                            className="border-b border-border/50 hover:bg-muted/30 transition-colors h-9"
+                                        >
+                                            {columns.map((column) => (
+                                                <TableCell key={column.key} className={cn("px-3 py-2 text-xs", column.className)}>
+                                                    {column.render
+                                                        ? column.render(item)
+                                                        : (item as any)[column.key]}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
 
-            {/* Pagination */}
-            {pagination && pagination.total > 0 && (
-                <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
-                    {/* Left: rows per page + range info */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5">
-                            <span>Baris:</span>
-                            {onPerPageChange ? (
-                                <Select
-                                    value={pagination.per_page.toString()}
-                                    onValueChange={(val) => val && onPerPageChange(parseInt(val))}
+                {/* ─── Card Footer: Pagination ──────────────────────────────────────────── */}
+                {pagination && pagination.total > 0 && (
+                    <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-neutral-200 dark:border-neutral-800 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
+                        {/* Left: 0 row(s) */}
+                        <div>
+                            {pagination.total} row(s)
+                        </div>
+
+                        {/* Right: Rows per page [ 10 ˅ ]   Page 1 of X   << < > >> */}
+                        <div className="flex items-center gap-4 self-end sm:self-center">
+                            <div className="flex items-center gap-2">
+                                <span>Rows per page</span>
+                                {onPerPageChange ? (
+                                    <Select
+                                        value={pagination.per_page.toString()}
+                                        onValueChange={(val) => val && onPerPageChange(parseInt(val))}
+                                    >
+                                        <SelectTrigger className="h-8 w-20 text-xs font-mono rounded-none border border-neutral-200 bg-white">
+                                            <SelectValue placeholder="10" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="10">10</SelectItem>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                            <SelectItem value="200">200</SelectItem>
+                                            <SelectItem value="500">500</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <span className="font-semibold text-neutral-900">{pagination.per_page}</span>
+                                )}
+                            </div>
+
+                            <div className="whitespace-nowrap">
+                                Page {pagination.total === 0 ? 0 : pagination.current_page} of {pagination.total === 0 ? 0 : pagination.last_page}
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="First page"
+                                    onClick={() => onPageChange?.(1)}
+                                    disabled={pagination.current_page <= 1}
                                 >
-                                    <SelectTrigger className="h-7 w-[70px]">
-                                        <SelectValue placeholder="10" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="10">10</SelectItem>
-                                        <SelectItem value="25">25</SelectItem>
-                                        <SelectItem value="50">50</SelectItem>
-                                        <SelectItem value="100">100</SelectItem>
-                                        <SelectItem value="200">200</SelectItem>
-                                        <SelectItem value="250">250</SelectItem>
-                                        <SelectItem value="500">500</SelectItem>
-                                        <SelectItem value="1000">1000</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            ) : (
-                                <span className="font-medium">{pagination.per_page}</span>
-                            )}
-                        </div>
-                        <Separator orientation="vertical" className="h-4" />
-                        <span>
-                            {pagination.from ?? 1}–{pagination.to ?? sortedData.length}
-                            {" "}dari{" "}
-                            <span className="font-medium text-foreground">{pagination.total}</span>
-                        </span>
-                    </div>
-
-                    {/* Right: page nav */}
-                    <div className="flex items-center gap-2">
-                        <span>
-                            Hal. <span className="font-medium text-foreground">{pagination.current_page}</span> / {pagination.last_page}
-                        </span>
-                        <div className="flex items-center gap-0.5">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => onPageChange?.(1)}
-                                disabled={pagination.current_page === 1}
-                            >
-                                <ChevronsLeft className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => onPageChange?.(pagination.current_page - 1)}
-                                disabled={pagination.current_page === 1}
-                            >
-                                <ChevronLeft className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => onPageChange?.(pagination.current_page + 1)}
-                                disabled={pagination.current_page === pagination.last_page}
-                            >
-                                <ChevronRight className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => onPageChange?.(pagination.last_page)}
-                                disabled={pagination.current_page === pagination.last_page}
-                            >
-                                <ChevronsRight className="h-3.5 w-3.5" />
-                            </Button>
+                                    <ChevronsLeft className="size-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="Previous page"
+                                    onClick={() => onPageChange?.(pagination.current_page - 1)}
+                                    disabled={pagination.current_page <= 1}
+                                >
+                                    <ChevronLeft className="size-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="Next page"
+                                    onClick={() => onPageChange?.(pagination.current_page + 1)}
+                                    disabled={pagination.current_page >= pagination.last_page || pagination.total === 0}
+                                >
+                                    <ChevronRight className="size-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="Last page"
+                                    onClick={() => onPageChange?.(pagination.last_page)}
+                                    disabled={pagination.current_page >= pagination.last_page || pagination.total === 0}
+                                >
+                                    <ChevronsRight className="size-4" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

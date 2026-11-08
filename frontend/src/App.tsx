@@ -85,6 +85,44 @@ import LeaveTypeEdit from './pages/HR/MasterData/LeaveType/edit';
 import LeaveTypeShow from './pages/HR/MasterData/LeaveType/show';
 import WorkLocationIndex from './pages/HR/MasterData/WorkLocation/index';
 import AttendanceReport from './pages/HR/Reports/AttendanceReport';
+import KpiCategoryIndex from './pages/HR/Kpi/Category/index';
+import KpiCategoryCreate from './pages/HR/Kpi/Category/create';
+import KpiCategoryEdit from './pages/HR/Kpi/Category/edit';
+import KpiCategoryShow from './pages/HR/Kpi/Category/show';
+import KpiTemplateIndex from './pages/HR/Kpi/Template/index';
+import KpiTemplateCreate from './pages/HR/Kpi/Template/create';
+import KpiTemplateEdit from './pages/HR/Kpi/Template/edit';
+import KpiTemplateShow from './pages/HR/Kpi/Template/show';
+
+import TrainingIndex from './pages/HR/Training/index';
+import TrainingCreate from './pages/HR/Training/create';
+import TrainingEdit from './pages/HR/Training/edit';
+import TrainingShow from './pages/HR/Training/show';
+
+import EmployeeTrainingIndex from './pages/HR/EmployeeTraining/index';
+import EmployeeTrainingCreate from './pages/HR/EmployeeTraining/create';
+import EmployeeTrainingEdit from './pages/HR/EmployeeTraining/edit';
+import EmployeeTrainingShow from './pages/HR/EmployeeTraining/show';
+
+import PerformancePeriodIndex from './pages/HR/PerformancePeriod/index';
+import PerformancePeriodCreate from './pages/HR/PerformancePeriod/create';
+import PerformancePeriodEdit from './pages/HR/PerformancePeriod/edit';
+import PerformancePeriodShow from './pages/HR/PerformancePeriod/show';
+
+import PerformanceReviewIndex from './pages/HR/PerformanceReview/index';
+import PerformanceReviewCreate from './pages/HR/PerformanceReview/create';
+import PerformanceReviewEdit from './pages/HR/PerformanceReview/edit';
+import PerformanceReviewShow from './pages/HR/PerformanceReview/show';
+
+import Feedback360Index from './pages/HR/Feedback360/index';
+import Feedback360Create from './pages/HR/Feedback360/create';
+import Feedback360Edit from './pages/HR/Feedback360/edit';
+import Feedback360Show from './pages/HR/Feedback360/show';
+
+import CalibrationIndex from './pages/HR/Calibration/index';
+import CalibrationCreate from './pages/HR/Calibration/create';
+import CalibrationEdit from './pages/HR/Calibration/edit';
+import CalibrationShow from './pages/HR/Calibration/show';
 
 // Protected Route wrapper
 function ProtectedRoute({ children, permission }: { children: React.ReactNode; permission?: string }) {
@@ -216,6 +254,49 @@ function App() {
           <Route path="/hr/master-data/leavetype/:id" element={<ProtectedRoute><LeaveTypeShow /></ProtectedRoute>} />
           <Route path="/hr/master-data/leavetype/:id/edit" element={<ProtectedRoute><LeaveTypeEdit /></ProtectedRoute>} />
           <Route path="/hr/master-data/work-location" element={<ProtectedRoute><WorkLocationIndex /></ProtectedRoute>} />
+
+          {/* KPI Management */}
+          <Route path="/hr/kpi" element={<Navigate to="/hr/kpi/templates" replace />} />
+          <Route path="/hr/kpi/categories" element={<ProtectedRoute permission="kpi.view"><KpiCategoryIndex /></ProtectedRoute>} />
+          <Route path="/hr/kpi/categories/create" element={<ProtectedRoute permission="kpi.create"><KpiCategoryCreate /></ProtectedRoute>} />
+          <Route path="/hr/kpi/categories/:id" element={<ProtectedRoute permission="kpi.view"><KpiCategoryShow /></ProtectedRoute>} />
+          <Route path="/hr/kpi/categories/:id/edit" element={<ProtectedRoute permission="kpi.edit"><KpiCategoryEdit /></ProtectedRoute>} />
+          <Route path="/hr/kpi/templates" element={<ProtectedRoute permission="kpi.view"><KpiTemplateIndex /></ProtectedRoute>} />
+          <Route path="/hr/kpi/templates/create" element={<ProtectedRoute permission="kpi.create"><KpiTemplateCreate /></ProtectedRoute>} />
+          <Route path="/hr/kpi/templates/:id" element={<ProtectedRoute permission="kpi.view"><KpiTemplateShow /></ProtectedRoute>} />
+          <Route path="/hr/kpi/templates/:id/edit" element={<ProtectedRoute permission="kpi.edit"><KpiTemplateEdit /></ProtectedRoute>} />
+
+          {/* Training */}
+          <Route path="/hr/trainings" element={<ProtectedRoute permission="training.view"><TrainingIndex /></ProtectedRoute>} />
+          <Route path="/hr/trainings/create" element={<ProtectedRoute permission="training.create"><TrainingCreate /></ProtectedRoute>} />
+          <Route path="/hr/trainings/:id" element={<ProtectedRoute permission="training.view"><TrainingShow /></ProtectedRoute>} />
+          <Route path="/hr/trainings/:id/edit" element={<ProtectedRoute permission="training.edit"><TrainingEdit /></ProtectedRoute>} />
+
+          <Route path="/hr/employee-trainings" element={<ProtectedRoute permission="employee_training.view"><EmployeeTrainingIndex /></ProtectedRoute>} />
+          <Route path="/hr/employee-trainings/create" element={<ProtectedRoute permission="employee_training.create"><EmployeeTrainingCreate /></ProtectedRoute>} />
+          <Route path="/hr/employee-trainings/:id" element={<ProtectedRoute permission="employee_training.view"><EmployeeTrainingShow /></ProtectedRoute>} />
+          <Route path="/hr/employee-trainings/:id/edit" element={<ProtectedRoute permission="employee_training.edit"><EmployeeTrainingEdit /></ProtectedRoute>} />
+
+          {/* Kinerja & Performance */}
+          <Route path="/hr/performance-periods" element={<ProtectedRoute permission="performance_period.view"><PerformancePeriodIndex /></ProtectedRoute>} />
+          <Route path="/hr/performance-periods/create" element={<ProtectedRoute permission="performance_period.create"><PerformancePeriodCreate /></ProtectedRoute>} />
+          <Route path="/hr/performance-periods/:id" element={<ProtectedRoute permission="performance_period.view"><PerformancePeriodShow /></ProtectedRoute>} />
+          <Route path="/hr/performance-periods/:id/edit" element={<ProtectedRoute permission="performance_period.edit"><PerformancePeriodEdit /></ProtectedRoute>} />
+
+          <Route path="/hr/performance-reviews" element={<ProtectedRoute permission="performance_review.view"><PerformanceReviewIndex /></ProtectedRoute>} />
+          <Route path="/hr/performance-reviews/create" element={<ProtectedRoute permission="performance_review.create"><PerformanceReviewCreate /></ProtectedRoute>} />
+          <Route path="/hr/performance-reviews/:id" element={<ProtectedRoute permission="performance_review.view"><PerformanceReviewShow /></ProtectedRoute>} />
+          <Route path="/hr/performance-reviews/:id/edit" element={<ProtectedRoute permission="performance_review.edit"><PerformanceReviewEdit /></ProtectedRoute>} />
+
+          <Route path="/hr/feedback360" element={<ProtectedRoute permission="feedback_360.view"><Feedback360Index /></ProtectedRoute>} />
+          <Route path="/hr/feedback360/create" element={<ProtectedRoute permission="feedback_360.create"><Feedback360Create /></ProtectedRoute>} />
+          <Route path="/hr/feedback360/:id" element={<ProtectedRoute permission="feedback_360.view"><Feedback360Show /></ProtectedRoute>} />
+          <Route path="/hr/feedback360/:id/edit" element={<ProtectedRoute permission="feedback_360.edit"><Feedback360Edit /></ProtectedRoute>} />
+
+          <Route path="/hr/calibration" element={<ProtectedRoute permission="calibration.view"><CalibrationIndex /></ProtectedRoute>} />
+          <Route path="/hr/calibration/create" element={<ProtectedRoute permission="calibration.create"><CalibrationCreate /></ProtectedRoute>} />
+          <Route path="/hr/calibration/:id" element={<ProtectedRoute permission="calibration.view"><CalibrationShow /></ProtectedRoute>} />
+          <Route path="/hr/calibration/:id/edit" element={<ProtectedRoute permission="calibration.edit"><CalibrationEdit /></ProtectedRoute>} />
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>

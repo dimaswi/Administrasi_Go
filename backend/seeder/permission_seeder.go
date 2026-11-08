@@ -171,6 +171,43 @@ var AllPermissions = []PermDef{
 	// 20. Settings
 	{"settings.view", "Lihat Pengaturan", "Dapat melihat konfigurasi sistem", "Settings"},
 	{"settings.edit", "Edit Pengaturan", "Dapat mengubah konfigurasi dan pengaturan sistem", "Settings"},
+
+	// 21. KPI Management
+	{"kpi.view", "Lihat KPI", "Dapat melihat daftar template dan kategori KPI", "KPI Management"},
+	{"kpi.create", "Tambah KPI", "Dapat menambahkan template dan kategori KPI baru", "KPI Management"},
+	{"kpi.edit", "Edit KPI", "Dapat mengubah template dan kategori KPI", "KPI Management"},
+	{"kpi.delete", "Hapus KPI", "Dapat menghapus template dan kategori KPI", "KPI Management"},
+
+	// 22. Training
+	{"training.view", "Lihat Program Training", "Dapat melihat daftar program pelatihan", "Training"},
+	{"training.create", "Tambah Program Training", "Dapat menambahkan program pelatihan baru", "Training"},
+	{"training.edit", "Edit Program Training", "Dapat mengubah program pelatihan", "Training"},
+	{"training.delete", "Hapus Program Training", "Dapat menghapus program pelatihan", "Training"},
+	{"employee_training.view", "Lihat Peserta Training", "Dapat melihat data keikutsertaan pelatihan karyawan", "Training"},
+	{"employee_training.create", "Tambah Peserta Training", "Dapat mendaftarkan karyawan ke pelatihan", "Training"},
+	{"employee_training.edit", "Edit Peserta Training", "Dapat memperbarui status & sertifikat pelatihan karyawan", "Training"},
+	{"employee_training.delete", "Hapus Peserta Training", "Dapat menghapus data peserta pelatihan", "Training"},
+
+	// 23. Kinerja & Performance
+	{"performance_period.view", "Lihat Periode Penilaian", "Dapat melihat daftar periode penilaian kinerja", "Kinerja"},
+	{"performance_period.create", "Tambah Periode Penilaian", "Dapat membuat periode penilaian kinerja baru", "Kinerja"},
+	{"performance_period.edit", "Edit Periode Penilaian", "Dapat mengubah status dan rentang periode penilaian", "Kinerja"},
+	{"performance_period.delete", "Hapus Periode Penilaian", "Dapat menghapus periode penilaian", "Kinerja"},
+
+	{"performance_review.view", "Lihat Penilaian Kinerja", "Dapat melihat evaluasi kinerja karyawan", "Kinerja"},
+	{"performance_review.create", "Tambah Penilaian Kinerja", "Dapat membuat sesi penilaian kinerja baru", "Kinerja"},
+	{"performance_review.edit", "Edit Penilaian Kinerja", "Dapat menilai dan memperbarui evaluasi kinerja", "Kinerja"},
+	{"performance_review.delete", "Hapus Penilaian Kinerja", "Dapat menghapus sesi penilaian kinerja", "Kinerja"},
+
+	{"feedback_360.view", "Lihat 360 Feedback", "Dapat melihat sesi umpan balik 360 derajat", "Kinerja"},
+	{"feedback_360.create", "Tambah 360 Feedback", "Dapat membuat sesi survei 360 feedback baru", "Kinerja"},
+	{"feedback_360.edit", "Edit 360 Feedback", "Dapat mengelola penilai dan status 360 feedback", "Kinerja"},
+	{"feedback_360.delete", "Hapus 360 Feedback", "Dapat menghapus sesi 360 feedback", "Kinerja"},
+
+	{"calibration.view", "Lihat Sesi Kalibrasi", "Dapat melihat sesi kalibrasi nilai performa", "Kinerja"},
+	{"calibration.create", "Tambah Sesi Kalibrasi", "Dapat membuat sesi kalibrasi nilai baru", "Kinerja"},
+	{"calibration.edit", "Edit Sesi Kalibrasi", "Dapat menjalankan dan memodifikasi kalibrasi nilai", "Kinerja"},
+	{"calibration.delete", "Hapus Sesi Kalibrasi", "Dapat menghapus sesi kalibrasi", "Kinerja"},
 }
 
 // SeedAllPermissions ensures that every single module and permission exists in database

@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
 import { IndexPage } from '@/components/ui/index-page';
 import { Clock, Plus, LogOut, Pencil, CheckCircle, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import {
     Dialog,
@@ -225,16 +226,16 @@ export default function AttendanceIndex() {
     };
 
     const statusConfig: Record<string, { label: string; className: string }> = {
-        present: { label: 'Hadir', className: 'bg-green-100 text-green-700' },
-        late: { label: 'Terlambat', className: 'bg-amber-100 text-amber-700' },
-        absent: { label: 'Absen', className: 'bg-red-100 text-red-700' },
-        sick: { label: 'Sakit', className: 'bg-blue-100 text-blue-700' },
-        permit: { label: 'Izin', className: 'bg-purple-100 text-purple-700' },
-        permission: { label: 'Izin', className: 'bg-purple-100 text-purple-700' },
-        leave: { label: 'Cuti', className: 'bg-indigo-100 text-indigo-700' },
-        holiday: { label: 'Libur', className: 'bg-gray-100 text-gray-600' },
-        early_leave: { label: 'Pulang Awal', className: 'bg-orange-100 text-orange-700' },
-        late_early_leave: { label: 'Terlambat & Pulang Awal', className: 'bg-rose-100 text-rose-700' },
+        present: { label: 'Hadir', className: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+        late: { label: 'Terlambat', className: 'bg-amber-50 text-amber-700 border border-amber-200' },
+        absent: { label: 'Absen', className: 'bg-rose-50 text-rose-700 border border-rose-200' },
+        sick: { label: 'Sakit', className: 'bg-blue-50 text-blue-700 border border-blue-200' },
+        permit: { label: 'Izin', className: 'bg-purple-50 text-purple-700 border border-purple-200' },
+        permission: { label: 'Izin', className: 'bg-purple-50 text-purple-700 border border-purple-200' },
+        leave: { label: 'Cuti', className: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
+        holiday: { label: 'Libur', className: 'bg-neutral-100 text-neutral-600 border border-neutral-200' },
+        early_leave: { label: 'Pulang Awal', className: 'bg-orange-50 text-orange-700 border border-orange-200' },
+        late_early_leave: { label: 'Terlambat & Pulang Awal', className: 'bg-rose-50 text-rose-700 border border-rose-200' },
     };
 
     const pendingEarlyCount = data.filter((r: any) =>
@@ -249,34 +250,44 @@ export default function AttendanceIndex() {
     const columns = [
         { 
             key: 'employee_name', 
-            label: 'Nama Pegawai', 
-            render: (row: any) => <span className="font-semibold text-foreground">{row.employee_name || `Pegawai ID ${row.employee_id}`}</span> 
+            label: 'Nama Pegawai',
+            className: 'min-w-[130px] max-w-[180px]',
+            render: (row: any) => (
+                <span className="font-semibold text-neutral-900 dark:text-neutral-100 truncate block text-xs" title={row.employee_name}>
+                    {row.employee_name || `Pegawai ID ${row.employee_id}`}
+                </span>
+            )
         },
         { 
             key: 'date', 
-            label: 'Tanggal', 
-            render: (row: any) => formatDate(row.date) 
+            label: 'Tanggal',
+            className: 'w-24 whitespace-nowrap',
+            render: (row: any) => <span className="font-mono text-xs">{formatDate(row.date)}</span>
         },
         { 
             key: 'clock_in', 
-            label: 'Jam Masuk', 
-            render: (row: any) => formatTime(row.clock_in) 
+            label: 'Masuk',
+            className: 'w-16 text-center whitespace-nowrap',
+            render: (row: any) => <span className="font-mono text-xs">{formatTime(row.clock_in)}</span> 
         },
         { 
             key: 'clock_out', 
-            label: 'Jam Pulang', 
-            render: (row: any) => formatTime(row.clock_out) 
+            label: 'Pulang',
+            className: 'w-16 text-center whitespace-nowrap',
+            render: (row: any) => <span className="font-mono text-xs">{formatTime(row.clock_out)}</span> 
         },
         { 
             key: 'work_schedule_name', 
-            label: 'Shift', 
-            render: (row: any) => row.work_schedule_name || '-' 
+            label: 'Shift',
+            className: 'w-20 whitespace-nowrap',
+            render: (row: any) => <span className="text-xs text-neutral-600">{row.work_schedule_name || '-'}</span> 
         },
         {
             key: 'notes',
             label: 'Catatan / Alasan',
+            className: 'min-w-[120px] max-w-[190px]',
             render: (row: any) => {
-                if (!row.notes) return <span className="text-muted-foreground text-xs italic">-</span>;
+                if (!row.notes) return <span className="text-neutral-400 text-xs italic">-</span>;
                 const cleanText = row.notes
                     .replace(/\[Pulang Cepat - Menunggu ACC HR\]/gi, '')
                     .replace(/\[Pulang Cepat - Disetujui HR\]/gi, '')
@@ -291,9 +302,9 @@ export default function AttendanceIndex() {
                     reason = cleanText.split('Pengganti:')[0].replace(/•/g, '').trim();
                 }
 
-                if (!reason) return <span className="text-muted-foreground text-xs italic">-</span>;
+                if (!reason) return <span className="text-neutral-400 text-xs italic">-</span>;
                 return (
-                    <span className="text-xs text-foreground font-medium" title={reason}>
+                    <span className="text-xs text-neutral-700 dark:text-neutral-300 font-medium truncate block" title={reason}>
                         {reason}
                     </span>
                 );
@@ -301,9 +312,10 @@ export default function AttendanceIndex() {
         },
         {
             key: 'delegation',
-            label: 'Karyawan Pengganti',
+            label: 'Pengganti',
+            className: 'w-28',
             render: (row: any) => {
-                if (!row.notes) return <span className="text-muted-foreground text-xs italic">-</span>;
+                if (!row.notes) return <span className="text-neutral-400 text-xs italic">-</span>;
                 let colleague = '';
                 if (row.notes.includes('• Pengganti:')) {
                     colleague = row.notes.split('• Pengganti:')[1].trim();
@@ -313,17 +325,18 @@ export default function AttendanceIndex() {
 
                 if (colleague) {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none text-[10px] font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 truncate max-w-[110px]" title={colleague}>
                             👤 {colleague}
                         </span>
                     );
                 }
-                return <span className="text-muted-foreground text-xs italic">-</span>;
+                return <span className="text-neutral-400 text-xs italic">-</span>;
             },
         },
         {
             key: 'status',
             label: 'Status',
+            className: 'w-28 text-center whitespace-nowrap',
             render: (row: any) => {
                 const isEarly = row.status?.toLowerCase() === 'early_leave';
                 const isLateEarly = row.status?.toLowerCase() === 'late_early_leave';
@@ -332,51 +345,51 @@ export default function AttendanceIndex() {
                 if (isEarly || isLateEarly) {
                     if (isApproved) {
                         return (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 whitespace-nowrap">
-                                <CheckCircle className="h-3 w-3 text-emerald-600" />
-                                Pulang Awal (Disetujui)
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 whitespace-nowrap">
+                                <CheckCircle className="size-3 text-emerald-600" />
+                                Pulang Awal (ACC)
                             </span>
                         );
                     }
                     return (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 whitespace-nowrap">
-                            <Clock className="h-3 w-3 text-amber-600" />
-                            Pulang Awal (Menunggu ACC)
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-300 whitespace-nowrap">
+                            <Clock className="size-3 text-amber-600" />
+                            Pulang Awal (Menunggu)
                         </span>
                     );
                 }
-                const cfg = statusConfig[row.status?.toLowerCase()] || { label: row.status, className: 'bg-gray-100 text-gray-700' };
-                return <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cfg.className}`}>{cfg.label}</span>;
+                const cfg = statusConfig[row.status?.toLowerCase()] || { label: row.status, className: 'bg-neutral-100 text-neutral-700 border border-neutral-200' };
+                return <span className={cn("inline-block px-2 py-0.5 rounded-none text-[10px] font-semibold whitespace-nowrap", cfg.className)}>{cfg.label}</span>;
             }
         },
         {
             key: 'actions',
             label: 'Aksi',
-            className: 'w-[120px] text-right',
+            className: 'w-20 text-right whitespace-nowrap',
             render: (row: any) => {
                 const isEarly = row.status?.toLowerCase() === 'early_leave' || (row.notes && row.notes.includes('Pulang Cepat'));
                 const isApproved = row.notes?.includes('[Disetujui');
                 const needsAcc = isEarly && !isApproved;
 
                 return (
-                    <div className="flex items-center justify-end gap-1.5">
+                    <div className="flex items-center justify-end gap-1">
                         {needsAcc && (
                             <Button
                                 size="sm"
-                                className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1 font-semibold shadow-sm"
+                                className="h-6 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1 font-semibold rounded-none shadow-none"
                                 title="ACC / Setujui Pulang Cepat Pegawai"
                                 onClick={() => handleAccEarlyLeave(row)}
                             >
-                                <CheckCircle className="h-3.5 w-3.5" />
+                                <CheckCircle className="size-3" />
                                 ACC
                             </Button>
                         )}
-                        <Button size="icon" variant="outline" className="h-7 w-7 text-indigo-500 border-indigo-200 hover:bg-indigo-50" title="Edit" onClick={() => handleEditClick(row)}>
-                            <Pencil className="h-3.5 w-3.5" />
+                        <Button size="icon" variant="outline" className="h-6 w-6 rounded-none border-neutral-200 text-neutral-600 hover:text-neutral-900" title="Edit" onClick={() => handleEditClick(row)}>
+                            <Pencil className="size-3" />
                         </Button>
                         {!row.clock_out && (
-                            <Button size="icon" variant="outline" className="h-7 w-7 text-blue-500 border-blue-200 hover:bg-blue-50" title="Check-out" onClick={() => handleCheckoutClick(row)}>
-                                <LogOut className="h-3.5 w-3.5" />
+                            <Button size="icon" variant="outline" className="h-6 w-6 rounded-none border-neutral-200 text-neutral-600 hover:text-neutral-900" title="Check-out" onClick={() => handleCheckoutClick(row)}>
+                                <LogOut className="size-3" />
                             </Button>
                         )}
                     </div>
@@ -391,28 +404,36 @@ export default function AttendanceIndex() {
                 title="Riwayat Absensi & Pulang Cepat"
                 description="Monitor absensi harian dan persetujuan (ACC) pulang cepat pegawai"
                 headerExtra={
-                    <div className="flex items-center gap-1.5 p-1 bg-muted/50 rounded-lg border text-xs">
-                        <Button
-                            variant={activeTab === 'all' ? 'default' : 'ghost'}
-                            size="sm"
-                            className="h-7 text-xs font-medium"
+                    <div className="flex items-center border border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-100/60 dark:bg-neutral-900 p-0.5">
+                        <button
+                            type="button"
                             onClick={() => setActiveTab('all')}
+                            className={cn(
+                                "h-7 px-2.5 text-xs font-semibold rounded-none transition-colors",
+                                activeTab === 'all' 
+                                    ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-none border border-neutral-200 dark:border-neutral-700" 
+                                    : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400"
+                            )}
                         >
                             Semua ({data.length})
-                        </Button>
-                        <Button
-                            variant={activeTab === 'early_leave' ? 'default' : 'ghost'}
-                            size="sm"
-                            className={`h-7 text-xs gap-1.5 font-medium ${activeTab === 'early_leave' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-orange-600 dark:text-orange-400'}`}
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setActiveTab('early_leave')}
+                            className={cn(
+                                "h-7 px-2.5 text-xs font-semibold rounded-none transition-colors flex items-center gap-1",
+                                activeTab === 'early_leave' 
+                                    ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-none border border-neutral-200 dark:border-neutral-700" 
+                                    : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400"
+                            )}
                         >
-                            Pulang Cepat
+                            <span>Pulang Cepat</span>
                             {pendingEarlyCount > 0 && (
-                                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-red-600 text-white font-bold text-[10px]">
+                                <span className="px-1 py-0.2 rounded-none bg-rose-600 text-white font-mono font-bold text-[10px]">
                                     {pendingEarlyCount}
                                 </span>
                             )}
-                        </Button>
+                        </button>
                     </div>
                 }
                 actions={[

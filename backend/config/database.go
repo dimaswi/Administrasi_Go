@@ -83,6 +83,121 @@ func ConnectDB(cfg DBConfig) *sqlx.DB {
 			CREATE UNIQUE INDEX attendances_emp_date_ws_unique ON attendances (employee_id, date, COALESCE(work_schedule_id, 0));
 		END IF;
 	END $$;
+
+	CREATE TABLE IF NOT EXISTS trainings (
+		id SERIAL PRIMARY KEY,
+		code VARCHAR(50) NOT NULL UNIQUE,
+		name VARCHAR(255) NOT NULL,
+		description TEXT,
+		type VARCHAR(50) NOT NULL,
+		category VARCHAR(50),
+		provider VARCHAR(255),
+		duration_hours INT,
+		cost NUMERIC(15,2),
+		location VARCHAR(255),
+		is_mandatory BOOLEAN NOT NULL DEFAULT FALSE,
+		is_active BOOLEAN NOT NULL DEFAULT TRUE,
+		objectives TEXT,
+		prerequisites TEXT,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS employee_trainings (
+		id SERIAL PRIMARY KEY,
+		employee_id INT NOT NULL,
+		training_id INT NOT NULL,
+		status VARCHAR(50) NOT NULL DEFAULT 'registered',
+		start_date DATE,
+		end_date DATE,
+		completion_date DATE,
+		score NUMERIC(5,2),
+		grade VARCHAR(10),
+		certificate_number VARCHAR(100),
+		certificate_path VARCHAR(255),
+		certificate_expiry DATE,
+		feedback TEXT,
+		rating INT,
+		notes TEXT,
+		approved_by INT,
+		approved_at TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS performance_periods (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		type VARCHAR(50) NOT NULL,
+		start_date DATE NOT NULL,
+		end_date DATE NOT NULL,
+		status VARCHAR(50) NOT NULL DEFAULT 'draft',
+		description TEXT,
+		is_current BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS performance_reviews (
+		id SERIAL PRIMARY KEY,
+		employee_id INT NOT NULL,
+		period_id INT NOT NULL,
+		reviewer_id INT,
+		status VARCHAR(50) NOT NULL DEFAULT 'draft',
+		self_score NUMERIC(5,2),
+		manager_score NUMERIC(5,2),
+		final_score NUMERIC(5,2),
+		final_grade VARCHAR(10),
+		employee_notes TEXT,
+		manager_notes TEXT,
+		strengths TEXT,
+		improvements TEXT,
+		development_plan TEXT,
+		self_reviewed_at TIMESTAMP,
+		manager_reviewed_at TIMESTAMP,
+		completed_at TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS feedback_360_sessions (
+		id SERIAL PRIMARY KEY,
+		period_id INT NOT NULL,
+		name VARCHAR(255) NOT NULL,
+		description TEXT,
+		start_date DATE NOT NULL,
+		end_date DATE NOT NULL,
+		status VARCHAR(50) NOT NULL DEFAULT 'draft',
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS feedback_360_participants (
+		id SERIAL PRIMARY KEY,
+		session_id INT NOT NULL,
+		employee_id INT NOT NULL,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS calibration_sessions (
+		id SERIAL PRIMARY KEY,
+		period_id INT NOT NULL,
+		name VARCHAR(255) NOT NULL,
+		description TEXT,
+		date DATE NOT NULL,
+		status VARCHAR(50) NOT NULL DEFAULT 'draft',
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS calibration_reviews (
+		id SERIAL PRIMARY KEY,
+		session_id INT NOT NULL,
+		review_id INT NOT NULL,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
 	`
 	if _, err := db.Exec(initSchema); err != nil {
 		log.Printf("Warning: Failed to auto-migrate schema/seed: %v", err)
