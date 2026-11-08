@@ -212,25 +212,25 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
     return (
         <div className="space-y-4">
             <div className="space-y-2">
-                <Label className="text-xs">Format Penomoran</Label>
+                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Format Penomoran</Label>
                 
                 {/* Current Format Display */}
                 {components.length > 0 && (
                     <div className="space-y-2">
-                        <div className="flex flex-wrap gap-1.5 p-2 border rounded-md bg-muted/30 min-h-[40px] items-center">
+                        <div className="flex flex-wrap gap-1.5 p-2 border border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-50/50 dark:bg-neutral-900/50 min-h-[40px] items-center">
                             {components.map((component, index) => (
                                 <div
                                     key={component.id}
                                     className="group flex items-center gap-0.5"
                                 >
-                                    <div className="flex items-center gap-0.5 bg-background border rounded px-1.5 py-0.5">
+                                    <div className="flex items-center gap-0.5 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-none px-1.5 py-0.5">
                                         {/* Move Left Button */}
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             size="icon"
                                             className={cn(
-                                                "h-4 w-4 transition-opacity hover:bg-muted",
+                                                "h-4 w-4 rounded-none transition-opacity hover:bg-neutral-100",
                                                 index === 0 ? "opacity-30 cursor-not-allowed" : "opacity-0 group-hover:opacity-100"
                                             )}
                                             onClick={() => moveComponent(component.id, 'left')}
@@ -241,11 +241,11 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                                         </Button>
                                         
                                         {component.type === 'variable' ? (
-                                            <Badge variant="secondary" className="h-5 text-[10px] px-1.5 font-mono">
+                                            <Badge variant="secondary" className="h-5 text-[10px] px-1.5 font-mono rounded-none">
                                                 {getVariableLabel(component.value)}
                                             </Badge>
                                         ) : component.type === 'custom' ? (
-                                            <Badge variant="outline" className="h-5 text-[10px] px-1.5 font-mono bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                                            <Badge variant="outline" className="h-5 text-[10px] px-1.5 font-mono rounded-none bg-neutral-50 dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700">
                                                 <Type className="h-2.5 w-2.5 mr-1" />
                                                 {component.value}
                                             </Badge>
@@ -261,7 +261,7 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                                             variant="ghost"
                                             size="icon"
                                             className={cn(
-                                                "h-4 w-4 transition-opacity hover:bg-muted",
+                                                "h-4 w-4 rounded-none transition-opacity hover:bg-neutral-100",
                                                 index === components.length - 1 ? "opacity-30 cursor-not-allowed" : "opacity-0 group-hover:opacity-100"
                                             )}
                                             onClick={() => moveComponent(component.id, 'right')}
@@ -275,7 +275,7 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                                            className="h-4 w-4 rounded-none opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
                                             onClick={() => removeComponent(component.id)}
                                             title="Hapus"
                                         >
@@ -288,8 +288,8 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                         
                         {/* Preview */}
                         <div className="flex items-center gap-2 text-xs">
-                            <span className="text-muted-foreground">Contoh:</span>
-                            <code className="px-2 py-0.5 bg-muted rounded font-mono">
+                            <span className="text-muted-foreground font-mono">Contoh:</span>
+                            <code className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-none font-mono text-xs">
                                 {getPreview()}
                             </code>
                         </div>
@@ -297,8 +297,8 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                 )}
 
                 {components.length === 0 && (
-                    <div className="p-4 border-2 border-dashed rounded-md text-center">
-                        <p className="text-xs text-muted-foreground">
+                    <div className="p-4 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-50/50 dark:bg-neutral-900/50 text-center">
+                        <p className="text-xs text-muted-foreground font-mono">
                             Belum ada komponen. Tambahkan variabel atau pemisah di bawah.
                         </p>
                     </div>
@@ -306,8 +306,8 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
             </div>
 
             {/* Add Variable */}
-            <div className="space-y-2">
-                <Label className="text-xs">Tambah Variabel Dinamis</Label>
+            <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Tambah Variabel Dinamis</Label>
                 <div className="flex gap-2">
                     <SearchableSelect 
                         value={newVariable} 
@@ -319,7 +319,7 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                                 <div className="flex flex-col w-full text-left">
                                     <div className="flex items-center justify-between gap-4">
                                         <span>{v.label}</span>
-                                        <code className="text-[10px] text-muted-foreground bg-muted px-1 rounded">
+                                        <code className="text-[10px] text-muted-foreground bg-neutral-100 dark:bg-neutral-800 px-1 font-mono rounded-none">
                                             {v.example}
                                         </code>
                                     </div>
@@ -330,13 +330,13 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                             )
                         }))}
                         placeholder="Pilih variabel..."
-                        className="h-8 text-xs flex-1"
+                        className="h-8 text-xs flex-1 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none"
                     />
                     <Button
                         type="button"
                         size="sm"
-                        variant="secondary"
-                        className="h-8 px-3"
+                        variant="outline"
+                        className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-xs font-medium"
                         onClick={addVariable}
                         disabled={!newVariable}
                     >
@@ -344,20 +344,20 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                         Tambah
                     </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground font-mono">
                     Variabel akan diisi otomatis saat membuat surat
                 </p>
             </div>
 
             {/* Add Custom Text */}
-            <div className="space-y-2">
-                <Label className="text-xs">Tambah Teks Kustom</Label>
+            <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Tambah Teks Kustom</Label>
                 <div className="flex gap-2">
                     <Input
                         value={newCustomText}
                         onChange={(e) => setNewCustomText(e.target.value)}
                         placeholder="Contoh: HRD, KEUANGAN, dll"
-                        className="h-8 text-xs flex-1"
+                        className="h-8 text-xs flex-1 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none font-mono"
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -368,8 +368,8 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                     <Button
                         type="button"
                         size="sm"
-                        variant="secondary"
-                        className="h-8 px-3"
+                        variant="outline"
+                        className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-xs font-medium"
                         onClick={addCustomText}
                         disabled={!newCustomText.trim()}
                     >
@@ -377,27 +377,27 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                         Tambah
                     </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground font-mono">
                     Teks tetap yang tidak berubah (misal: kode departemen)
                 </p>
             </div>
 
             {/* Add Separator */}
-            <div className="space-y-2">
-                <Label className="text-xs">Tambah Pemisah</Label>
+            <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Tambah Pemisah</Label>
                 <div className="flex gap-2">
                     <SearchableSelect 
                         value={newSeparator} 
                         onValueChange={setNewSeparator}
                         options={AVAILABLE_SEPARATORS}
                         placeholder="Pilih pemisah..."
-                        className="h-8 text-xs flex-1"
+                        className="h-8 text-xs flex-1 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none"
                     />
                     <Button
                         type="button"
                         size="sm"
-                        variant="secondary"
-                        className="h-8 px-3"
+                        variant="outline"
+                        className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-xs font-medium"
                         onClick={addSeparator}
                     >
                         <Plus className="h-3 w-3 mr-1" />
@@ -411,7 +411,7 @@ export function NumberingFormatBuilder({ value, onChange }: Props) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="w-full h-8 text-xs"
+                    className="w-full h-8 text-xs rounded-none text-neutral-500 hover:text-neutral-900"
                     onClick={() => updateFormat([])}
                 >
                     <X className="h-3 w-3 mr-1" />

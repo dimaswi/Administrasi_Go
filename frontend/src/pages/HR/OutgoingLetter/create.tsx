@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { ArrowLeft, Save, Eye, Mail, FileText, UserCheck, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Mail, FileText, UserCheck, ZoomIn, ZoomOut, RotateCcw, Loader2 } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -199,49 +199,65 @@ export default function OutgoingLetterCreate() {
 
     return (
         <AdminLayout>
-            <div className="w-full">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/admin/outgoing-letters')}>
+            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col lg:h-[calc(100vh-120px)]">
+                {/* Unified Header */}
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 shrink-0" 
+                            type="button" 
+                            onClick={() => navigate('/admin/outgoing-letters')}
+                        >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <div className="space-y-0.5">
-                            <h2 className="text-xl font-semibold">Buat Surat Keluar</h2>
-                            <p className="text-sm text-muted-foreground">Formulir pembuatan draft surat keluar baru.</p>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+                                <Mail className="size-4" />
+                            </div>
+                            <div className="min-w-0">
+                                <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                                    Buat Surat Keluar
+                                </h1>
+                                <p className="text-[11px] text-neutral-500 font-mono truncate">
+                                    Formulir pembuatan draft surat keluar baru berbasis template
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div className="lg:col-span-5 relative pb-32">
-                        <form id="letter-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-                            <div className="flex flex-col">
-                                <Tabs defaultValue="informasi" className="w-full">
-                                    <div className="border-b mb-6">
-                                        <TabsList className="w-full flex justify-start rounded-none bg-transparent h-12 p-0">
-                                            <TabsTrigger value="informasi" className="h-12 rounded-none px-6 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary text-muted-foreground data-[state=active]:text-primary">Info Dasar</TabsTrigger>
-                                            <TabsTrigger value="variabel" disabled={!(selectedTemplate?.parsedVars?.length > 0)} className="h-12 rounded-none px-6 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary text-muted-foreground data-[state=active]:text-primary">Variabel</TabsTrigger>
-                                            <TabsTrigger value="penandatangan" disabled={!(selectedTemplate && signatories.length > 0)} className="h-12 rounded-none px-6 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary text-muted-foreground data-[state=active]:text-primary">Signer</TabsTrigger>
-                                        </TabsList>
-                                    </div>
+                {/* Unified 2-Column Body */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 items-stretch overflow-hidden">
+                    {/* Left Column: Form Content */}
+                    <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800 flex flex-col h-full min-h-0 bg-white dark:bg-neutral-950 overflow-hidden">
+                        <form id="letter-form" onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
+                            <Tabs defaultValue="informasi" className="w-full flex flex-col h-full min-h-0">
+                                <div className="border-b border-neutral-200 dark:border-neutral-800 overflow-hidden shrink-0 bg-neutral-50/60 dark:bg-neutral-900/40 px-2">
+                                    <TabsList className="w-full flex justify-start rounded-none bg-transparent h-10 p-0 border-none overflow-x-auto overflow-y-hidden no-scrollbar">
+                                        <TabsTrigger value="informasi" className="h-10 rounded-none px-4 bg-transparent after:hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-neutral-900 dark:data-[state=active]:border-white text-neutral-500 data-[state=active]:text-neutral-900 dark:data-[state=active]:text-white font-semibold text-xs uppercase tracking-wider">Info Dasar</TabsTrigger>
+                                        <TabsTrigger value="variabel" disabled={!(selectedTemplate?.parsedVars?.length > 0)} className="h-10 rounded-none px-4 bg-transparent after:hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-neutral-900 dark:data-[state=active]:border-white text-neutral-500 data-[state=active]:text-neutral-900 dark:data-[state=active]:text-white font-semibold text-xs uppercase tracking-wider">Variabel</TabsTrigger>
+                                        <TabsTrigger value="penandatangan" disabled={!(selectedTemplate && signatories.length > 0)} className="h-10 rounded-none px-4 bg-transparent after:hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-neutral-900 dark:data-[state=active]:border-white text-neutral-500 data-[state=active]:text-neutral-900 dark:data-[state=active]:text-white font-semibold text-xs uppercase tracking-wider">Signer</TabsTrigger>
+                                    </TabsList>
+                                </div>
 
-                                    <div className="pr-2">
+                                <div className="p-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                                         <TabsContent value="informasi" className="m-0 focus-visible:outline-none">
-                                            <div className="flex items-center gap-2 text-primary font-medium pb-2 border-b mb-6">
-                                                <Mail className="h-5 w-5" />
-                                                Informasi Dasar
+                                            <div className="flex items-center gap-2 text-neutral-900 dark:text-white font-semibold text-xs uppercase tracking-wider pb-2 border-b border-neutral-100 dark:border-neutral-800 mb-5">
+                                                <Mail className="h-4 w-4" />
+                                                Informasi Dasar Surat
                                             </div>
-                                            <div className="grid grid-cols-1 gap-6">
-                                                <div className="space-y-2">
-                                                    <Label className="flex gap-1">Pilih Template <span className="text-destructive">*</span></Label>
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider flex gap-1">Pilih Template <span className="text-rose-500">*</span></Label>
                                                     <Popover open={openTemplateBox} onOpenChange={setOpenTemplateBox}>
                                                         <PopoverTrigger render={
                                                             <Button
                                                                 variant="outline"
                                                                 role="combobox"
                                                                 aria-expanded={openTemplateBox}
-                                                                className="w-full justify-between bg-white text-left font-normal"
+                                                                className="w-full justify-between bg-white dark:bg-neutral-900 text-left font-normal h-9 rounded-none border border-neutral-200 dark:border-neutral-800 text-sm shadow-none"
                                                             />
                                                         }>
                                                             {formData.template_id
@@ -252,9 +268,9 @@ export default function OutgoingLetterCreate() {
                                                                 : "Pilih template surat..."}
                                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                         </PopoverTrigger>
-                                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none" align="start">
                                                             <Command>
-                                                                <CommandInput placeholder="Cari template..." />
+                                                                <CommandInput placeholder="Cari template..." className="h-9 text-sm" />
                                                                 <CommandList>
                                                                     <CommandEmpty>Template tidak ditemukan.</CommandEmpty>
                                                                     <CommandGroup>
@@ -266,6 +282,7 @@ export default function OutgoingLetterCreate() {
                                                                                     setFormData({ ...formData, template_id: t.id.toString() });
                                                                                     setOpenTemplateBox(false);
                                                                                 }}
+                                                                                className="text-xs font-medium cursor-pointer rounded-none"
                                                                             >
                                                                                 <Check
                                                                                     className={cn(
@@ -282,22 +299,24 @@ export default function OutgoingLetterCreate() {
                                                         </PopoverContent>
                                                     </Popover>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label className="flex gap-1">Tanggal Surat <span className="text-destructive">*</span></Label>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider flex gap-1">Tanggal Surat <span className="text-rose-500">*</span></Label>
                                                     <Input
                                                         type="date"
                                                         value={formData.letter_date}
                                                         onChange={(e) => setFormData({ ...formData, letter_date: e.target.value })}
                                                         required
+                                                        className="h-9 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm shadow-none"
                                                     />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label className="flex gap-1">Perihal Surat <span className="text-destructive">*</span></Label>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider flex gap-1">Perihal Surat <span className="text-rose-500">*</span></Label>
                                                     <Input
                                                         placeholder="Masukkan perihal surat..."
                                                         value={formData.subject}
                                                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                                         required
+                                                        className="h-9 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm shadow-none"
                                                     />
                                                 </div>
                                             </div>
@@ -305,23 +324,23 @@ export default function OutgoingLetterCreate() {
 
                                         <TabsContent value="variabel" className="m-0 focus-visible:outline-none">
                                             {selectedTemplate?.parsedVars?.length > 0 && (
-                                                <div className="space-y-6">
-                                                    <div className="flex items-center gap-2 text-primary font-medium pb-2 border-b">
-                                                        <FileText className="h-5 w-5" />
+                                                <div className="space-y-5">
+                                                    <div className="flex items-center gap-2 text-neutral-900 dark:text-white font-semibold text-xs uppercase tracking-wider pb-2 border-b border-neutral-100 dark:border-neutral-800">
+                                                        <FileText className="h-4 w-4" />
                                                         Isi Variabel Dokumen
                                                     </div>
                                                     
                                                     {selectedTemplate.parsedVars.filter((v: any) => !v.source || v.source === 'manual').length === 0 ? (
-                                                        <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg text-center border border-dashed">
+                                                        <div className="text-xs text-neutral-500 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-none text-center border border-dashed border-neutral-200 dark:border-neutral-800 font-mono">
                                                             Semua variabel pada template ini akan diisi secara otomatis oleh sistem saat surat dicetak.
                                                         </div>
                                                     ) : (
-                                                    <div className="grid grid-cols-1 gap-6">
+                                                    <div className="grid grid-cols-1 gap-4">
                                                         {selectedTemplate.parsedVars
                                                             .filter((v: any) => !v.source || v.source === 'manual')
                                                             .map((v: any) => (
-                                                            <div key={v.key || v.name} className="space-y-2">
-                                                                <Label>{v.label || v.name || v.key}</Label>
+                                                            <div key={v.key || v.name} className="space-y-1.5">
+                                                                <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{v.label || v.name || v.key}</Label>
                                                                 {v.type === 'textarea' ? (
                                                                     <Textarea
                                                                         value={formData.variable_values[v.key || v.name] || ''}
@@ -335,7 +354,8 @@ export default function OutgoingLetterCreate() {
                                                                             }))
                                                                         }}
                                                                         placeholder={`Masukkan ${v.label?.toLowerCase() || v.name}...`}
-                                                                        rows={4}
+                                                                        rows={3}
+                                                                        className="rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm shadow-none"
                                                                     />
                                                                 ) : (
                                                                     <Input
@@ -351,6 +371,7 @@ export default function OutgoingLetterCreate() {
                                                                             }))
                                                                         }}
                                                                         placeholder={`Masukkan ${v.label?.toLowerCase() || v.name}...`}
+                                                                        className="h-9 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm shadow-none"
                                                                     />
                                                                 )}
                                                             </div>
@@ -364,23 +385,20 @@ export default function OutgoingLetterCreate() {
                                         <TabsContent value="penandatangan" className="m-0 focus-visible:outline-none">
                                             {selectedTemplate && signatories.length > 0 && (
                                                 <div className="space-y-4">
-                                                    <div className="mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <UserCheck className="h-5 w-5 text-muted-foreground" />
-                                                            <h3 className="font-semibold text-lg">Penanda Tangan</h3>
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground mt-1">Tentukan siapa yang akan menandatangani</p>
+                                                    <div className="flex items-center gap-2 text-neutral-900 dark:text-white font-semibold text-xs uppercase tracking-wider pb-2 border-b border-neutral-100 dark:border-neutral-800">
+                                                        <UserCheck className="h-4 w-4" />
+                                                        Penanda Tangan Dokumen
                                                     </div>
 
                                                     {signatories.map((sig, idx) => (
-                                                        <Card key={idx} className="border p-4 bg-card shadow-sm space-y-4 relative overflow-hidden">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-6 h-6 rounded-full bg-slate-100 border flex items-center justify-center text-xs font-semibold text-slate-600 shrink-0">
+                                                        <div key={idx} className="border border-neutral-200 dark:border-neutral-800 p-3.5 bg-white dark:bg-neutral-900 rounded-none shadow-none space-y-3">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <div className="size-6 rounded-none bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center text-xs font-bold shrink-0">
                                                                     {idx + 1}
                                                                 </div>
-                                                                <div className="flex flex-col">
-                                                                    <div className="font-semibold text-sm">{sig.role}</div>
-                                                                    {sig.sub_role && <div className="text-xs text-muted-foreground">{sig.sub_role}</div>}
+                                                                <div className="flex flex-col min-w-0">
+                                                                    <div className="font-semibold text-xs text-neutral-900 dark:text-white">{sig.role}</div>
+                                                                    {sig.sub_role && <div className="text-[11px] text-neutral-500 font-mono truncate">{sig.sub_role}</div>}
                                                                 </div>
                                                             </div>
 
@@ -400,77 +418,112 @@ export default function OutgoingLetterCreate() {
                                                                 />
                                                             </div>
 
-                                                            <div className="flex items-center gap-2 pt-1">
-                                                                {sig.column && <div className="text-[11px] px-2 py-0.5 bg-slate-50 border rounded text-slate-600">Kolom {sig.column}</div>}
-                                                                {sig.show_name && <div className="text-[11px] px-2 py-0.5 bg-slate-50 border rounded text-slate-600">Nama</div>}
-                                                                {sig.show_nip && <div className="text-[11px] px-2 py-0.5 bg-slate-50 border rounded text-slate-600">NIP</div>}
+                                                            <div className="flex items-center gap-2 pt-1 font-mono text-[10px]">
+                                                                {sig.column && <div className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400">Kolom {sig.column}</div>}
+                                                                {sig.show_name && <div className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400">Nama</div>}
+                                                                {sig.show_nip && <div className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400">NIP</div>}
                                                             </div>
-                                                        </Card>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             )}
                                         </TabsContent>
                                     </div>
                                 </Tabs>
-                            </div>
-
-                        </form>
-                    </div>
+                            </form>
+                        </div>
 
                     {/* Live Preview Pane */}
-                    <div className="lg:col-span-7">
-                        <div className="h-[calc(100vh-120px)] sticky top-6 overflow-hidden bg-slate-100 flex flex-col border-l border-r border-t">
-                            <div className="bg-white border-b py-2 px-4 shrink-0 flex items-center justify-between">
-                                <div className="text-sm font-medium text-transparent">
-                                    {/* Empty space for flex alignment */}
-                                </div>
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <button type="button" onClick={() => setPreviewScale(Math.max(0.2, previewScale - 0.1))} className="p-1 hover:bg-slate-100">
-                                        <ZoomOut className="w-4 h-4" />
-                                    </button>
-                                    <span className="text-xs font-medium w-8 text-center">{Math.round(previewScale * 100)}%</span>
-                                    <button type="button" onClick={() => setPreviewScale(Math.min(2.0, previewScale + 0.1))} className="p-1 hover:bg-slate-100 rounded">
-                                        <ZoomIn className="w-4 h-4" />
-                                    </button>
-                                    <button type="button" onClick={() => setPreviewScale(0.67)} className="p-1 hover:bg-slate-100 rounded ml-2 border-l pl-3">
-                                        <RotateCcw className="w-4 h-4" />
-                                    </button>
-                                </div>
+                    <div className="lg:col-span-7 flex flex-col bg-neutral-100/80 dark:bg-neutral-900/50">
+                        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-2 flex items-center justify-between shrink-0">
+                            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider font-mono">
+                                Pratinjau Surat
+                            </span>
+                            <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 rounded-none text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                                    onClick={() => setPreviewScale(Math.max(0.2, previewScale - 0.1))}
+                                    title="Perkecil"
+                                >
+                                    <ZoomOut className="h-3.5 w-3.5" />
+                                </Button>
+                                <span className="text-xs font-mono w-10 text-center">
+                                    {Math.round(previewScale * 100)}%
+                                </span>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 rounded-none text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                                    onClick={() => setPreviewScale(Math.min(2.0, previewScale + 0.1))}
+                                    title="Perbesar"
+                                >
+                                    <ZoomIn className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 rounded-none text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white ml-1 border-l border-neutral-200 dark:border-neutral-800 pl-2"
+                                    onClick={() => setPreviewScale(0.67)}
+                                    title="Reset Zoom"
+                                >
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                </Button>
                             </div>
-                            <div className="flex-1 overflow-auto flex justify-center py-8 relative">
-                                {selectedTemplate ? (
-                                    <TemplatePreview
-                                        pageSettings={selectedTemplate.parsedPage}
-                                        headerSettings={selectedTemplate.parsedHeader}
-                                        contentBlocks={selectedTemplate.parsedContent}
-                                        signatureSettings={selectedTemplate.parsedSig}
-                                        footerSettings={selectedTemplate.parsedFooter || null}
-                                        variableValues={previewVariableValues}
-                                        signatoriesData={signatories.map(s => ({
-                                            slot_id: s.slot_id,
-                                            name: users.find(u => u.id.toString() === s.user_id)?.name || users.find(u => u.id.toString() === s.user_id)?.first_name || '(Nama Penandatangan)',
-                                            nip: users.find(u => u.id.toString() === s.user_id)?.nip || ''
-                                        }))}
-                                        scale={previewScale}
-                                    />
-                                ) : (
-                                    <div className="text-muted-foreground flex items-center justify-center h-full">
-                                        <div className="text-center">
-                                            <FileText className="w-12 h-12 mx-auto text-slate-300 mb-2" />
-                                            <p>Pilih template untuk melihat pratinjau surat.</p>
-                                        </div>
+                        </div>
+                        <div className="flex-1 min-h-0 overflow-auto p-6 md:p-8 flex justify-center custom-scrollbar">
+                            {selectedTemplate ? (
+                                <TemplatePreview
+                                    pageSettings={selectedTemplate.parsedPage}
+                                    headerSettings={selectedTemplate.parsedHeader}
+                                    contentBlocks={selectedTemplate.parsedContent}
+                                    signatureSettings={selectedTemplate.parsedSig}
+                                    footerSettings={selectedTemplate.parsedFooter || null}
+                                    variableValues={previewVariableValues}
+                                    signatoriesData={signatories.map(s => ({
+                                        slot_id: s.slot_id,
+                                        name: users.find(u => u.id.toString() === s.user_id)?.name || users.find(u => u.id.toString() === s.user_id)?.first_name || '(Nama Penandatangan)',
+                                        nip: users.find(u => u.id.toString() === s.user_id)?.nip || ''
+                                    }))}
+                                    scale={previewScale}
+                                />
+                            ) : (
+                                <div className="text-neutral-400 flex items-center justify-center h-full min-h-[300px]">
+                                    <div className="text-center font-mono text-xs">
+                                        <FileText className="w-10 h-10 mx-auto text-neutral-300 dark:text-neutral-700 mb-2" />
+                                        <p>Pilih template untuk melihat pratinjau surat.</p>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                <div className="sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                    <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate('/admin/outgoing-letters')} disabled={loading}>Batal</Button>
-                    <Button type="submit" size="sm" className="h-9 px-6" disabled={loading} form="letter-form">
-                        <Save className="w-4 h-4 mr-2" />
-                        {loading ? 'Menyimpan...' : 'Simpan Draft'}
+                {/* Unified Card Footer */}
+                <div className="px-4 py-3 bg-neutral-50/70 dark:bg-neutral-900/40 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-2.5 shrink-0">
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 px-4 rounded-none border border-neutral-200 dark:border-neutral-800 text-xs font-semibold shadow-none" 
+                        onClick={() => navigate('/admin/outgoing-letters')} 
+                        disabled={loading}
+                    >
+                        Batal
+                    </Button>
+                    <Button 
+                        type="submit" 
+                        size="sm" 
+                        className="h-8 px-5 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 text-xs font-semibold shadow-none gap-1.5" 
+                        disabled={loading} 
+                        form="letter-form"
+                    >
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                        <span>{loading ? 'Menyimpan...' : 'Simpan Draft'}</span>
                     </Button>
                 </div>
             </div>

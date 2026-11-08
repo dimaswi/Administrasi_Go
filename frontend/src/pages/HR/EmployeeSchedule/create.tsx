@@ -4,11 +4,11 @@ import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, CalendarDays, Check, ChevronsUpDown } from 'lucide-react';
+import { CalendarDays, Check, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { FormCard } from '@/components/ui/form-card';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 
@@ -78,79 +78,93 @@ export default function EmployeeScheduleCreate() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" onClick={() => navigate('/hr/employee-schedules')}><ArrowLeft className="h-4 w-4" /></Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Tetapkan Jadwal Mingguan</h2>
+            <FormCard
+                title="Tetapkan Jadwal Mingguan"
+                subtitle="Tetapkan pola rotasi shift kerja mingguan untuk karyawan"
+                icon={CalendarDays}
+                onBack={() => navigate('/hr/employee-schedules')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Jadwal"
+                onCancel={() => navigate('/hr/employee-schedules')}
+            >
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Karyawan <span className="text-rose-500">*</span>
+                            </Label>
+                            <Popover open={openUserSelect} onOpenChange={setOpenUserSelect}>
+                                <PopoverTrigger render={<Button variant="outline" role="combobox" className="w-full justify-between font-normal h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />}>
+                                    {formData.user_id ? users.find(u => u.id.toString() === formData.user_id)?.name || "Pilih..." : "Pilih Karyawan..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] md:w-[400px] p-0 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none" align="start">
+                                    <Command>
+                                        <CommandInput placeholder="Cari nama karyawan..." className="rounded-none h-9 text-sm" />
+                                        <CommandList>
+                                            <CommandEmpty>Karyawan tidak ditemukan.</CommandEmpty>
+                                            <CommandGroup>
+                                                {users.map(u => (
+                                                    <CommandItem
+                                                        key={u.id}
+                                                        value={u.name}
+                                                        onSelect={() => {
+                                                            setFormData(prev => ({ ...prev, user_id: u.id.toString() }));
+                                                            setOpenUserSelect(false);
+                                                        }}
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4", formData.user_id === u.id.toString() ? "opacity-100" : "opacity-0")} />
+                                                        {u.name}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="start_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Mulai Berlaku (Tanggal) <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="start_date"
+                                name="start_date" 
+                                type="date" 
+                                required 
+                                value={formData.start_date} 
+                                onChange={handleChange} 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="border border-neutral-200 dark:border-neutral-800 p-4 bg-neutral-50/50 dark:bg-neutral-900/40 space-y-4">
+                        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200 block">
+                                Konfigurasi Shift Harian (Senin - Minggu)
+                            </span>
+                            <p className="text-[11px] text-neutral-500">Pilih jam kerja untuk setiap hari kerja atau kosongkan jika libur.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {days.map((d, i) => (
+                                <div key={d} className="space-y-1.5">
+                                    <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        Hari {dayNames[i]}
+                                    </Label>
+                                    <SearchableSelect
+                                        value={(formData as any)[`${d}_shift_id`]}
+                                        onValueChange={(val) => setFormData(prev => ({ ...prev, [`${d}_shift_id`]: val }))}
+                                        placeholder="-- Libur / Tidak ada shift --"
+                                        options={shifts.map((s: any) => ({ value: s.id.toString(), label: `${s.name} (${formatTime(s.clock_in_time)} - ${formatTime(s.clock_out_time)})` }))}
+                                    />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" /> Formulir Jadwal</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Karyawan</Label>
-                                <Popover open={openUserSelect} onOpenChange={setOpenUserSelect}>
-                                    <PopoverTrigger render={<Button variant="outline" role="combobox" className="w-full justify-between font-normal" />}>
-                                        {formData.user_id ? users.find(u => u.id.toString() === formData.user_id)?.name || "Pilih..." : "Pilih Karyawan..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[300px] md:w-[400px] p-0" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Cari nama karyawan..." />
-                                            <CommandList>
-                                                <CommandEmpty>Karyawan tidak ditemukan.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {users.map(u => (
-                                                        <CommandItem
-                                                            key={u.id}
-                                                            value={u.name}
-                                                            onSelect={() => {
-                                                                setFormData(prev => ({ ...prev, user_id: u.id.toString() }));
-                                                                setOpenUserSelect(false);
-                                                            }}
-                                                        >
-                                                            <Check className={cn("mr-2 h-4 w-4", formData.user_id === u.id.toString() ? "opacity-100" : "opacity-0")} />
-                                                            {u.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Mulai Berlaku (Tanggal)</Label>
-                                <Input name="start_date" type="date" required value={formData.start_date} onChange={handleChange} />
-                            </div>
-                            
-                            <div className="col-span-1 md:col-span-2 border-t pt-4 mt-2">
-                                <h3 className="font-medium mb-4">Pilih Shift Per Hari</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {days.map((d, i) => (
-                                        <div key={d} className="space-y-2">
-                                            <Label>{dayNames[i]}</Label>
-                                            <SearchableSelect
-                                                value={(formData as any)[`${d}_shift_id`]}
-                                                onValueChange={(val) => setFormData(prev => ({ ...prev, [`${d}_shift_id`]: val }))}
-                                                placeholder="-- Libur / Tidak ada shift --"
-                                                options={shifts.map((s: any) => ({ value: s.id.toString(), label: `${s.name} (${formatTime(s.clock_in_time)} - ${formatTime(s.clock_out_time)})` }))}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="sticky bottom-0 z-40 mt-auto -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur border-t flex justify-end gap-3">
-                        <Button type="submit" disabled={loading}><Save className="mr-2 h-4 w-4" /> {loading ? 'Menyimpan...' : 'Simpan Jadwal'}</Button>
-                    </div>
-                </form>
-            </div>
+            </FormCard>
         </HrLayout>
     );
 }

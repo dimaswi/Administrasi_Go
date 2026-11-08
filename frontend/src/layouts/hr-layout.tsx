@@ -52,7 +52,42 @@ import {
   Target,
   GraduationCap,
   Award,
+  Sun,
+  Moon,
 } from 'lucide-react';
+
+function ThemeToggle() {
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      return;
+    }
+    const isDark = document.documentElement.classList.contains('dark');
+    setTheme(isDark ? 'dark' : 'light');
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="size-8 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center transition-colors shadow-none cursor-pointer"
+      title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+    >
+      {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+    </button>
+  );
+}
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import AppLogoIcon from '@/components/AppLogoIcon';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -97,7 +132,7 @@ function WorkspaceSwitcherHR() {
           >
             <div className={cn(
               "flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden shrink-0",
-              !appLogo && "bg-primary text-primary-foreground"
+              !appLogo && "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold"
             )}>
               {appLogo ? (
                 <img src={appLogo} alt="Logo" className="size-full object-contain" />
@@ -106,40 +141,40 @@ function WorkspaceSwitcherHR() {
               )}
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">{appName || currentWorkspace.name}</span>
-              <span className="truncate text-xs text-muted-foreground">Modul {currentWorkspace.label}</span>
+              <span className="truncate font-semibold text-neutral-900 dark:text-neutral-100">{appName || currentWorkspace.name}</span>
+              <span className="truncate text-xs text-neutral-500 font-normal">Modul {currentWorkspace.label}</span>
             </div>
-            <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
+            <ChevronsUpDown className="ml-auto size-4 text-neutral-400" />
           </SidebarMenuButton>} />
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none"
             align="start"
             side={isCollapsed ? "right" : "bottom"}
             sideOffset={4}
           >
-            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+            <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
               Modul Sistem
             </div>
             {workspaces.map((workspace) => (
               <DropdownMenuItem
                 key={workspace.id}
                 render={<Link to={workspace.href} />}
-                className="cursor-pointer gap-2 p-2"
+                className="cursor-pointer gap-2 p-2 rounded-none"
               >
                 <div className={cn(
                   "flex size-8 items-center justify-center rounded-lg border",
                   workspace.id === currentWorkspace.id
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background border-border"
+                    ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                    : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300"
                 )}>
                   <workspace.icon className="size-4" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium">{workspace.name}</div>
-                  <div className="text-xs text-muted-foreground">Modul {workspace.label}</div>
+                  <div className="font-medium text-neutral-900 dark:text-neutral-100">{workspace.name}</div>
+                  <div className="text-xs text-neutral-500">Modul {workspace.label}</div>
                 </div>
                 {workspace.id === currentWorkspace.id && (
-                  <Check className="size-4 text-primary" />
+                  <Check className="size-4 text-neutral-900 dark:text-neutral-100" />
                 )}
               </DropdownMenuItem>
             ))}
@@ -273,7 +308,12 @@ function NavMain() {
                   render={<Link to={item.href} />}
                   isActive={isActive}
                   tooltip={{ children: item.title }}
-                  className={isActive ? "bg-primary/10 text-primary font-semibold" : ""}
+                  className={cn(
+                    "w-full transition-colors",
+                    isActive
+                      ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold hover:bg-neutral-800 dark:hover:bg-neutral-100 hover:text-white dark:hover:text-neutral-900"
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                  )}
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -292,7 +332,12 @@ function NavMain() {
                 <CollapsibleTrigger render={<SidebarMenuButton
                   tooltip={{ children: item.title }}
                   isActive={isActive}
-                  className={cn("w-full", isActive ? "text-primary font-semibold" : "")}
+                  className={cn(
+                    "w-full transition-colors",
+                    isActive
+                      ? "bg-neutral-100 dark:bg-neutral-800/80 text-neutral-900 dark:text-white font-semibold"
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                  )}
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -302,15 +347,21 @@ function NavMain() {
                   <SidebarMenuSub>
                     {itemChildren!.map((child) => {
                       const fullPath = location.pathname + location.search;
+                      const childPath = child.href.split('?')[0];
                       const childActive = child.href.includes('?')
-                        ? (fullPath === child.href || (location.pathname === child.href.split('?')[0] && location.search === '' && child.href.endsWith('?tab=daily')))
-                        : (url === child.href);
+                        ? (fullPath === child.href || (location.pathname === childPath && location.search === '' && child.href.endsWith('?tab=daily')))
+                        : (url === childPath || url.startsWith(childPath + '/'));
                       return (
                         <SidebarMenuSubItem key={child.title}>
                           <SidebarMenuSubButton
                             render={<Link to={child.href} />}
                             isActive={childActive}
-                            className={childActive ? "bg-primary/10 text-primary font-semibold" : ""}
+                            className={cn(
+                              "w-full transition-colors",
+                              childActive
+                                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold hover:bg-neutral-800 dark:hover:bg-neutral-100 hover:text-white dark:hover:text-neutral-900"
+                                : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                            )}
                           >
                             <span>{child.title}</span>
                           </SidebarMenuSubButton>
@@ -349,28 +400,28 @@ function NavUser() {
     <SidebarMenu className="px-2">
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent">
-            <div className="flex items-center gap-2 flex-1 text-left text-sm leading-tight">
-              <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">{initials}</div>
-              <div className="grid flex-1">
-                <span className="truncate font-semibold">{name}</span>
-                <span className="truncate text-xs text-muted-foreground">{nipOrEmail}</span>
+          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent rounded-none">
+            <div className="flex items-center gap-2 flex-1 text-left text-sm leading-tight min-w-0">
+              <div className="h-8 w-8 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-semibold text-xs shrink-0">{initials}</div>
+              <div className="grid flex-1 min-w-0">
+                <span className="truncate font-semibold text-neutral-900 dark:text-neutral-100">{name}</span>
+                <span className="truncate text-xs text-neutral-500 font-normal">{nipOrEmail}</span>
               </div>
             </div>
-            <ChevronsUpDown className="ml-auto size-4" />
+            <ChevronsUpDown className="ml-auto size-4 text-neutral-400 shrink-0" />
           </SidebarMenuButton>} />
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none"
             align="end"
             side={isCollapsed ? 'left' : 'bottom'}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
-                  <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-xs">{initials}</div>
+                  <div className="h-8 w-8 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-semibold text-xs shrink-0">{initials}</div>
                   <div className="grid flex-1">
-                    <span className="truncate font-semibold">{name}</span>
-                    <span className="truncate text-xs text-muted-foreground">{nipOrEmail}</span>
+                    <span className="truncate font-semibold text-neutral-900 dark:text-neutral-100">{name}</span>
+                    <span className="truncate text-xs text-neutral-500 font-mono">{nipOrEmail}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -379,7 +430,7 @@ function NavUser() {
             {canAccessSettings && (
               <>
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+                  <DropdownMenuItem onClick={() => navigate('/admin/settings')} className="cursor-pointer rounded-none">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </DropdownMenuItem>
@@ -387,7 +438,7 @@ function NavUser() {
                 <DropdownMenuSeparator />
               </>
             )}
-            <DropdownMenuItem onClick={logout}>
+            <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive rounded-none">
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
@@ -404,29 +455,78 @@ function HrBreadcrumbs() {
 
   const crumbs = React.useMemo(() => {
     const list: { title: string; href?: string }[] = [
-      { title: 'Administrasi', href: '/admin/dashboard' },
       { title: 'HR', href: '/hr/dashboard' },
     ];
 
-    if (path === '/hr/dashboard') {
-      list.push({ title: 'Dashboard' });
+    if (path === '/hr/dashboard' || path === '/hr') {
+      list.push({ title: 'Dashboard Presensi' });
       return list;
     }
 
+    // 1. Training
+    if (path.startsWith('/hr/employee-trainings')) {
+      list.push({
+        title: 'Peserta Training',
+        href: path === '/hr/employee-trainings' ? undefined : '/hr/employee-trainings',
+      });
+      if (path === '/hr/employee-trainings/create') {
+        list.push({ title: 'Tambah' });
+      } else if (path.endsWith('/edit')) {
+        list.push({ title: 'Edit' });
+      } else if (path !== '/hr/employee-trainings') {
+        list.push({ title: 'Detail' });
+      }
+      return list;
+    }
+
+    if (path.startsWith('/hr/trainings')) {
+      list.push({
+        title: 'Daftar Training',
+        href: path === '/hr/trainings' ? undefined : '/hr/trainings',
+      });
+      if (path === '/hr/trainings/create') {
+        list.push({ title: 'Tambah' });
+      } else if (path.endsWith('/edit')) {
+        list.push({ title: 'Edit' });
+      } else if (path !== '/hr/trainings') {
+        list.push({ title: 'Detail' });
+      }
+      return list;
+    }
+
+    // 2. Karyawan
     if (path.startsWith('/hr/employees')) {
-      list.push({ title: 'Data Karyawan', href: '/hr/employees' });
+      list.push({
+        title: 'Data Karyawan',
+        href: path === '/hr/employees' ? undefined : '/hr/employees',
+      });
       if (path === '/hr/employees/create') {
         list.push({ title: 'Tambah' });
       } else if (path.endsWith('/edit')) {
         list.push({ title: 'Edit' });
       } else if (path !== '/hr/employees') {
-        list.push({ title: 'Detail Karyawan' });
+        list.push({ title: 'Detail' });
       }
       return list;
     }
 
-    if (path.startsWith('/hr/reports/attendance')) {
-      list.push({ title: 'Rekap Absensi' });
+    if (path.startsWith('/hr/rosters')) {
+      list.push({ title: 'Jadwal Karyawan' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/shift-exchanges')) {
+      list.push({
+        title: 'Tukar Shift',
+        href: path === '/hr/shift-exchanges' ? undefined : '/hr/shift-exchanges',
+      });
+      if (path === '/hr/shift-exchanges/create') {
+        list.push({ title: 'Tambah' });
+      } else if (path.endsWith('/edit')) {
+        list.push({ title: 'Edit' });
+      } else if (path !== '/hr/shift-exchanges') {
+        list.push({ title: 'Detail' });
+      }
       return list;
     }
 
@@ -435,50 +535,155 @@ function HrBreadcrumbs() {
       return list;
     }
 
+    if (path.startsWith('/hr/reports/attendance')) {
+      list.push({ title: 'Rekap Absensi' });
+      return list;
+    }
+
     if (path.startsWith('/hr/leaves')) {
-      list.push({ title: 'Izin & Cuti Karyawan' });
+      list.push({
+        title: 'Izin & Cuti Karyawan',
+        href: path === '/hr/leaves' ? undefined : '/hr/leaves',
+      });
+      if (path === '/hr/leaves/create') {
+        list.push({ title: 'Tambah' });
+      } else if (path.endsWith('/edit')) {
+        list.push({ title: 'Edit' });
+      } else if (path !== '/hr/leaves') {
+        list.push({ title: 'Detail' });
+      }
       return list;
     }
 
-    if (path.startsWith('/hr/rosters')) {
-      list.push({ title: 'Jadwal Roster' });
+    if (path.startsWith('/hr/my-attendance')) {
+      list.push({ title: 'Presensi Saya' });
       return list;
     }
 
-    if (path.startsWith('/hr/shift-exchanges')) {
-      list.push({ title: 'Tukar Shift' });
+    // 3. Kinerja
+    if (path.startsWith('/hr/performance-reviews')) {
+      list.push({
+        title: 'Penilaian Kinerja',
+        href: path === '/hr/performance-reviews' ? undefined : '/hr/performance-reviews',
+      });
+      if (path === '/hr/performance-reviews/create') {
+        list.push({ title: 'Tambah' });
+      } else if (path.endsWith('/edit')) {
+        list.push({ title: 'Edit' });
+      } else if (path !== '/hr/performance-reviews') {
+        list.push({ title: 'Detail' });
+      }
       return list;
     }
 
+    if (path.startsWith('/hr/feedback360')) {
+      list.push({ title: '360 Feedback' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/calibration')) {
+      list.push({ title: 'Kalibrasi' });
+      return list;
+    }
+
+    if (path.startsWith('/hr/performance-periods')) {
+      list.push({
+        title: 'Periode Penilaian',
+        href: path === '/hr/performance-periods' ? undefined : '/hr/performance-periods',
+      });
+      if (path === '/hr/performance-periods/create') {
+        list.push({ title: 'Tambah' });
+      } else if (path.endsWith('/edit')) {
+        list.push({ title: 'Edit' });
+      } else if (path !== '/hr/performance-periods') {
+        list.push({ title: 'Detail' });
+      }
+      return list;
+    }
+
+    if (path.startsWith('/hr/kpi')) {
+      list.push({ title: 'Kategori & KPI' });
+      return list;
+    }
+
+    // 4. Master Data
     if (path.startsWith('/hr/access/users')) {
-      list.push({ title: 'Master Data', href: '/hr/access/users' });
-      list.push({ title: 'Daftar User' });
+      list.push({
+        title: 'Daftar User',
+        href: path === '/hr/access/users' ? undefined : '/hr/access/users',
+      });
+      if (path === '/hr/access/users/create') list.push({ title: 'Tambah' });
+      else if (path.endsWith('/edit')) list.push({ title: 'Edit' });
       return list;
     }
     if (path.startsWith('/hr/access/roles')) {
-      list.push({ title: 'Master Data', href: '/hr/access/roles' });
-      list.push({ title: 'Daftar Role' });
+      list.push({
+        title: 'Daftar Role',
+        href: path === '/hr/access/roles' ? undefined : '/hr/access/roles',
+      });
+      if (path === '/hr/access/roles/create') list.push({ title: 'Tambah' });
+      else if (path.endsWith('/edit')) list.push({ title: 'Edit' });
       return list;
     }
     if (path.startsWith('/hr/access/permissions')) {
-      list.push({ title: 'Master Data', href: '/hr/access/permissions' });
       list.push({ title: 'Daftar Permission' });
       return list;
     }
     if (path.startsWith('/hr/organizations')) {
-      list.push({ title: 'Master Data', href: '/hr/organizations' });
-      list.push({ title: 'Unit Organisasi' });
+      list.push({
+        title: 'Unit Organisasi',
+        href: path === '/hr/organizations' ? undefined : '/hr/organizations',
+      });
+      if (path === '/hr/organizations/create') list.push({ title: 'Tambah' });
+      else if (path.endsWith('/edit')) list.push({ title: 'Edit' });
       return list;
     }
     if (path.startsWith('/hr/work-schedules')) {
-      list.push({ title: 'Master Data', href: '/hr/work-schedules' });
-      list.push({ title: 'Master Shift' });
+      list.push({
+        title: 'Master Shift',
+        href: path === '/hr/work-schedules' ? undefined : '/hr/work-schedules',
+      });
+      if (path === '/hr/work-schedules/create') list.push({ title: 'Tambah' });
+      else if (path.endsWith('/edit')) list.push({ title: 'Edit' });
+      return list;
+    }
+    if (path.startsWith('/hr/master-data/jobcategory')) {
+      list.push({ title: 'Kategori Pekerjaan' });
+      return list;
+    }
+    if (path.startsWith('/hr/master-data/employmentstatus')) {
+      list.push({ title: 'Status Kepegawaian' });
+      return list;
+    }
+    if (path.startsWith('/hr/master-data/educationlevel')) {
+      list.push({ title: 'Tingkat Pendidikan' });
+      return list;
+    }
+    if (path.startsWith('/hr/master-data/leavetype')) {
+      list.push({ title: 'Jenis Cuti' });
+      return list;
+    }
+    if (path.startsWith('/hr/master-data/work-location')) {
+      list.push({ title: 'Lokasi Presensi (GPS)' });
       return list;
     }
     if (path.startsWith('/hr/master-data/')) {
       list.push({ title: 'Master Data' });
       return list;
     }
+
+    // Fallback: format segments gracefully
+    const segments = path.replace(/^\/hr\/?/, '').split('/').filter(Boolean);
+    segments.forEach((seg, i) => {
+      const formatted = seg
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      const isLast = i === segments.length - 1;
+      list.push({
+        title: formatted === 'Create' ? 'Tambah' : formatted === 'Edit' ? 'Edit' : formatted,
+        href: isLast ? undefined : `/hr/${segments.slice(0, i + 1).join('/')}`,
+      });
+    });
 
     return list;
   }, [path]);
@@ -493,15 +698,15 @@ function HrBreadcrumbs() {
             <React.Fragment key={idx}>
               <BreadcrumbItem className={cn(isEarlyCrumb ? 'hidden sm:inline-flex' : '')}>
                 {isLast || !crumb.href ? (
-                  <BreadcrumbPage>{crumb.title}</BreadcrumbPage>
+                  <BreadcrumbPage className="font-semibold text-neutral-900 dark:text-neutral-100">{crumb.title}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink render={<Link to={crumb.href} />}>
+                  <BreadcrumbLink render={<Link to={crumb.href} />} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
                     {crumb.title}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
               {!isLast && (
-                <BreadcrumbSeparator className={cn(isEarlyCrumb ? 'hidden sm:inline-flex' : '')} />
+                <BreadcrumbSeparator className={cn("text-neutral-400", isEarlyCrumb ? 'hidden sm:inline-flex' : '')} />
               )}
             </React.Fragment>
           );
@@ -524,24 +729,25 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
           <NavMain />
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter className="border-t border-neutral-200 dark:border-neutral-800 p-2">
           <NavUser />
         </SidebarFooter>
       </Sidebar>
 
       <SidebarInset className="min-w-0">
-        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/50 bg-background px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <div className="h-4 w-px bg-border" />
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm px-4 md:px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2.5">
+            <SidebarTrigger className="-ml-1 rounded-none hover:bg-neutral-100 dark:hover:bg-neutral-800" />
+            <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
             <HrBreadcrumbs />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <EmployeeSearchDialog />
+            <ThemeToggle />
           </div>
         </header>
-        <div className="flex-1 flex flex-col px-4 py-2 md:px-4 md:py-2 bg-background min-w-0">
-          <main className="flex w-full flex-1 flex-col gap-4 min-w-0">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/50 dark:bg-zinc-950/50 min-w-0">
+          <main className="mx-auto max-w-full w-full flex flex-col gap-4 min-w-0">
             {children}
           </main>
         </div>

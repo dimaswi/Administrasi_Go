@@ -6,9 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { ArrowLeft, Save, Eye, Mail, FileText, UserCheck, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Mail, FileText, UserCheck, ZoomIn, ZoomOut, RotateCcw, Loader2 } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { TemplatePreview } from '@/components/document-template/template-preview';
@@ -245,34 +244,50 @@ export default function OutgoingLetterEdit() {
 
     return (
         <AdminLayout>
-            <div className="w-full">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/admin/outgoing-letters')}>
+            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col lg:h-[calc(100vh-120px)]">
+                {/* Unified Header */}
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 shrink-0" 
+                            type="button" 
+                            onClick={() => navigate('/admin/outgoing-letters')}
+                        >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <div className="space-y-0.5">
-                            <h2 className="text-xl font-semibold">Edit Surat Keluar</h2>
-                            <p className="text-sm text-muted-foreground">Perbarui informasi dan isi surat keluar Anda.</p>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+                                <Mail className="size-4" />
+                            </div>
+                            <div className="min-w-0">
+                                <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                                    Edit Surat Keluar
+                                </h1>
+                                <p className="text-[11px] text-neutral-500 font-mono truncate">
+                                    Perbarui informasi dan isi surat keluar Anda
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div className="lg:col-span-5 relative pb-32">
-                        <form id="letter-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-                            <div className="flex flex-col">
-                                <Tabs defaultValue="informasi" className="w-full">
-                                    <div className="border-b mb-6">
-                                        <TabsList className="w-full flex justify-start rounded-none bg-transparent h-12 p-0">
-                                            <TabsTrigger value="informasi" className="h-12 rounded-none px-6 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary text-muted-foreground data-[state=active]:text-primary">Info Dasar</TabsTrigger>
-                                            <TabsTrigger value="variabel" disabled={!(selectedTemplate?.parsedVars?.length > 0)} className="h-12 rounded-none px-6 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary text-muted-foreground data-[state=active]:text-primary">Variabel</TabsTrigger>
-                                            <TabsTrigger value="penandatangan" disabled={!(selectedTemplate && signatories.length > 0)} className="h-12 rounded-none px-6 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary text-muted-foreground data-[state=active]:text-primary">Signer</TabsTrigger>
-                                        </TabsList>
-                                    </div>
+                {/* Unified 2-Column Body */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 items-stretch overflow-hidden">
+                    {/* Left Column: Form Content */}
+                    <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800 flex flex-col h-full min-h-0 bg-white dark:bg-neutral-950 overflow-hidden">
+                        <form id="letter-form" onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
+                            <Tabs defaultValue="informasi" className="w-full flex flex-col h-full min-h-0">
+                                <div className="border-b border-neutral-200 dark:border-neutral-800 overflow-hidden shrink-0 bg-neutral-50/60 dark:bg-neutral-900/40 px-2">
+                                    <TabsList className="w-full flex justify-start rounded-none bg-transparent h-10 p-0 border-none overflow-x-auto overflow-y-hidden no-scrollbar">
+                                        <TabsTrigger value="informasi" className="h-10 rounded-none px-4 bg-transparent after:hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-neutral-900 dark:data-[state=active]:border-white text-neutral-500 data-[state=active]:text-neutral-900 dark:data-[state=active]:text-white font-semibold text-xs uppercase tracking-wider">Info Dasar</TabsTrigger>
+                                        <TabsTrigger value="variabel" disabled={!(selectedTemplate?.parsedVars?.length > 0)} className="h-10 rounded-none px-4 bg-transparent after:hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-neutral-900 dark:data-[state=active]:border-white text-neutral-500 data-[state=active]:text-neutral-900 dark:data-[state=active]:text-white font-semibold text-xs uppercase tracking-wider">Variabel</TabsTrigger>
+                                        <TabsTrigger value="penandatangan" disabled={!(selectedTemplate && signatories.length > 0)} className="h-10 rounded-none px-4 bg-transparent after:hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-neutral-900 dark:data-[state=active]:border-white text-neutral-500 data-[state=active]:text-neutral-900 dark:data-[state=active]:text-white font-semibold text-xs uppercase tracking-wider">Signer</TabsTrigger>
+                                    </TabsList>
+                                </div>
 
-                                    <div className="pr-2">
+                                <div className="p-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                                         <TabsContent value="informasi" className="m-0 focus-visible:outline-none">
                                             <div className="flex items-center gap-2 text-primary font-medium pb-2 border-b mb-6">
                                                 <Mail className="h-5 w-5" />
@@ -380,7 +395,7 @@ export default function OutgoingLetterEdit() {
                                                     </div>
 
                                                     {signatories.map((sig, idx) => (
-                                                        <Card key={idx} className="border p-4 bg-card shadow-sm space-y-4 relative overflow-hidden">
+                                                        <div key={idx} className="border border-neutral-200 dark:border-neutral-800 p-4 bg-white dark:bg-neutral-950 rounded-none space-y-3 relative overflow-hidden">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="w-6 h-6 rounded-full bg-slate-100 border flex items-center justify-center text-xs font-semibold text-slate-600 shrink-0">
                                                                     {idx + 1}
@@ -412,72 +427,107 @@ export default function OutgoingLetterEdit() {
                                                                 {sig.show_name && <div className="text-[11px] px-2 py-0.5 bg-slate-50 border rounded text-slate-600">Nama</div>}
                                                                 {sig.show_nip && <div className="text-[11px] px-2 py-0.5 bg-slate-50 border rounded text-slate-600">NIP</div>}
                                                             </div>
-                                                        </Card>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             )}
                                         </TabsContent>
                                     </div>
                                 </Tabs>
-                            </div>
-
-                        </form>
-                    </div>
+                            </form>
+                        </div>
 
                     {/* Live Preview Pane */}
-                    <div className="lg:col-span-7">
-                        <div className="h-[calc(100vh-120px)] sticky top-6 overflow-hidden bg-slate-100 flex flex-col border-l border-r border-t">
-                            <div className="bg-white border-b py-2 px-4 shrink-0 flex items-center justify-between">
-                                <div className="text-sm font-medium text-transparent">
-                                    {/* Empty space for flex alignment */}
-                                </div>
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <button type="button" onClick={() => setPreviewScale(Math.max(0.2, previewScale - 0.1))} className="p-1 hover:bg-slate-100">
-                                        <ZoomOut className="w-4 h-4" />
-                                    </button>
-                                    <span className="text-xs font-medium w-8 text-center">{Math.round(previewScale * 100)}%</span>
-                                    <button type="button" onClick={() => setPreviewScale(Math.min(2.0, previewScale + 0.1))} className="p-1 hover:bg-slate-100 rounded">
-                                        <ZoomIn className="w-4 h-4" />
-                                    </button>
-                                    <button type="button" onClick={() => setPreviewScale(0.67)} className="p-1 hover:bg-slate-100 rounded ml-2 border-l pl-3">
-                                        <RotateCcw className="w-4 h-4" />
-                                    </button>
-                                </div>
+                    <div className="lg:col-span-7 flex flex-col bg-neutral-100/80 dark:bg-neutral-900/50">
+                        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-2 flex items-center justify-between shrink-0">
+                            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider font-mono">
+                                Pratinjau Surat
+                            </span>
+                            <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 rounded-none text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                                    onClick={() => setPreviewScale(Math.max(0.2, previewScale - 0.1))}
+                                    title="Perkecil"
+                                >
+                                    <ZoomOut className="h-3.5 w-3.5" />
+                                </Button>
+                                <span className="text-xs font-mono w-10 text-center">
+                                    {Math.round(previewScale * 100)}%
+                                </span>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 rounded-none text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                                    onClick={() => setPreviewScale(Math.min(2.0, previewScale + 0.1))}
+                                    title="Perbesar"
+                                >
+                                    <ZoomIn className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 rounded-none text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white ml-1 border-l border-neutral-200 dark:border-neutral-800 pl-2"
+                                    onClick={() => setPreviewScale(0.67)}
+                                    title="Reset Zoom"
+                                >
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                </Button>
                             </div>
-                            <div className="flex-1 overflow-auto flex justify-center py-8 relative">
-                                {selectedTemplate ? (
-                                    <TemplatePreview
-                                        pageSettings={selectedTemplate.parsedPage}
-                                        headerSettings={selectedTemplate.parsedHeader}
-                                        contentBlocks={selectedTemplate.parsedContent}
-                                        signatureSettings={selectedTemplate.parsedSig}
-                                        footerSettings={selectedTemplate.parsedFooter || null}
-                                        variableValues={previewVariableValues}
-                                        signatoriesData={signatories.map(s => ({
-                                            slot_id: s.slot_id,
-                                            name: users.find(u => u.id.toString() === s.user_id)?.name || users.find(u => u.id.toString() === s.user_id)?.first_name || '(Nama Penandatangan)',
-                                            nip: users.find(u => u.id.toString() === s.user_id)?.nip || ''
-                                        }))}
-                                        scale={previewScale}
-                                    />
-                                ) : (
-                                    <div className="text-muted-foreground flex items-center justify-center h-full">
-                                        <div className="text-center">
-                                            <FileText className="w-12 h-12 mx-auto text-slate-300 mb-2" />
-                                            <p>Pilih template untuk melihat pratinjau surat.</p>
-                                        </div>
+                        </div>
+                        <div className="flex-1 min-h-0 overflow-auto p-6 md:p-8 flex justify-center custom-scrollbar">
+                            {selectedTemplate ? (
+                                <TemplatePreview
+                                    pageSettings={selectedTemplate.parsedPage}
+                                    headerSettings={selectedTemplate.parsedHeader}
+                                    contentBlocks={selectedTemplate.parsedContent}
+                                    signatureSettings={selectedTemplate.parsedSig}
+                                    footerSettings={selectedTemplate.parsedFooter || null}
+                                    variableValues={previewVariableValues}
+                                    signatoriesData={signatories.map(s => ({
+                                        slot_id: s.slot_id,
+                                        name: users.find(u => u.id.toString() === s.user_id)?.name || users.find(u => u.id.toString() === s.user_id)?.first_name || '(Nama Penandatangan)',
+                                        nip: users.find(u => u.id.toString() === s.user_id)?.nip || ''
+                                    }))}
+                                    scale={previewScale}
+                                />
+                            ) : (
+                                <div className="text-neutral-400 flex items-center justify-center h-full min-h-[300px]">
+                                    <div className="text-center font-mono text-xs">
+                                        <FileText className="w-10 h-10 mx-auto text-neutral-300 dark:text-neutral-700 mb-2" />
+                                        <p>Pilih template untuk melihat pratinjau surat.</p>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                <div className="sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                    <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate('/admin/outgoing-letters')} disabled={loading}>Batal</Button>
-                    <Button type="submit" form="letter-form" className="rounded-none px-6" disabled={loading}>
-                        <Save className="h-4 w-4 mr-2" />
-                        {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+                {/* Unified Card Footer */}
+                <div className="px-4 py-3 bg-neutral-50/70 dark:bg-neutral-900/40 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-2.5 shrink-0">
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 px-4 rounded-none border border-neutral-200 dark:border-neutral-800 text-xs font-semibold shadow-none" 
+                        onClick={() => navigate('/admin/outgoing-letters')} 
+                        disabled={loading}
+                    >
+                        Batal
+                    </Button>
+                    <Button 
+                        type="submit" 
+                        size="sm" 
+                        className="h-8 px-5 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 text-xs font-semibold shadow-none gap-1.5" 
+                        disabled={loading} 
+                        form="letter-form"
+                    >
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                        <span>{loading ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
                     </Button>
                 </div>
             </div>

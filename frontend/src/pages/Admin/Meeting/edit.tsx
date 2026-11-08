@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Loader2, Search, Users as UsersIcon, CheckSquare, XSquare } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Search, CheckSquare, XSquare, Calendar, Loader2 } from 'lucide-react';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -64,7 +63,6 @@ export default function MeetingEdit() {
     const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterOrgUnit, setFilterOrgUnit] = useState('');
-    // Keep track of original participant IDs (from DB) to handle deletions
     const [originalParticipantIds, setOriginalParticipantIds] = useState<number[]>([]);
 
     useEffect(() => {
@@ -103,33 +101,32 @@ export default function MeetingEdit() {
                 status: data.status || 'draft',
             });
 
-            // Pre-load existing participants
-            const existingParts = (partRes.data || []).map((p: any) => ({
+            const parts = partRes.data || [];
+            setSelectedParticipants(parts.map((p: any) => ({
                 user_id: p.user_id,
-                role: p.role || 'participant',
-            }));
-            setSelectedParticipants(existingParts);
-            setOriginalParticipantIds(existingParts.map((p: any) => p.user_id));
+                role: p.role,
+            })));
+            setOriginalParticipantIds(parts.map((p: any) => p.user_id));
         } catch (error) {
             console.error(error);
+            toast.error('Gagal memuat data rapat');
         } finally {
             setLoading(false);
         }
     };
 
-    const filteredUsers = useMemo(() => {
-        return users.filter(u => {
-            const matchSearch = searchQuery === '' ||
-                u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (u.nip || '').toLowerCase().includes(searchQuery.toLowerCase());
-            const matchUnit = filterOrgUnit === '' ||
-                u.organization_unit_id?.toString() === filterOrgUnit;
-            return matchSearch && matchUnit;
-        });
-    }, [users, searchQuery, filterOrgUnit]);
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
-    const isSelected = (userId: number) => selectedParticipants.some(p => p.user_id === userId);
-    const getRole = (userId: number) => selectedParticipants.find(p => p.user_id === userId)?.role || 'participant';
+    const isSelected = (userId: number) => {
+        return selectedParticipants.some(p => p.user_id === userId);
+    };
+
+    const getRole = (userId: number) => {
+        return selectedParticipants.find(p => p.user_id === userId)?.role || 'participant';
+    };
 
     const handleToggle = (userId: number, checked: boolean) => {
         if (checked) {
@@ -140,62 +137,61 @@ export default function MeetingEdit() {
     };
 
     const handleRoleChange = (userId: number, role: string) => {
-        setSelectedParticipants(prev => prev.map(p => p.user_id === userId ? { ...p, role } : p));
+        setSelectedParticipants(prev =>
+            prev.map(p => p.user_id === userId ? { ...p, role } : p)
+        );
     };
+
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
+            const matchesQuery = !searchQuery ||
+                user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                user.nip?.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesOrg = !filterOrgUnit ||
+                user.organization_unit_id?.toString() === filterOrgUnit;
+            return matchesQuery && matchesOrg;
+        });
+    }, [users, searchQuery, filterOrgUnit]);
 
     const handleSelectAll = () => {
-        const newOnes = filteredUsers
+        const toAdd = filteredUsers
             .filter(u => !isSelected(u.id))
             .map(u => ({ user_id: u.id, role: 'participant' }));
-        setSelectedParticipants(prev => [...prev, ...newOnes]);
+        setSelectedParticipants(prev => [...prev, ...toAdd]);
     };
 
-    const handleDeselectAll = () => setSelectedParticipants([]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    const handleDeselectAll = () => {
+        const filteredIds = new Set(filteredUsers.map(u => u.id));
+        setSelectedParticipants(prev => prev.filter(p => !filteredIds.has(p.user_id)));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+
         try {
             const payload = {
                 ...formData,
                 room_id: formData.room_id ? parseInt(formData.room_id) : null,
                 organization_unit_id: formData.organization_unit_id ? parseInt(formData.organization_unit_id) : null,
-                start_time: formData.start_time + ':00',
-                end_time: formData.end_time + ':00',
             };
+
             await api.put(`/meetings/${id}`, payload);
 
             // Sync participants
             const currentIds = selectedParticipants.map(p => p.user_id);
-            const toAdd = selectedParticipants.filter(p => !originalParticipantIds.includes(p.user_id));
-            const toRemove = originalParticipantIds.filter(uid => !currentIds.includes(uid));
+            const toDelete = originalParticipantIds.filter(uid => !currentIds.includes(uid));
 
-            // Remove deselected
-            await Promise.all(toRemove.map(uid =>
-                api.delete(`/meetings/${id}/participants/${uid}`)
+            await Promise.all(toDelete.map(userId =>
+                api.delete(`/meetings/${id}/participants/${userId}`).catch(() => {})
             ));
 
-            // Add new participants
-            await Promise.all(toAdd.map(p =>
+            await Promise.all(selectedParticipants.map(p =>
                 api.post(`/meetings/${id}/participants`, {
                     user_id: p.user_id,
                     role: p.role,
-                    attendance_status: 'invited',
-                })
-            ));
-
-            // Update roles for existing
-            const toUpdateRole = selectedParticipants.filter(p => originalParticipantIds.includes(p.user_id));
-            await Promise.all(toUpdateRole.map(p =>
-                api.post(`/meetings/${id}/participants`, {
-                    user_id: p.user_id,
-                    role: p.role,
-                    attendance_status: 'invited',
+                }).catch(() => {
+                    return api.put(`/meetings/${id}/participants/${p.user_id}`, { role: p.role }).catch(() => {});
                 })
             ));
 
@@ -212,8 +208,9 @@ export default function MeetingEdit() {
     if (loading) {
         return (
             <AdminLayout>
-                <div className="flex items-center justify-center h-64">
-                    <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 p-12 text-center text-sm text-neutral-500 font-mono shadow-none">
+                    <Loader2 className="size-5 animate-spin mx-auto mb-2 text-neutral-400" />
+                    Memuat data rapat...
                 </div>
             </AdminLayout>
         );
@@ -221,147 +218,192 @@ export default function MeetingEdit() {
 
     return (
         <AdminLayout>
-            <div className="w-full">
-                <div className="flex items-center gap-2 mb-6">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate(`/admin/meetings/${id}`)}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Edit Rapat</h2>
-                        <p className="text-sm text-muted-foreground">Perbarui informasi jadwal rapat.</p>
-                    </div>
-                </div>
+            <FormCard
+                title="Edit Informasi Rapat"
+                subtitle="Perbarui jadwal pelaksanaan, agenda, ruangan, dan daftar peserta undangan"
+                icon={Calendar}
+                onBack={() => navigate(`/admin/meetings/${id}`)}
+                onSubmit={handleSubmit}
+                loading={submitting}
+                submitText="Simpan Perubahan Rapat"
+                cancelText="Batal"
+                onCancel={() => navigate(`/admin/meetings/${id}`)}
+            >
+                <div className="space-y-6">
+                    {/* 1. Informasi Umum */}
+                    <FormSection title="1. Informasi Umum Rapat" description="Detail dasar terkait rapat yang akan diadakan">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="meeting_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Nomor Rapat <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="meeting_number" 
+                                    name="meeting_number" 
+                                    required 
+                                    value={formData.meeting_number} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="title" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Judul Rapat <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="title" 
+                                    name="title" 
+                                    required 
+                                    value={formData.title} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                                />
+                            </div>
+                        </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="space-y-4">
-                        {/* Informasi Umum */}
-                        <Card className="shadow-none">
-                            <CardHeader>
-                                <CardTitle>Informasi Umum</CardTitle>
-                                <CardDescription>Detail dasar terkait rapat yang akan diadakan</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="meeting_number">Nomor Rapat *</Label>
-                                        <Input id="meeting_number" name="meeting_number" required value={formData.meeting_number} onChange={handleChange} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="title">Judul Rapat *</Label>
-                                        <Input id="title" name="title" required value={formData.title} onChange={handleChange} />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="agenda">Agenda Utama</Label>
-                                    <Textarea id="agenda" name="agenda" value={formData.agenda} onChange={handleChange} rows={3} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="notes">Catatan</Label>
-                                    <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} rows={2} placeholder="Catatan tambahan (opsional)..." />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="status">Status Rapat</Label>
-                                        <SearchableSelect
-                                            value={formData.status}
-                                            onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
-                                            placeholder="Pilih status"
-                                            options={[
-                                                { value: "draft", label: "Draft" },
-                                                { value: "scheduled", label: "Terjadwal" },
-                                                { value: "ongoing", label: "Sedang Berjalan" },
-                                                { value: "completed", label: "Selesai" },
-                                                { value: "cancelled", label: "Dibatalkan" },
-                                            ]}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="agenda" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Agenda Utama
+                            </Label>
+                            <Textarea 
+                                id="agenda" 
+                                name="agenda" 
+                                value={formData.agenda} 
+                                onChange={handleChange} 
+                                rows={3} 
+                                className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
 
-                        {/* Waktu & Lokasi */}
-                        <Card className="shadow-none">
-                            <CardHeader>
-                                <CardTitle>Waktu & Lokasi</CardTitle>
-                                <CardDescription>Penjadwalan dan pemilihan ruangan rapat</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="meeting_date">Tanggal *</Label>
-                                        <Input id="meeting_date" name="meeting_date" type="date" required value={formData.meeting_date} onChange={handleChange} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="start_time">Waktu Mulai *</Label>
-                                        <Input id="start_time" name="start_time" type="time" required value={formData.start_time} onChange={handleChange} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="end_time">Waktu Selesai *</Label>
-                                        <Input id="end_time" name="end_time" type="time" required value={formData.end_time} onChange={handleChange} />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Ruangan</Label>
-                                        <SearchableSelect
-                                            value={formData.room_id}
-                                            onValueChange={(val) => setFormData(prev => ({ ...prev, room_id: val }))}
-                                            placeholder="Pilih ruangan"
-                                            options={rooms.length > 0 ? rooms : [{ value: "", label: "Loading..." }]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Unit Organisasi</Label>
-                                        <SearchableSelect
-                                            value={formData.organization_unit_id}
-                                            onValueChange={(val) => setFormData(prev => ({ ...prev, organization_unit_id: val }))}
-                                            placeholder="Pilih unit (opsional)"
-                                            options={[
-                                                { value: '', label: 'Tidak ada unit khusus' },
-                                                ...orgUnits.map(u => ({ value: u.id.toString(), label: u.name }))
-                                            ]}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="notes" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Catatan Tambahan
+                            </Label>
+                            <Textarea 
+                                id="notes" 
+                                name="notes" 
+                                value={formData.notes} 
+                                onChange={handleChange} 
+                                rows={2} 
+                                placeholder="Catatan tambahan (opsional)..."
+                                className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
 
-                        {/* Pemilihan Peserta */}
-                        <Card className="shadow-none">
-                            <CardHeader>
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <UsersIcon className="h-5 w-5" />
-                                            Peserta Rapat
-                                        </CardTitle>
-                                        <CardDescription>
-                                            {selectedParticipants.length} peserta dipilih
-                                        </CardDescription>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button type="button" variant="outline" size="sm" onClick={handleSelectAll}>
-                                            <CheckSquare className="h-4 w-4 mr-2" />
-                                            Pilih Semua
-                                        </Button>
-                                        <Button type="button" variant="outline" size="sm" onClick={handleDeselectAll}>
-                                            <XSquare className="h-4 w-4 mr-2" />
-                                            Batal Semua
-                                        </Button>
-                                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="status" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Status Rapat
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.status}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
+                                    placeholder="Pilih status"
+                                    options={[
+                                        { value: "draft", label: "Draft" },
+                                        { value: "scheduled", label: "Terjadwal" },
+                                        { value: "ongoing", label: "Sedang Berjalan" },
+                                        { value: "completed", label: "Selesai" },
+                                        { value: "cancelled", label: "Dibatalkan" },
+                                    ]}
+                                />
+                            </div>
+                        </div>
+                    </FormSection>
+
+                    {/* 2. Waktu & Lokasi */}
+                    <FormSection title="2. Waktu & Lokasi Pelaksanaan" description="Penjadwalan tanggal, jam, dan lokasi ruangan">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="meeting_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Tanggal <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="meeting_date" 
+                                    name="meeting_date" 
+                                    type="date" 
+                                    required 
+                                    value={formData.meeting_date} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="start_time" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Waktu Mulai <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="start_time" 
+                                    name="start_time" 
+                                    type="time" 
+                                    required 
+                                    value={formData.start_time} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="end_time" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Waktu Selesai <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="end_time" 
+                                    name="end_time" 
+                                    type="time" 
+                                    required 
+                                    value={formData.end_time} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="room_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Ruangan Rapat
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.room_id}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, room_id: val }))}
+                                    placeholder="Pilih Ruangan"
+                                    options={rooms.length > 0 ? rooms : [{ value: "", label: "Loading..." }]}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="organization_unit_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Unit Penyelenggara
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.organization_unit_id}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, organization_unit_id: val }))}
+                                    placeholder="Pilih Unit (opsional)"
+                                    options={[
+                                        { value: '', label: 'Tidak ada unit khusus' },
+                                        ...orgUnits.map(u => ({ value: u.id.toString(), label: u.name }))
+                                    ]}
+                                />
+                            </div>
+                        </div>
+                    </FormSection>
+
+                    {/* 3. Peserta Rapat */}
+                    <FormSection 
+                        title={`3. Peserta Rapat (${selectedParticipants.length} Dipilih)`} 
+                        description="Pilih pegawai yang diundang dan tentukan peran dalam rapat"
+                    >
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-400" />
+                                    <Input
+                                        placeholder="Cari nama atau NIP..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        className="pl-8 h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                                    />
                                 </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Cari nama atau NIP..."
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                            className="pl-10"
-                                        />
-                                    </div>
+                                <div className="w-full sm:w-60">
                                     <SearchableSelect
                                         value={filterOrgUnit}
                                         onValueChange={setFilterOrgUnit}
@@ -372,88 +414,110 @@ export default function MeetingEdit() {
                                         ]}
                                     />
                                 </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSelectAll}
+                                        className="h-9 rounded-none text-xs border-neutral-200 dark:border-neutral-800 shadow-none"
+                                        title="Pilih semua yang tampil"
+                                    >
+                                        <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                                        Semua
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleDeselectAll}
+                                        className="h-9 rounded-none text-xs border-neutral-200 dark:border-neutral-800 shadow-none text-rose-600"
+                                        title="Batal pilih semua"
+                                    >
+                                        <XSquare className="h-3.5 w-3.5 mr-1" />
+                                        Reset
+                                    </Button>
+                                </div>
+                            </div>
 
-                                <div className="border rounded-lg">
-                                    <div className="max-h-80 overflow-y-auto">
-                                        {filteredUsers.length === 0 ? (
-                                            <div className="text-center py-8 text-muted-foreground text-sm">
-                                                Tidak ada pengguna ditemukan
+                            {/* User List */}
+                            <div className="border border-neutral-200 dark:border-neutral-800 rounded-none overflow-hidden max-h-72 overflow-y-auto divide-y divide-neutral-100 dark:divide-neutral-800 bg-white dark:bg-neutral-950">
+                                {filteredUsers.length === 0 ? (
+                                    <div className="p-4 text-center text-xs text-neutral-500 font-mono">
+                                        Tidak ada pengguna yang cocok dengan kriteria pencarian.
+                                    </div>
+                                ) : (
+                                    filteredUsers.map(user => {
+                                        const sel = isSelected(user.id);
+                                        const role = getRole(user.id);
+                                        return (
+                                            <div
+                                                key={user.id}
+                                                className={`flex items-center justify-between p-2.5 px-3 transition-colors cursor-pointer ${
+                                                    sel ? 'bg-neutral-50/80 dark:bg-neutral-900/60' : 'hover:bg-neutral-50/50 dark:hover:bg-neutral-900/30'
+                                                }`}
+                                                onClick={() => handleToggle(user.id, !sel)}
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <Checkbox
+                                                        checked={sel}
+                                                        onCheckedChange={(checked) => handleToggle(user.id, checked as boolean)}
+                                                        className="rounded-none pointer-events-none"
+                                                        tabIndex={-1}
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-semibold text-neutral-900 dark:text-white truncate">{user.name}</p>
+                                                        <p className="text-[11px] text-neutral-500 font-mono truncate">
+                                                            {user.nip ? `NIP: ${user.nip}` : ''}
+                                                            {user.organization_unit ? ` • ${user.organization_unit.name}` : ''}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {sel && (
+                                                    <div className="flex items-center gap-1 shrink-0 ml-2" onClick={e => e.stopPropagation()}>
+                                                        {ROLE_OPTIONS.map(r => (
+                                                            <Button
+                                                                key={r.value}
+                                                                type="button"
+                                                                size="sm"
+                                                                variant={role === r.value ? 'default' : 'outline'}
+                                                                onClick={() => handleRoleChange(user.id, r.value)}
+                                                                className="h-6 text-[10px] px-2 rounded-none shadow-none uppercase font-bold"
+                                                            >
+                                                                {r.label}
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <div className="divide-y">
-                                                {filteredUsers.map(user => {
-                                                    const sel = isSelected(user.id);
-                                                    const role = getRole(user.id);
-                                                    return (
-                                                        <div
-                                                            key={user.id}
-                                                            className={`flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/40 transition-colors ${sel ? 'bg-muted/25' : ''}`}
-                                                            onClick={() => handleToggle(user.id, !sel)}
-                                                        >
-                                                            <Checkbox
-                                                                checked={sel}
-                                                                onCheckedChange={(checked) => handleToggle(user.id, checked as boolean)}
-                                                                className="mt-1 pointer-events-none"
-                                                                tabIndex={-1}
-                                                            />
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-medium text-sm">{user.name}</p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {user.nip} • {user.organization_unit?.name || 'Tanpa Unit'}
-                                                                </p>
-                                                                {sel && (
-                                                                    <div className="flex flex-wrap gap-1.5 mt-2" onClick={e => e.stopPropagation()}>
-                                                                        {ROLE_OPTIONS.map(r => (
-                                                                            <Button
-                                                                                key={r.value}
-                                                                                type="button"
-                                                                                size="sm"
-                                                                                variant={role === r.value ? 'default' : 'outline'}
-                                                                                onClick={() => handleRoleChange(user.id, r.value)}
-                                                                                className="h-6 text-xs px-2"
-                                                                            >
-                                                                                {r.label}
-                                                                            </Button>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* Selected preview */}
+                            {selectedParticipants.length > 0 && (
+                                <div className="border border-neutral-200 dark:border-neutral-800 p-3 bg-neutral-50/50 dark:bg-neutral-900/40 space-y-1.5">
+                                    <span className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        Ringkasan Peserta Terpilih ({selectedParticipants.length})
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedParticipants.map(p => {
+                                            const u = users.find(u => u.id === p.user_id);
+                                            return (
+                                                <span key={p.user_id} className="font-mono text-xs px-2 py-0.5 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200">
+                                                    {u?.name} ({ROLE_OPTIONS.find(r => r.value === p.role)?.label})
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                 </div>
-
-                                {selectedParticipants.length > 0 && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground mb-2 font-medium">Peserta Terpilih:</p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {selectedParticipants.map(p => {
-                                                const u = users.find(u => u.id === p.user_id);
-                                                return (
-                                                    <Badge key={p.user_id} variant="secondary" className="text-xs">
-                                                        {u?.name} ({ROLE_OPTIONS.find(r => r.value === p.role)?.label})
-                                                    </Badge>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <div className="sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate(`/admin/meetings/${id}`)} disabled={submitting}>Batal</Button>
-                        <Button type="submit" size="sm" className="h-9 px-6" disabled={submitting}>
-                            {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                            {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                            )}
+                        </div>
+                    </FormSection>
+                </div>
+            </FormCard>
         </AdminLayout>
     );
 }

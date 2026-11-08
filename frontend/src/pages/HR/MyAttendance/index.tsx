@@ -93,14 +93,14 @@ const LiveClockBadge = React.memo(function LiveClockBadge() {
   };
 
   return (
-    <div className="flex items-center justify-between sm:justify-end gap-2.5 px-3.5 py-2 rounded-xl border bg-card text-xs shadow-2xs font-mono w-full sm:w-auto">
+    <div className="flex items-center justify-between sm:justify-end gap-2.5 px-3 py-1.5 rounded-none border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 text-xs shadow-none font-mono w-full sm:w-auto">
       <div className="flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-        <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-        <span className="font-bold text-foreground text-sm tracking-wider">{formatClock(time)}</span>
-        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">WIB</span>
+        <Clock className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300 shrink-0" />
+        <span className="font-bold text-neutral-900 dark:text-white text-sm tracking-wider">{formatClock(time)}</span>
+        <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-1.5 py-0.2 rounded-none">WIB</span>
       </div>
-      <span className="text-muted-foreground font-sans text-xs border-l border-border/80 pl-2.5">
+      <span className="text-neutral-500 font-sans text-xs border-l border-neutral-200 dark:border-neutral-800 pl-2.5">
         {time.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
       </span>
     </div>
@@ -808,258 +808,270 @@ export default function MyAttendancePortal() {
 
   return (
     <HrLayout>
-      <div className="flex-1 space-y-4 p-4 md:p-6 pt-5 pb-20">
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Dashboard Presensi
-              </h1>
-              <Badge variant="outline" className="text-[11px] font-normal py-0">
-                {employee?.position || 'Karyawan'}
-              </Badge>
+      <div className="w-full space-y-4 pb-20 font-sans">
+        {/* =========================================================
+            UNIFIED TOP CARD: Header, Clock & Quick Action Toolbar
+        ========================================================= */}
+        <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col">
+          {/* Top Header */}
+          <div className="px-4 py-3.5 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-start sm:items-center gap-3 min-w-0">
+              <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0 rounded-none">
+                <Clock className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-sm sm:text-base font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                    Dashboard Presensi
+                  </h1>
+                  <Badge variant="outline" className="rounded-none border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 font-mono text-[10px] uppercase font-semibold py-0.5 px-2">
+                    {employee?.position || 'Karyawan'}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-neutral-500 font-mono truncate mt-0.5">
+                  Selamat datang, <span className="font-semibold text-neutral-800 dark:text-neutral-200">{employee ? `${employee.first_name} ${employee.last_name || ''}` : user?.name || 'Pegawai'}</span> • NIK: {employee?.nik || employee?.employee_id || '-'}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Selamat datang, <span className="font-semibold text-foreground">{employee ? `${employee.first_name} ${employee.last_name || ''}` : user?.name || 'Pegawai'}</span> • NIK: {employee?.nik || employee?.employee_id || '-'}
-            </p>
+
+            <LiveClockBadge />
           </div>
 
-          <LiveClockBadge />
-        </div>
-
-        {/* Quick Action Toolbar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
-          <Button
-            disabled={todayStatusInfo ? (!todayStatusInfo.can_check_in || todayStatusInfo.is_on_leave) : hasActiveSession}
-            onClick={() => {
-              setCapturedPhoto('');
-              setActionNotes('');
-              setCheckinModalOpen(true);
-              refreshLocation();
-            }}
-            className={`h-11 text-xs sm:text-sm font-semibold gap-1.5 sm:gap-2 text-white w-full px-2 sm:px-4 min-w-0 ${
-              todayStatusInfo?.is_on_leave
-                ? 'bg-amber-600/70 dark:bg-amber-800/60 cursor-not-allowed text-white hover:bg-amber-600/70'
-                : todayStatusInfo?.is_day_off || todayStatusInfo?.all_completed
-                ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed text-slate-100 hover:bg-slate-400'
-                : hasActiveSession
-                ? 'bg-emerald-600/60 cursor-not-allowed hover:bg-emerald-600/60'
-                : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}
-          >
-            <LogIn className="w-4 h-4 shrink-0" />
-            <span className="truncate">
-              {todayStatusInfo?.is_on_leave
-                ? 'Sedang Cuti'
-                : todayStatusInfo?.is_day_off
-                ? 'Hari Libur'
-                : todayStatusInfo?.all_completed
-                ? 'Presensi Hari Ini Selesai'
-                : hasActiveSession
-                ? 'Sesi Berjalan'
-                : todayStatusInfo?.completed_count > 0
-                ? 'Masuk Shift Berikutnya'
-                : 'Presensi Masuk'}
-            </span>
-          </Button>
-
-          <Button
-            disabled={!hasActiveSession}
-            onClick={() => {
-              setCapturedPhoto('');
-              setActionNotes('');
-              setCheckoutModalOpen(true);
-              refreshLocation();
-            }}
-            className="h-11 text-xs sm:text-sm font-semibold gap-1.5 sm:gap-2 bg-rose-600 hover:bg-rose-700 text-white w-full px-2 sm:px-4 min-w-0"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span className="truncate">Presensi Pulang</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            disabled={!hasActiveSession}
-            onClick={() => {
-              setCapturedPhoto('');
-              setEarlyReason('');
-              setEarlyLeaveModalOpen(true);
-            }}
-            className="h-11 text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 w-full px-2 sm:px-4 min-w-0"
-          >
-            <Zap className="w-4 h-4 text-amber-500 shrink-0" />
-            <span className="truncate">Pulang Cepat</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              setMeetingToken('');
-              setMeetingModalOpen(true);
-            }}
-            className="h-11 text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 w-full px-2 sm:px-4 min-w-0"
-          >
-            <QrCode className="w-4 h-4 shrink-0" />
-            <span className="truncate">Presensi Rapat</span>
-          </Button>
-
-          <Button
-            variant="secondary"
-            onClick={() => {
-              fetchColleagues();
-              setLeaveModalOpen(true);
-            }}
-            className="h-11 text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 w-full px-2 sm:px-4 min-w-0"
-          >
-            <CalendarPlus className="w-4 h-4 shrink-0" />
-            <span className="truncate">Ajukan Cuti</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              setActiveTab('leaves');
-              setHistoryModalOpen(true);
-            }}
-            className="h-11 text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 border-primary/40 text-primary hover:bg-primary/10 w-full px-2 sm:px-4 min-w-0 shadow-2xs"
-          >
-            <History className="w-4 h-4 text-primary shrink-0" />
-            <span className="truncate">Pantau Cuti</span>
-            {leaveHistory.filter((l: any) => l.status === 'pending').length > 0 && (
-              <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] px-1.5 py-0 h-4 ml-0.5">
-                {leaveHistory.filter((l: any) => l.status === 'pending').length}
-              </Badge>
-            )}
-          </Button>
-        </div>
-
-        {/* 4 Compact Status / KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-          {/* Card 1: Clock In */}
-          <Card className="p-3 sm:p-3.5 rounded-xl border bg-card shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1 font-medium truncate">
-                <LogIn className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Masuk
-              </span>
-              {todayAttendance ? (
-                <Badge
-                  variant="outline"
-                  className={statusConfig[todayAttendance.status]?.className || 'text-[10px] py-0 px-1.5'}
-                >
-                  {statusConfig[todayAttendance.status]?.label || todayAttendance.status}
-                </Badge>
-              ) : todayStatusInfo?.is_on_leave ? (
-                <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
-                  Cuti
-                </span>
-              ) : todayStatusInfo?.is_day_off ? (
-                <span className="text-[10px] font-semibold text-blue-700 bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 px-1.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                  Libur
-                </span>
-              ) : todayStatusInfo?.all_completed ? (
-                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                  Selesai
-                </span>
-              ) : (
-                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.2 rounded-full">
-                  Belum
-                </span>
-              )}
-            </div>
-            <div className="text-xl sm:text-2xl font-bold font-mono text-foreground tracking-tight">
-              {formatTime(todayAttendance?.clock_in)}
-            </div>
-            <div className="text-[11px] text-muted-foreground truncate">
-              {todayAttendance?.late_minutes > 0 ? (
-                <span className="text-rose-600 font-medium">Terlambat {todayAttendance.late_minutes} mnt</span>
-              ) : todayStatusInfo?.is_on_leave ? (
-                <span className="text-amber-700 dark:text-amber-300 font-medium font-sans">
-                  Sedang Cuti: {todayStatusInfo?.leave_name || 'Cuti'}
-                </span>
-              ) : todayStatusInfo?.is_day_off ? (
-                <span className="text-blue-600 dark:text-blue-400 font-medium">Hari ini libur (tidak ada jadwal)</span>
-              ) : todayStatusInfo?.all_completed ? (
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Semua shift selesai</span>
-              ) : (
-                `Shift: ${todayAttendance?.work_schedule_name || todayStatusInfo?.shift_name || todaySchedule?.work_schedule_name || todaySchedule?.name || 'Sesuai Jadwal'}`
-              )}
-            </div>
-          </Card>
-
-          {/* Card 2: Clock Out */}
-          <Card className="p-3 sm:p-3.5 rounded-xl border bg-card shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1 font-medium truncate">
-                <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" /> Pulang
-              </span>
-              {todayAttendance?.status === 'early_leave' && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                  Pulang Cepat
-                </span>
-              )}
-            </div>
-            <div className="text-xl sm:text-2xl font-bold font-mono text-foreground tracking-tight">
-              {formatTime(todayAttendance?.clock_out)}
-            </div>
-            <div className="text-[11px] text-muted-foreground truncate">
-              {todayAttendance?.clock_out ? 'Tercatat Selesai' : (todayAttendance?.clock_in ? 'Sedang Bekerja' : todayStatusInfo?.is_day_off ? 'Tidak Bekerja' : '-')}
-            </div>
-          </Card>
-
-          {/* Card 3: Location / Geofence */}
-          <Card className="p-3 sm:p-3.5 rounded-xl border bg-card shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1 font-medium truncate">
-                <MapPin className="w-3.5 h-3.5 text-teal-600 shrink-0" /> Lokasi GPS
-              </span>
-              <button
-                type="button"
-                onClick={refreshLocation}
-                disabled={isLocating}
-                className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-                title="Segarkan GPS"
+          {/* Quick Action Toolbar */}
+          <div className="p-3 sm:p-4 bg-neutral-50/50 dark:bg-neutral-900/30 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
+              <Button
+                disabled={todayStatusInfo ? (!todayStatusInfo.can_check_in || todayStatusInfo.is_on_leave) : hasActiveSession}
+                onClick={() => {
+                  setCapturedPhoto('');
+                  setActionNotes('');
+                  setCheckinModalOpen(true);
+                  refreshLocation();
+                }}
+                className={`h-10 text-xs uppercase tracking-wider font-bold gap-1.5 sm:gap-2 text-white w-full px-2 sm:px-3 min-w-0 rounded-none shadow-none ${
+                  todayStatusInfo?.is_on_leave
+                    ? 'bg-amber-600/70 dark:bg-amber-800/60 cursor-not-allowed text-white'
+                    : todayStatusInfo?.is_day_off || todayStatusInfo?.all_completed
+                    ? 'bg-neutral-400 dark:bg-neutral-700 cursor-not-allowed text-neutral-100'
+                    : hasActiveSession
+                    ? 'bg-emerald-600/60 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
               >
-                <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin text-teal-600' : ''}`} />
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${isInsideGeofence === true ? 'bg-emerald-500' : isInsideGeofence === false ? 'bg-amber-500' : 'bg-slate-400'}`} />
-              <span className={`text-xs sm:text-sm font-semibold truncate ${isInsideGeofence === true ? 'text-emerald-700 dark:text-emerald-400' : isInsideGeofence === false ? 'text-amber-700 dark:text-amber-400' : 'text-foreground'}`}>
-                {isLocating ? 'Mendeteksi...' : isInsideGeofence === true ? 'Dalam Radius' : isInsideGeofence === false ? 'Luar Radius' : 'Mencari...'}
-              </span>
-            </div>
-            <div className="text-[11px] text-muted-foreground truncate" title={locationName}>
-              {locationName || 'Mencari sinyal GPS...'}
-            </div>
-          </Card>
+                <LogIn className="w-4 h-4 shrink-0" />
+                <span className="truncate">
+                  {todayStatusInfo?.is_on_leave
+                    ? 'Sedang Cuti'
+                    : todayStatusInfo?.is_day_off
+                    ? 'Hari Libur'
+                    : todayStatusInfo?.all_completed
+                    ? 'Selesai'
+                    : hasActiveSession
+                    ? 'Sesi Berjalan'
+                    : todayStatusInfo?.completed_count > 0
+                    ? 'Shift Berikut'
+                    : 'Presensi Masuk'}
+                </span>
+              </Button>
 
-          {/* Card 4: AI Face Status */}
-          <Card className="p-3 sm:p-3.5 rounded-xl border bg-card shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1 font-medium truncate">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" /> Face AI
-              </span>
-              <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-full border ${employee?.photo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                {employee?.photo ? 'Aktif' : 'Daftar'}
-              </span>
+              <Button
+                disabled={!hasActiveSession}
+                onClick={() => {
+                  setCapturedPhoto('');
+                  setActionNotes('');
+                  setCheckoutModalOpen(true);
+                  refreshLocation();
+                }}
+                className="h-10 text-xs uppercase tracking-wider font-bold gap-1.5 sm:gap-2 bg-rose-600 hover:bg-rose-700 text-white w-full px-2 sm:px-3 min-w-0 rounded-none shadow-none"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                <span className="truncate">Presensi Pulang</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                disabled={!hasActiveSession}
+                onClick={() => {
+                  setCapturedPhoto('');
+                  setEarlyReason('');
+                  setEarlyLeaveModalOpen(true);
+                }}
+                className="h-10 text-xs uppercase tracking-wider font-semibold gap-1.5 sm:gap-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 w-full px-2 sm:px-3 min-w-0 rounded-none shadow-none"
+              >
+                <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                <span className="truncate">Pulang Cepat</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMeetingToken('');
+                  setMeetingModalOpen(true);
+                }}
+                className="h-10 text-xs uppercase tracking-wider font-semibold gap-1.5 sm:gap-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 w-full px-2 sm:px-3 min-w-0 rounded-none shadow-none"
+              >
+                <QrCode className="w-4 h-4 shrink-0" />
+                <span className="truncate">Presensi Rapat</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  fetchColleagues();
+                  setLeaveModalOpen(true);
+                }}
+                className="h-10 text-xs uppercase tracking-wider font-semibold gap-1.5 sm:gap-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 w-full px-2 sm:px-3 min-w-0 rounded-none shadow-none"
+              >
+                <CalendarPlus className="w-4 h-4 shrink-0" />
+                <span className="truncate">Ajukan Cuti</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setActiveTab('leaves');
+                  setHistoryModalOpen(true);
+                }}
+                className="h-10 text-xs uppercase tracking-wider font-semibold gap-1.5 sm:gap-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-850 w-full px-2 sm:px-3 min-w-0 rounded-none shadow-none"
+              >
+                <History className="w-4 h-4 text-neutral-600 dark:text-neutral-400 shrink-0" />
+                <span className="truncate">Pantau Cuti</span>
+                {leaveHistory.filter((l: any) => l.status === 'pending').length > 0 && (
+                  <Badge className="bg-amber-500 text-white text-[10px] font-mono px-1.5 py-0 h-4 ml-0.5 rounded-none">
+                    {leaveHistory.filter((l: any) => l.status === 'pending').length}
+                  </Badge>
+                )}
+              </Button>
             </div>
-            <div className="flex items-center gap-1.5 min-w-0">
-              <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px] overflow-hidden shrink-0">
-                {employee?.photo ? (
-                  <img src={employee.photo.startsWith('http') || employee.photo.startsWith('data:') ? employee.photo : getApiUrl(employee.photo)} alt="Face" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          </div>
+
+          {/* 4 Compact Status / KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 divide-x-0 sm:divide-x divide-neutral-200 dark:divide-neutral-800 bg-white dark:bg-neutral-950">
+            {/* Card 1: Clock In */}
+            <div className="p-3.5 sm:p-4 space-y-1.5 border-b lg:border-b-0 border-r lg:border-r border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center justify-between text-xs text-neutral-500">
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 truncate">
+                  <LogIn className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Masuk
+                </span>
+                {todayAttendance ? (
+                  <Badge
+                    variant="outline"
+                    className={cn("rounded-none font-mono text-[10px] uppercase font-semibold py-0 px-1.5", statusConfig[todayAttendance.status]?.className)}
+                  >
+                    {statusConfig[todayAttendance.status]?.label || todayAttendance.status}
+                  </Badge>
+                ) : todayStatusInfo?.is_on_leave ? (
+                  <span className="text-[10px] font-mono uppercase font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 px-1.5 py-0.2 border border-amber-200 dark:border-amber-800">
+                    Cuti
+                  </span>
+                ) : todayStatusInfo?.is_day_off ? (
+                  <span className="text-[10px] font-mono uppercase font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400 px-1.5 py-0.2 border border-blue-200 dark:border-blue-800">
+                    Libur
+                  </span>
+                ) : todayStatusInfo?.all_completed ? (
+                  <span className="text-[10px] font-mono uppercase font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.2 border border-emerald-200 dark:border-emerald-800">
+                    Selesai
+                  </span>
                 ) : (
-                  <User className="w-3 h-3" />
+                  <span className="text-[10px] font-mono uppercase text-neutral-500 bg-neutral-100 dark:bg-neutral-900 px-1.5 py-0.2 border border-neutral-200 dark:border-neutral-800">
+                    Belum
+                  </span>
                 )}
               </div>
-              <span className="text-xs sm:text-sm font-semibold truncate text-foreground">
-                {employee?.photo ? 'Wajah Terdaftar' : 'Siap Didaftarkan'}
-              </span>
+              <div className="text-xl sm:text-2xl font-bold font-mono text-neutral-900 dark:text-white tracking-tight">
+                {formatTime(todayAttendance?.clock_in)}
+              </div>
+              <div className="text-[11px] text-neutral-500 truncate font-mono">
+                {todayAttendance?.late_minutes > 0 ? (
+                  <span className="text-rose-600 font-semibold font-sans">Terlambat {todayAttendance.late_minutes} mnt</span>
+                ) : todayStatusInfo?.is_on_leave ? (
+                  <span className="text-amber-700 dark:text-amber-400 font-medium font-sans">
+                    Sedang Cuti: {todayStatusInfo?.leave_name || 'Cuti'}
+                  </span>
+                ) : todayStatusInfo?.is_day_off ? (
+                  <span className="text-blue-600 dark:text-blue-400 font-medium font-sans">Hari ini libur (tidak ada jadwal)</span>
+                ) : todayStatusInfo?.all_completed ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium font-sans">Semua shift selesai</span>
+                ) : (
+                  `Shift: ${todayAttendance?.work_schedule_name || todayStatusInfo?.shift_name || todaySchedule?.work_schedule_name || todaySchedule?.name || 'Sesuai Jadwal'}`
+                )}
+              </div>
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">
-              {employee?.photo ? 'Model AI Terverifikasi' : 'Selfie untuk mendaftar'}
+
+            {/* Card 2: Clock Out */}
+            <div className="p-3.5 sm:p-4 space-y-1.5 border-b lg:border-b-0 border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center justify-between text-xs text-neutral-500">
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 truncate">
+                  <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" /> Pulang
+                </span>
+                {todayAttendance?.status === 'early_leave' && (
+                  <span className="text-[10px] font-mono uppercase font-semibold px-1.5 py-0.2 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                    Pulang Cepat
+                  </span>
+                )}
+              </div>
+              <div className="text-xl sm:text-2xl font-bold font-mono text-neutral-900 dark:text-white tracking-tight">
+                {formatTime(todayAttendance?.clock_out)}
+              </div>
+              <div className="text-[11px] text-neutral-500 truncate font-mono">
+                {todayAttendance?.clock_out ? 'Tercatat Selesai' : (todayAttendance?.clock_in ? 'Sedang Bekerja' : todayStatusInfo?.is_day_off ? 'Tidak Bekerja' : '-')}
+              </div>
             </div>
-          </Card>
+
+            {/* Card 3: Location / Geofence */}
+            <div className="p-3.5 sm:p-4 space-y-1.5 border-r border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center justify-between text-xs text-neutral-500">
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300 shrink-0" /> Lokasi GPS
+                </span>
+                <button
+                  type="button"
+                  onClick={refreshLocation}
+                  disabled={isLocating}
+                  className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white p-0.5 rounded-none transition-colors cursor-pointer shrink-0"
+                  title="Segarkan GPS"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-neutral-900 dark:text-white' : ''}`} />
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${isInsideGeofence === true ? 'bg-emerald-500' : isInsideGeofence === false ? 'bg-amber-500' : 'bg-neutral-400'}`} />
+                <span className={`text-xs sm:text-sm font-bold uppercase tracking-tight truncate ${isInsideGeofence === true ? 'text-emerald-700 dark:text-emerald-400' : isInsideGeofence === false ? 'text-amber-700 dark:text-amber-400' : 'text-neutral-900 dark:text-white'}`}>
+                  {isLocating ? 'Mendeteksi...' : isInsideGeofence === true ? 'Dalam Radius' : isInsideGeofence === false ? 'Luar Radius' : 'Mencari...'}
+                </span>
+              </div>
+              <div className="text-[11px] text-neutral-500 truncate font-mono" title={locationName}>
+                {locationName || 'Mencari sinyal GPS...'}
+              </div>
+            </div>
+
+            {/* Card 4: AI Face Status */}
+            <div className="p-3.5 sm:p-4 space-y-1.5">
+              <div className="flex items-center justify-between text-xs text-neutral-500">
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 truncate">
+                  <ShieldCheck className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300 shrink-0" /> Face AI
+                </span>
+                <span className={`text-[10px] font-mono uppercase font-semibold px-1.5 py-0.2 border rounded-none ${employee?.photo ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'}`}>
+                  {employee?.photo ? 'Aktif' : 'Daftar'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-none border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 flex items-center justify-center font-bold text-[10px] overflow-hidden shrink-0">
+                  {employee?.photo ? (
+                    <img src={employee.photo.startsWith('http') || employee.photo.startsWith('data:') ? employee.photo : getApiUrl(employee.photo)} alt="Face" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  ) : (
+                    <User className="w-3.5 h-3.5" />
+                  )}
+                </div>
+                <span className="text-xs sm:text-sm font-bold uppercase tracking-tight truncate text-neutral-900 dark:text-white">
+                  {employee?.photo ? 'Wajah Terdaftar' : 'Siap Didaftarkan'}
+                </span>
+              </div>
+              <div className="text-[11px] text-neutral-500 truncate font-mono">
+                {employee?.photo ? 'Model AI Terverifikasi' : 'Selfie untuk mendaftar'}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Features: Jadwal Kerja & Skor Disiplin (Sesuai Fitur Gambar 2, Desain Konsisten Dashboard) */}
@@ -1236,20 +1248,20 @@ export default function MyAttendancePortal() {
             : '0.00';
 
           return (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               {/* Card 1: JADWAL KERJA */}
-              <Card className="lg:col-span-7 p-4 sm:p-5 rounded-xl border bg-card shadow-xs flex flex-col justify-between space-y-4">
+              <div className="lg:col-span-7 border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/50">
+                  <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-foreground">
+                      <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-neutral-900 dark:text-white">
                         Jadwal Kerja
                       </span>
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded text-muted-foreground hover:text-foreground"
+                          className="h-7 w-7 rounded-none border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
                           onClick={() => {
                             const d = new Date(scheduleCenterDate);
                             d.setDate(d.getDate() - 5);
@@ -1262,7 +1274,7 @@ export default function MyAttendancePortal() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded text-muted-foreground hover:text-foreground"
+                          className="h-7 w-7 rounded-none border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
                           onClick={() => {
                             const d = new Date(scheduleCenterDate);
                             d.setDate(d.getDate() + 5);
@@ -1279,7 +1291,7 @@ export default function MyAttendancePortal() {
                       variant="outline"
                       size="sm"
                       onClick={() => setHistoryModalOpen(true)}
-                      className="h-7 sm:h-8 text-xs gap-1.5 px-3 rounded-lg border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+                      className="h-7 sm:h-8 text-xs gap-1.5 px-3 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 font-semibold"
                     >
                       <History className="w-3.5 h-3.5" />
                       Riwayat
@@ -1287,7 +1299,7 @@ export default function MyAttendancePortal() {
                   </div>
 
                   {/* Horizontal 5-Day Strip */}
-                  <div className="grid grid-cols-5 gap-2 sm:gap-3 pt-3">
+                  <div className="grid grid-cols-5 gap-1.5 sm:gap-2 p-3 sm:p-4">
                     {calendarDays.map((d) => {
                       const dayName = DAY_NAMES[d.getDay()];
                       const dayNum = String(d.getDate()).padStart(2, '0');
@@ -1301,32 +1313,32 @@ export default function MyAttendancePortal() {
                           type="button"
                           onClick={() => setSelectedScheduleDate(d)}
                           className={cn(
-                            'flex flex-col items-center justify-center py-2.5 px-1 sm:px-2 rounded-xl border transition-all text-center',
+                            'flex flex-col items-center justify-center py-2.5 px-1 sm:px-2 rounded-none border transition-all text-center cursor-pointer',
                             isSelected
-                              ? 'bg-primary text-primary-foreground border-primary shadow-xs ring-2 ring-primary/20'
-                              : 'bg-muted/30 hover:bg-muted/60 text-foreground border-border/60 hover:border-border'
+                              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-none font-bold'
+                              : 'bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-900 dark:text-white border-neutral-200 dark:border-neutral-800'
                           )}
                         >
                           <span
                             className={cn(
                               'text-[10px] sm:text-xs font-semibold tracking-wider uppercase',
-                              isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                              isSelected ? 'text-neutral-300 dark:text-neutral-700' : 'text-neutral-500'
                             )}
                           >
                             {dayName}
                           </span>
                           <span
                             className={cn(
-                              'text-base sm:text-xl font-bold leading-tight mt-0.5',
-                              isSelected ? 'text-primary-foreground' : 'text-foreground'
+                              'text-base sm:text-xl font-bold font-mono leading-tight mt-0.5',
+                              isSelected ? 'text-white dark:text-neutral-900' : 'text-neutral-900 dark:text-white'
                             )}
                           >
                             {dayNum}
                           </span>
                           <span
                             className={cn(
-                              'w-1.5 h-1.5 rounded-full mt-1.5 shrink-0',
-                              isSelected ? 'bg-primary-foreground' : dotColor
+                              'w-1.5 h-1.5 rounded-none mt-1.5 shrink-0',
+                              isSelected ? 'bg-white dark:bg-neutral-900' : dotColor
                             )}
                           />
                         </button>
@@ -1336,10 +1348,10 @@ export default function MyAttendancePortal() {
                 </div>
 
                 {/* Selected Day Details Card */}
-                <div className="p-3 sm:p-3.5 rounded-xl border bg-muted/20 space-y-2">
+                <div className="m-3 sm:m-4 mt-0 p-3 sm:p-3.5 rounded-none border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                      <Calendar className="w-3.5 h-3.5 text-primary" />
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
+                      <Calendar className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
                       <span>
                         {selectedScheduleDate.toLocaleDateString('id-ID', {
                           weekday: 'long',
@@ -1350,27 +1362,27 @@ export default function MyAttendancePortal() {
                       </span>
                     </div>
                     {isSelectedDateToday ? (
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] py-0">
+                      <Badge variant="outline" className="rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white font-mono text-[10px] uppercase font-bold py-0.5">
                         Hari Ini
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-[10px] py-0 text-muted-foreground">
+                      <Badge variant="outline" className="rounded-none text-[10px] font-mono uppercase font-semibold py-0.5 text-neutral-500 border-neutral-200 dark:border-neutral-800">
                         {selectedScheduleDate > new Date() ? 'Mendatang' : 'Riwayat'}
                       </Badge>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
-                    <div className="p-2 rounded-lg bg-card border border-border/50">
-                      <span className="text-[10px] text-muted-foreground block">Jadwal / Shift</span>
-                      <span className="font-semibold text-foreground truncate block mt-0.5">
+                    <div className="p-2.5 rounded-none bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500 block">Jadwal / Shift</span>
+                      <span className="font-semibold text-neutral-900 dark:text-white truncate block mt-0.5">
                         {selectedLeave ? (
-                          <span className="text-amber-700 dark:text-amber-300 font-medium">
+                          <span className="text-amber-700 dark:text-amber-400 font-medium">
                             Cuti: {selectedLeave.leave_type_name || 'Cuti Tahunan'} ({selectedLeave.reason || 'Izin Cuti'})
                           </span>
                         ) : isSelectedDateToday ? (
                           todayStatusInfo?.is_on_leave ? (
-                            <span className="text-amber-700 dark:text-amber-300 font-medium">
+                            <span className="text-amber-700 dark:text-amber-400 font-medium">
                               Cuti: {todayStatusInfo?.leave_name || 'Cuti'}
                             </span>
                           ) : todayStatusInfo?.is_day_off ? (
@@ -1381,15 +1393,15 @@ export default function MyAttendancePortal() {
                         ) : selectedAtt ? (
                           selectedAtt.work_schedule_name || selectedSchedule?.name || 'Shift Terjadwal'
                         ) : selectedSchedule ? (
-                          <span className="text-foreground">{selectedSchedule.name}</span>
+                          <span className="text-neutral-900 dark:text-white">{selectedSchedule.name}</span>
                         ) : (
-                          <span className="text-muted-foreground">Tidak Ada Jadwal / Libur</span>
+                          <span className="text-neutral-500">Tidak Ada Jadwal / Libur</span>
                         )}
                       </span>
                     </div>
-                    <div className="p-2 rounded-lg bg-card border border-border/50">
-                      <span className="text-[10px] text-muted-foreground block">Jam Masuk</span>
-                      <span className="font-semibold text-foreground font-mono block mt-0.5">
+                    <div className="p-2.5 rounded-none bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500 block">Jam Masuk</span>
+                      <span className="font-semibold text-neutral-900 dark:text-white font-mono block mt-0.5">
                         {selectedLeave ? (
                           <span className="text-xs text-amber-600 font-sans">--:-- (Cuti)</span>
                         ) : isSelectedDateToday ? (
@@ -1418,9 +1430,9 @@ export default function MyAttendancePortal() {
                         )}
                       </span>
                     </div>
-                    <div className="p-2 rounded-lg bg-card border border-border/50">
-                      <span className="text-[10px] text-muted-foreground block">Jam Pulang</span>
-                      <span className="font-semibold text-foreground font-mono block mt-0.5">
+                    <div className="p-2.5 rounded-none bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500 block">Jam Pulang</span>
+                      <span className="font-semibold text-neutral-900 dark:text-white font-mono block mt-0.5">
                         {selectedLeave ? (
                           <span className="text-xs text-amber-600 font-sans">--:-- (Cuti)</span>
                         ) : isSelectedDateToday ? (
@@ -1446,13 +1458,13 @@ export default function MyAttendancePortal() {
                     </div>
                   </div>
                 </div>
-              </Card>
+              </div>
 
               {/* Card 2: SKOR DISIPLIN */}
-              <Card className="lg:col-span-5 p-4 sm:p-5 rounded-xl border bg-card shadow-xs flex flex-col justify-between space-y-4">
+              <div className="lg:col-span-5 border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between pb-2 border-b border-border/50">
-                    <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-foreground">
+                  <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-neutral-900 dark:text-white">
                       Skor Disiplin
                     </span>
 
@@ -1460,7 +1472,7 @@ export default function MyAttendancePortal() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                        className="h-7 w-7 rounded-none border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
                         onClick={() => {
                           const d = new Date(disciplineMonthDate);
                           d.setMonth(d.getMonth() - 1);
@@ -1468,12 +1480,12 @@ export default function MyAttendancePortal() {
                         }}
                         title="Bulan Sebelumnya"
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-3.5 h-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                        className="h-7 w-7 rounded-none border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
                         onClick={() => {
                           const d = new Date(disciplineMonthDate);
                           d.setMonth(d.getMonth() + 1);
@@ -1481,17 +1493,17 @@ export default function MyAttendancePortal() {
                         }}
                         title="Bulan Berikutnya"
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
 
                   {/* Circular Indicator & Score */}
-                  <div className="flex items-center gap-4 sm:gap-5 py-3">
+                  <div className="p-4 sm:p-5 flex items-center gap-4 sm:gap-5">
                     <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
                       <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                         <path
-                          className="text-muted/30"
+                          className="text-neutral-200 dark:text-neutral-800"
                           strokeWidth="3.2"
                           stroke="currentColor"
                           fill="none"
@@ -1519,9 +1531,9 @@ export default function MyAttendancePortal() {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div
                           className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center border",
+                            "w-8 h-8 rounded-none flex items-center justify-center border",
                             !hasData
-                              ? "bg-muted text-muted-foreground border-border"
+                              ? "bg-neutral-100 dark:bg-neutral-900 text-neutral-500 border-neutral-200 dark:border-neutral-800"
                               : parseFloat(scoreValue) >= 80
                                 ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border-emerald-200 dark:border-emerald-800/40"
                                 : parseFloat(scoreValue) >= 50
@@ -1530,7 +1542,7 @@ export default function MyAttendancePortal() {
                           )}
                         >
                           {!hasData ? (
-                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <Clock className="w-4 h-4 text-neutral-500" />
                           ) : parseFloat(scoreValue) >= 80 ? (
                             <Check className="w-4 h-4 text-emerald-600" />
                           ) : (
@@ -1540,32 +1552,32 @@ export default function MyAttendancePortal() {
                       </div>
                     </div>
 
-                    <div className="space-y-0.5">
-                      <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-mono">
                         {hasData ? `${scoreValue}%` : '0.00%'}
                       </div>
-                      <div className="text-xs sm:text-sm font-medium text-muted-foreground">
+                      <div className="text-xs sm:text-sm font-medium text-neutral-500 font-mono">
                         {MONTH_NAMES[disciplineMonthDate.getMonth()]} {disciplineMonthDate.getFullYear()}
                       </div>
                       <div className="text-[11px] pt-0.5">
                         {!hasData ? (
-                          <span className="text-muted-foreground font-medium flex items-center gap-1">
+                          <span className="text-neutral-500 font-medium flex items-center gap-1 font-mono text-[10px]">
                             <Info className="w-3.5 h-3.5" /> Belum Ada Data Presensi
                           </span>
                         ) : parseFloat(scoreValue) >= 95 ? (
-                          <span className="text-emerald-600 font-medium inline-flex items-center gap-1">
+                          <span className="text-emerald-600 font-semibold inline-flex items-center gap-1 uppercase font-mono text-[10px] tracking-wide">
                             <ShieldCheck className="w-3.5 h-3.5" /> Sangat Disiplin
                           </span>
                         ) : parseFloat(scoreValue) >= 80 ? (
-                          <span className="text-emerald-600 font-medium inline-flex items-center gap-1">
+                          <span className="text-emerald-600 font-semibold inline-flex items-center gap-1 uppercase font-mono text-[10px] tracking-wide">
                             <Check className="w-3.5 h-3.5" /> Disiplin Baik
                           </span>
                         ) : parseFloat(scoreValue) >= 50 ? (
-                          <span className="text-amber-600 font-medium inline-flex items-center gap-1">
+                          <span className="text-amber-600 font-semibold inline-flex items-center gap-1 uppercase font-mono text-[10px] tracking-wide">
                             <AlertCircle className="w-3.5 h-3.5" /> Cukup Disiplin
                           </span>
                         ) : (
-                          <span className="text-rose-600 font-medium inline-flex items-center gap-1">
+                          <span className="text-rose-600 font-semibold inline-flex items-center gap-1 uppercase font-mono text-[10px] tracking-wide">
                             <AlertCircle className="w-3.5 h-3.5" /> Perlu Evaluasi Disiplin
                           </span>
                         )}
@@ -1575,93 +1587,93 @@ export default function MyAttendancePortal() {
                 </div>
 
                 {/* 3-Stats Breakdown */}
-                <div>
-                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50 text-center">
-                    <div className="p-2 rounded-lg bg-muted/20 border border-border/40">
-                      <div className="text-[10px] text-muted-foreground font-medium">Hadir</div>
-                      <div className="text-sm font-bold text-foreground mt-0.5">
-                        {totalPresent} <span className="text-[10px] font-normal text-muted-foreground">hari</span>
+                <div className="p-4 pt-0">
+                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-center">
+                    <div className="p-2.5 rounded-none bg-neutral-50/50 dark:bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800">
+                      <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Hadir</div>
+                      <div className="text-sm font-bold text-neutral-900 dark:text-white font-mono mt-0.5">
+                        {totalPresent} <span className="text-[10px] font-normal text-neutral-500">hari</span>
                       </div>
                     </div>
-                    <div className="p-2 rounded-lg bg-muted/20 border border-border/40">
-                      <div className="text-[10px] text-muted-foreground font-medium">Tepat Waktu</div>
-                      <div className="text-sm font-bold text-emerald-600 mt-0.5">
-                        {onTimeCount} <span className="text-[10px] font-normal text-muted-foreground">hari</span>
+                    <div className="p-2.5 rounded-none bg-neutral-50/50 dark:bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800">
+                      <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Tepat Waktu</div>
+                      <div className="text-sm font-bold text-emerald-600 font-mono mt-0.5">
+                        {onTimeCount} <span className="text-[10px] font-normal text-neutral-500">hari</span>
                       </div>
                     </div>
-                    <div className="p-2 rounded-lg bg-muted/20 border border-border/40">
-                      <div className="text-[10px] text-muted-foreground font-medium">Terlambat</div>
-                      <div className="text-sm font-bold text-amber-600 mt-0.5">
-                        {lateCount} <span className="text-[10px] font-normal text-muted-foreground">kali</span>
+                    <div className="p-2.5 rounded-none bg-neutral-50/50 dark:bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800">
+                      <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Terlambat</div>
+                      <div className="text-sm font-bold text-amber-600 font-mono mt-0.5">
+                        {lateCount} <span className="text-[10px] font-normal text-neutral-500">kali</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-[10px] text-muted-foreground text-center pt-2">
+                  <div className="text-[10px] font-mono text-neutral-500 text-center pt-2">
                     {hasData
                       ? `Perhitungan: (${onTimeCount} tepat waktu / ${totalPresent} total hadir) × 100%`
                       : `Belum ada riwayat kehadiran tercatat pada ${MONTH_NAMES[disciplineMonthDate.getMonth()]} ${disciplineMonthDate.getFullYear()}`}
                   </div>
                 </div>
-              </Card>
+              </div>
             </div>
           );
         })()}
 
         {/* Modal Dialog: Aktivitas & Riwayat Pegawai (Riwayat Absensi, Cuti & Profil) */}
         <Dialog open={historyModalOpen} onOpenChange={setHistoryModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0 rounded-2xl border shadow-xl bg-card">
+          <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-xl bg-white dark:bg-neutral-950">
             {/* Header & Tabs */}
-            <div className="border-b bg-muted/40 p-4 sm:p-5 space-y-3.5">
+            <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 p-4 sm:p-5 space-y-3.5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <DialogTitle className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
-                    <History className="w-5 h-5 text-primary shrink-0" />
-                    <span>Aktivitas & Riwayat Pegawai</span>
+                  <DialogTitle className="text-sm sm:text-base font-bold uppercase tracking-tight text-neutral-900 dark:text-white flex items-center gap-2">
+                    <History className="w-4 h-4 text-neutral-700 dark:text-neutral-300 shrink-0" />
+                    <span>Aktivitas &amp; Riwayat Pegawai</span>
                   </DialogTitle>
-                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  <DialogDescription className="text-xs text-neutral-500 mt-0.5">
                     Catatan kehadiran harian, permohonan cuti, dan profil data kepegawaian Anda.
                   </DialogDescription>
                 </div>
 
                 {/* Modern Responsive Tabs Switcher */}
-                <div className="grid grid-cols-3 gap-1 bg-muted p-1 rounded-xl w-full sm:w-auto text-xs font-medium">
+                <div className="grid grid-cols-3 gap-1 bg-neutral-100 dark:bg-neutral-900 p-1 rounded-none border border-neutral-200 dark:border-neutral-800 w-full sm:w-auto text-xs font-medium">
                   <button
                     type="button"
                     onClick={() => setActiveTab('attendance')}
                     className={cn(
-                      'py-1.5 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer',
+                      'py-1.5 px-2.5 rounded-none transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider text-[11px]',
                       activeTab === 'attendance'
-                        ? 'bg-card text-foreground shadow-2xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-none'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
                     )}
                   >
-                    <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">Absensi</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('leaves')}
                     className={cn(
-                      'py-1.5 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer',
+                      'py-1.5 px-2.5 rounded-none transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider text-[11px]',
                       activeTab === 'leaves'
-                        ? 'bg-card text-foreground shadow-2xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-none'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
                     )}
                   >
-                    <CalendarPlus className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span className="truncate">Cuti & Izin</span>
+                    <CalendarPlus className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Cuti &amp; Izin</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('profile')}
                     className={cn(
-                      'py-1.5 px-2.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer',
+                      'py-1.5 px-2.5 rounded-none transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider text-[11px]',
                       activeTab === 'profile'
-                        ? 'bg-card text-foreground shadow-2xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-none'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
                     )}
                   >
-                    <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <User className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">Profil</span>
                   </button>
                 </div>

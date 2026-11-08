@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, UserPlus } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 import api from '@/lib/api';
 
 export default function EmployeeCreate() {
@@ -157,339 +157,356 @@ export default function EmployeeCreate() {
 
     return (
         <HrLayout>
-            <div className="w-full">
-                {/* Header Component (like FormPage) */}
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/hr/employees')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Tambah Karyawan Baru</h2>
-                        <p className="text-sm text-muted-foreground">Silakan lengkapi data karyawan baru</p>
-                    </div>
-                </div>
-
+            <FormCard
+                title="Tambah Karyawan Baru"
+                subtitle="Silakan lengkapi data profil, penempatan, dan legalitas karyawan baru"
+                icon={UserPlus}
+                onBack={() => navigate('/hr/employees')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Karyawan"
+                onCancel={() => navigate('/hr/employees')}
+            >
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 border border-red-100 flex items-center gap-2">
-                        <span className="block sm:inline">{error}</span>
+                    <div className="bg-rose-50 text-rose-700 p-3 border border-rose-200 text-xs font-medium">
+                        {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="space-y-6">
+                <div className="space-y-6">
+                    {/* 1. Data Pribadi & Akun Login */}
+                    <FormSection title="1. Data Pribadi & Akun Login" description="Informasi identitas dasar karyawan">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="first_name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Nama Depan <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleChange} required placeholder="John" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="last_name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Nama Belakang
+                                </Label>
+                                <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} placeholder="Doe" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                        </div>
 
-                        {/* Data Pribadi */}
-                        <Card>
-                            <CardHeader>
-                                <div>
-                                    <CardTitle>Data Pribadi</CardTitle>
-                                    <CardDescription>Informasi identitas karyawan</CardDescription>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="first_name">Nama Depan *</Label>
-                                        <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleChange} required placeholder="John" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="last_name">Nama Belakang</Label>
-                                        <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} placeholder="Doe" />
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="employee_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    NIP Karyawan <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input id="employee_id" name="employee_id" value={formData.employee_id} onChange={handleChange} required placeholder="2026-X-XXX" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="nik" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    NIK KTP <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input id="nik" name="nik" value={formData.nik} onChange={handleChange} required maxLength={16} placeholder="3201234567890001" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5 sm:col-span-2">
+                                <Label htmlFor="user_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Akun Login (User)
+                                </Label>
+                                <SearchableSelect
+                                    options={systemUsers}
+                                    value={formData.user_id}
+                                    onValueChange={(val) => handleSelectChange('user_id', val === '' ? '' : val)}
+                                    placeholder="Pilih Akun User untuk karyawan ini..."
+                                />
+                                <p className="text-[11px] text-neutral-500 font-mono">Pilih akun pengguna jika Karyawan ini akan diberi akses login ke sistem.</p>
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="employee_id">NIP Karyawan *</Label>
-                                        <Input id="employee_id" name="employee_id" value={formData.employee_id} onChange={handleChange} required placeholder="2026-X-XXX" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nik">NIK KTP *</Label>
-                                        <Input id="nik" name="nik" value={formData.nik} onChange={handleChange} required maxLength={16} placeholder="3201234567890001" />
-                                    </div>
-                                    <div className="space-y-2 sm:col-span-2">
-                                        <Label htmlFor="user_id">Akun Login (User)</Label>
-                                        <SearchableSelect
-                                            options={systemUsers}
-                                            value={formData.user_id}
-                                            onValueChange={(val) => handleSelectChange('user_id', val === '' ? '' : val)}
-                                            placeholder="Pilih Akun User untuk karyawan ini..."
-                                        />
-                                        <p className="text-xs text-muted-foreground">Pilih akun pengguna jika Karyawan ini akan diberi akses login ke sistem.</p>
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="gender" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Jenis Kelamin <span className="text-rose-500">*</span>
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.gender}
+                                    onValueChange={(val) => handleSelectChange('gender', val)}
+                                    placeholder="Pilih jenis kelamin"
+                                    options={[
+                                        { value: "male", label: "Laki-laki" },
+                                        { value: "female", label: "Perempuan" }
+                                    ]}
+                                />
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="gender">Jenis Kelamin *</Label>
-                                        <SearchableSelect
-                                            value={formData.gender}
-                                            onValueChange={(val) => handleSelectChange('gender', val)}
-                                            placeholder="Pilih jenis kelamin"
-                                            options={[
-                                                { value: "male", label: "Laki-laki" },
-                                                { value: "female", label: "Perempuan" }
-                                            ]}
-                                        />
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="place_of_birth" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Tempat Lahir
+                                </Label>
+                                <Input id="place_of_birth" name="place_of_birth" value={formData.place_of_birth} onChange={handleChange} placeholder="Jakarta" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="date_of_birth" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Tanggal Lahir
+                                </Label>
+                                <Input id="date_of_birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleChange} className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="place_of_birth">Tempat Lahir</Label>
-                                        <Input id="place_of_birth" name="place_of_birth" value={formData.place_of_birth} onChange={handleChange} placeholder="Jakarta" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="date_of_birth">Tanggal Lahir</Label>
-                                        <Input id="date_of_birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleChange} />
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="religion" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Agama
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.religion}
+                                    onValueChange={(val) => handleSelectChange('religion', val)}
+                                    placeholder="Pilih agama"
+                                    options={[
+                                        { value: "Islam", label: "Islam" },
+                                        { value: "Kristen", label: "Kristen" },
+                                        { value: "Katolik", label: "Katolik" },
+                                        { value: "Hindu", label: "Hindu" },
+                                        { value: "Buddha", label: "Buddha" },
+                                        { value: "Konghucu", label: "Konghucu" }
+                                    ]}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="marital_status" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Status Perkawinan
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.marital_status}
+                                    onValueChange={(val) => handleSelectChange('marital_status', val)}
+                                    placeholder="Pilih status"
+                                    options={[
+                                        { value: "single", label: "Belum Menikah" },
+                                        { value: "married", label: "Menikah" },
+                                        { value: "divorced", label: "Cerai" },
+                                        { value: "widowed", label: "Duda/Janda" }
+                                    ]}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="blood_type" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Golongan Darah
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.blood_type}
+                                    onValueChange={(val) => handleSelectChange('blood_type', val)}
+                                    placeholder="Pilih"
+                                    options={[
+                                        { value: "A", label: "A" },
+                                        { value: "B", label: "B" },
+                                        { value: "AB", label: "AB" },
+                                        { value: "O", label: "O" }
+                                    ]}
+                                />
+                            </div>
+                        </div>
+                    </FormSection>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="religion">Agama</Label>
-                                        <SearchableSelect
-                                            value={formData.religion}
-                                            onValueChange={(val) => handleSelectChange('religion', val)}
-                                            placeholder="Pilih agama"
-                                            options={[
-                                                { value: "Islam", label: "Islam" },
-                                                { value: "Kristen", label: "Kristen" },
-                                                { value: "Katolik", label: "Katolik" },
-                                                { value: "Hindu", label: "Hindu" },
-                                                { value: "Buddha", label: "Buddha" },
-                                                { value: "Konghucu", label: "Konghucu" }
-                                            ]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="marital_status">Status Perkawinan</Label>
-                                        <SearchableSelect
-                                            value={formData.marital_status}
-                                            onValueChange={(val) => handleSelectChange('marital_status', val)}
-                                            placeholder="Pilih status"
-                                            options={[
-                                                { value: "single", label: "Belum Menikah" },
-                                                { value: "married", label: "Menikah" },
-                                                { value: "divorced", label: "Cerai" },
-                                                { value: "widowed", label: "Duda/Janda" }
-                                            ]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="blood_type">Golongan Darah</Label>
-                                        <SearchableSelect
-                                            value={formData.blood_type}
-                                            onValueChange={(val) => handleSelectChange('blood_type', val)}
-                                            placeholder="Pilih"
-                                            options={[
-                                                { value: "A", label: "A" },
-                                                { value: "B", label: "B" },
-                                                { value: "AB", label: "AB" },
-                                                { value: "O", label: "O" }
-                                            ]}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* 2. Data Kontak & Alamat */}
+                    <FormSection title="2. Data Kontak & Alamat" description="Alamat domisili dan nomor kontak karyawan">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="address" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Alamat Domisili
+                            </Label>
+                            <Textarea id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Jl. Contoh No. 123..." rows={3} className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
 
-                        {/* Data Kontak */}
-                        <Card>
-                            <CardHeader>
-                                <div>
-                                    <CardTitle>Data Kontak</CardTitle>
-                                    <CardDescription>Alamat dan informasi kontak</CardDescription>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="address">Alamat</Label>
-                                    <Textarea id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Jl. Contoh No. 123..." rows={3} />
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="city" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Kota
+                                </Label>
+                                <Input id="city" name="city" value={formData.city} onChange={handleChange} placeholder="Jakarta" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="province" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Provinsi
+                                </Label>
+                                <Input id="province" name="province" value={formData.province} onChange={handleChange} placeholder="DKI Jakarta" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="postal_code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Kode Pos
+                                </Label>
+                                <Input id="postal_code" name="postal_code" value={formData.postal_code} onChange={handleChange} placeholder="12345" maxLength={10} className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="city">Kota</Label>
-                                        <Input id="city" name="city" value={formData.city} onChange={handleChange} placeholder="Jakarta" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="province">Provinsi</Label>
-                                        <Input id="province" name="province" value={formData.province} onChange={handleChange} placeholder="DKI Jakarta" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="postal_code">Kode Pos</Label>
-                                        <Input id="postal_code" name="postal_code" value={formData.postal_code} onChange={handleChange} placeholder="12345" maxLength={10} />
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="phone" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    No. HP Utama
+                                </Label>
+                                <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="08123456789" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="phone_secondary" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    No. HP Lainnya
+                                </Label>
+                                <Input id="phone_secondary" name="phone_secondary" value={formData.phone_secondary} onChange={handleChange} placeholder="08198765432" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="email" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Email
+                                </Label>
+                                <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="email@example.com" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">No. HP Utama</Label>
-                                        <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="08123456789" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone_secondary">No. HP Lainnya</Label>
-                                        <Input id="phone_secondary" name="phone_secondary" value={formData.phone_secondary} onChange={handleChange} placeholder="08198765432" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="email@example.com" />
-                                    </div>
+                        <div className="pt-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 block mb-2">Kontak Darurat</span>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="emergency_contact_name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        Nama Kontak
+                                    </Label>
+                                    <Input id="emergency_contact_name" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} placeholder="Nama kontak darurat" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
                                 </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="emergency_contact_phone" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        No. HP Darurat
+                                    </Label>
+                                    <Input id="emergency_contact_phone" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleChange} placeholder="08123456789" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="emergency_contact_relation" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        Hubungan
+                                    </Label>
+                                    <Input id="emergency_contact_relation" name="emergency_contact_relation" value={formData.emergency_contact_relation} onChange={handleChange} placeholder="Istri/Suami/Orang Tua" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                                </div>
+                            </div>
+                        </div>
+                    </FormSection>
 
-                                <div className="border-t pt-4">
-                                    <h4 className="mb-4 font-medium">Kontak Darurat</h4>
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="emergency_contact_name">Nama</Label>
-                                            <Input id="emergency_contact_name" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} placeholder="Nama kontak darurat" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="emergency_contact_phone">No. HP</Label>
-                                            <Input id="emergency_contact_phone" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleChange} placeholder="08123456789" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="emergency_contact_relation">Hubungan</Label>
-                                            <Input id="emergency_contact_relation" name="emergency_contact_relation" value={formData.emergency_contact_relation} onChange={handleChange} placeholder="Istri/Suami/Orang Tua" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* 3. Data Kepegawaian & Penempatan */}
+                    <FormSection title="3. Data Kepegawaian & Penempatan" description="Unit kerja, kategori, dan kontrak">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="job_category_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Kategori Pekerjaan <span className="text-rose-500">*</span>
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.job_category_id}
+                                    onValueChange={(val) => handleSelectChange('job_category_id', val)}
+                                    placeholder="Pilih kategori"
+                                    options={jobCategories}
+                                />
+                                <p className="text-[11px] text-neutral-500 font-mono">Kode kategori digunakan untuk format NIK</p>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="employment_status_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Status Kepegawaian <span className="text-rose-500">*</span>
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.employment_status_id}
+                                    onValueChange={(val) => handleSelectChange('employment_status_id', val)}
+                                    placeholder="Pilih status"
+                                    options={employmentStatuses}
+                                />
+                            </div>
+                        </div>
 
-                        {/* Data Kepegawaian */}
-                        <Card>
-                            <CardHeader>
-                                <div>
-                                    <CardTitle>Data Kepegawaian</CardTitle>
-                                    <CardDescription>Informasi pekerjaan dan kontrak</CardDescription>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="job_category_id">Kategori Pekerjaan *</Label>
-                                        <SearchableSelect
-                                            value={formData.job_category_id}
-                                            onValueChange={(val) => handleSelectChange('job_category_id', val)}
-                                            placeholder="Pilih kategori"
-                                            options={jobCategories}
-                                        />
-                                        <p className="text-xs text-muted-foreground">Kode kategori digunakan untuk NIK</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="employment_status_id">Status Kepegawaian *</Label>
-                                        <SearchableSelect
-                                            value={formData.employment_status_id}
-                                            onValueChange={(val) => handleSelectChange('employment_status_id', val)}
-                                            placeholder="Pilih status"
-                                            options={employmentStatuses}
-                                        />
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="organization_unit_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Unit Organisasi
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.organization_unit_id}
+                                    onValueChange={(val) => handleSelectChange('organization_unit_id', val)}
+                                    placeholder="Pilih unit"
+                                    options={orgUnits.length > 0 ? orgUnits : [{ value: "", label: "Loading..." }]}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="position" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Jabatan
+                                </Label>
+                                <Input id="position" name="position" value={formData.position} onChange={handleChange} placeholder="Staff Perawat" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="organization_unit_id">Unit Organisasi</Label>
-                                        <SearchableSelect
-                                            value={formData.organization_unit_id}
-                                            onValueChange={(val) => handleSelectChange('organization_unit_id', val)}
-                                            placeholder="Pilih unit"
-                                            options={orgUnits.length > 0 ? orgUnits : [{ value: "", label: "Loading..." }]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="position">Jabatan</Label>
-                                        <Input id="position" name="position" value={formData.position} onChange={handleChange} placeholder="Staff Perawat" />
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="join_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Tanggal Masuk <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input id="join_date" name="join_date" type="date" value={formData.join_date} onChange={handleChange} required className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                                <p className="text-[11px] text-neutral-500 font-mono">Tahun masuk digunakan untuk NIK</p>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="contract_start_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Mulai Kontrak
+                                </Label>
+                                <Input id="contract_start_date" name="contract_start_date" type="date" value={formData.contract_start_date} onChange={handleChange} className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="contract_end_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Akhir Kontrak
+                                </Label>
+                                <Input id="contract_end_date" name="contract_end_date" type="date" value={formData.contract_end_date} onChange={handleChange} className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                            </div>
+                        </div>
+                    </FormSection>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="join_date">Tanggal Masuk *</Label>
-                                        <Input id="join_date" name="join_date" type="date" value={formData.join_date} onChange={handleChange} required />
-                                        <p className="text-xs text-muted-foreground">Tahun masuk digunakan untuk NIK</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contract_start_date">Mulai Kontrak</Label>
-                                        <Input id="contract_start_date" name="contract_start_date" type="date" value={formData.contract_start_date} onChange={handleChange} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contract_end_date">Akhir Kontrak</Label>
-                                        <Input id="contract_end_date" name="contract_end_date" type="date" value={formData.contract_end_date} onChange={handleChange} />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* 4. Dokumen Legalitas & Akun Bank */}
+                    <FormSection title="4. Dokumen Legalitas & Akun Bank" description="Nomor dokumen pajak, jaminan sosial, dan rekening penggajian">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="npwp_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    No. NPWP
+                                </Label>
+                                <Input id="npwp_number" name="npwp_number" value={formData.npwp_number} onChange={handleChange} placeholder="12.345.678.9-012.000" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="bpjs_kesehatan_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    No. BPJS Kesehatan
+                                </Label>
+                                <Input id="bpjs_kesehatan_number" name="bpjs_kesehatan_number" value={formData.bpjs_kesehatan_number} onChange={handleChange} placeholder="0001234567890" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="bpjs_ketenagakerjaan_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    No. BPJS Ketenagakerjaan
+                                </Label>
+                                <Input id="bpjs_ketenagakerjaan_number" name="bpjs_ketenagakerjaan_number" value={formData.bpjs_ketenagakerjaan_number} onChange={handleChange} placeholder="0001234567890" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                            </div>
+                        </div>
 
-                        {/* Dokumen & Akun Bank */}
-                        <Card>
-                            <CardHeader>
-                                <div>
-                                    <CardTitle>Dokumen & Akun Bank</CardTitle>
-                                    <CardDescription>Nomor dokumen dan informasi bank</CardDescription>
+                        <div className="pt-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 block mb-2">Informasi Rekening Bank</span>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="bank_name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        Nama Bank
+                                    </Label>
+                                    <Input id="bank_name" name="bank_name" value={formData.bank_name} onChange={handleChange} placeholder="BCA" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
                                 </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="npwp_number">No. NPWP</Label>
-                                        <Input id="npwp_number" name="npwp_number" value={formData.npwp_number} onChange={handleChange} placeholder="12.345.678.9-012.000" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="bpjs_kesehatan_number">No. BPJS Kesehatan</Label>
-                                        <Input id="bpjs_kesehatan_number" name="bpjs_kesehatan_number" value={formData.bpjs_kesehatan_number} onChange={handleChange} placeholder="0001234567890" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="bpjs_ketenagakerjaan_number">No. BPJS Ketenagakerjaan</Label>
-                                        <Input id="bpjs_ketenagakerjaan_number" name="bpjs_ketenagakerjaan_number" value={formData.bpjs_ketenagakerjaan_number} onChange={handleChange} placeholder="0001234567890" />
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="bank_account_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        No. Rekening
+                                    </Label>
+                                    <Input id="bank_account_number" name="bank_account_number" value={formData.bank_account_number} onChange={handleChange} placeholder="1234567890" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
                                 </div>
-
-                                <div className="border-t pt-4">
-                                    <h4 className="mb-4 font-medium">Informasi Bank</h4>
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="bank_name">Nama Bank</Label>
-                                            <Input id="bank_name" name="bank_name" value={formData.bank_name} onChange={handleChange} placeholder="BCA" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="bank_account_number">No. Rekening</Label>
-                                            <Input id="bank_account_number" name="bank_account_number" value={formData.bank_account_number} onChange={handleChange} placeholder="1234567890" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="bank_account_name">Nama Pemilik Rekening</Label>
-                                            <Input id="bank_account_name" name="bank_account_name" value={formData.bank_account_name} onChange={handleChange} placeholder="John Doe" />
-                                        </div>
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="bank_account_name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        Nama Pemilik Rekening
+                                    </Label>
+                                    <Input id="bank_account_name" name="bank_account_name" value={formData.bank_account_name} onChange={handleChange} placeholder="John Doe" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
                                 </div>
+                            </div>
+                        </div>
 
-                                <div className="border-t pt-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="notes">Catatan</Label>
-                                        <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} placeholder="Catatan tambahan..." rows={3} />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                    </div>
-
-                    {/* Form Actions */}
-                    <div className="sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate('/hr/employees')} disabled={loading}>Batal</Button>
-                        <Button type="submit" size="sm" className="h-9 px-6" disabled={loading}>
-                            {loading ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                                <Save className="h-4 w-4 mr-2" />
-                            )}
-                            {loading ? 'Menyimpan...' : 'Simpan'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                        <div className="space-y-1.5 pt-2">
+                            <Label htmlFor="notes" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Catatan Tambahan
+                            </Label>
+                            <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} placeholder="Catatan tambahan mengenai karyawan..." rows={3} className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
+                    </FormSection>
+                </div>
+            </FormCard>
         </HrLayout>
     );
 }

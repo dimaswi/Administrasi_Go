@@ -139,127 +139,156 @@ export default function SettingsPage() {
 
     return (
         <AdminLayout>
-            <div className="w-full flex-1 flex flex-col">
-                {/* Header Component */}
-                <div className="flex items-center gap-2 mb-6">
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Pengaturan Aplikasi</h2>
-                        <p className="text-sm text-muted-foreground">Sesuaikan identitas aplikasi, logo, serta lokasi presensi geofencing kantor.</p>
+            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col font-sans mb-12">
+                {/* Header Toolbar */}
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+                            <Settings className="size-4" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                            <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                                Pengaturan Aplikasi
+                            </h1>
+                            <p className="text-[11px] text-neutral-500 font-mono">
+                                Identitas aplikasi, logo branding, serta konfigurasi presensi GPS kantor
+                            </p>
+                        </div>
                     </div>
+
+                    {canEdit && (
+                        <Button 
+                            type="submit" 
+                            form="settings-form" 
+                            size="sm" 
+                            className="h-8 px-4 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 shadow-none text-xs font-semibold gap-1.5" 
+                            disabled={processing}
+                        >
+                            <Save className="h-3.5 w-3.5" />
+                            {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                        </Button>
+                    )}
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6 flex-1">
+                <form id="settings-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-8 flex-1 bg-white dark:bg-neutral-950">
                     {/* Identitas Aplikasi */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Settings className="h-5 w-5 text-primary" />
+                    <div className="space-y-6">
+                        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-3">
+                            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white flex items-center gap-2">
+                                <Settings className="h-4 w-4 text-neutral-700 dark:text-neutral-300" />
                                 Identitas Aplikasi
-                            </CardTitle>
-                            <CardDescription>
-                                Perubahan ini akan memengaruhi tampilan di seluruh sistem.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-8">
-                            {/* App Name */}
+                            </h2>
+                            <p className="text-[11px] text-neutral-500 font-mono mt-0.5">
+                                Perubahan nama dan logo akan langsung memengaruhi seluruh sistem
+                            </p>
+                        </div>
+
+                        {/* App Name */}
+                        <div className="space-y-1.5 max-w-xl">
+                            <Label htmlFor="appName" className="text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                                Nama Aplikasi
+                            </Label>
+                            <Input
+                                id="appName"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Contoh: SIMKEP"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-sm"
+                            />
+                            <p className="text-[11px] text-neutral-500 font-mono">Ditampilkan di header browser dan menu navigasi.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Logo Upload */}
                             <div className="space-y-2">
-                                <Label htmlFor="appName">Nama Aplikasi</Label>
-                                <Input
-                                    id="appName"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Contoh: SIMKEP"
-                                />
-                                <p className="text-xs text-muted-foreground">Ditampilkan di header browser dan menu navigasi.</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* Logo Upload */}
-                                <div className="space-y-4">
-                                    <Label>Logo Aplikasi</Label>
-                                    <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 transition-colors">
-                                        <div className="flex flex-col items-center justify-center gap-3">
-                                            {logoPreview || appLogo ? (
-                                                <div className="relative h-24 w-auto max-w-[200px]">
-                                                    <img
-                                                        src={logoPreview || appLogo}
-                                                        alt="Logo"
-                                                        className="h-full w-full object-contain"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
-                                                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                                                </div>
-                                            )}
-                                            <div>
-                                                <Input
-                                                    type="file"
-                                                    id="logo"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={handleLogoChange}
+                                <Label className="text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                                    Logo Aplikasi
+                                </Label>
+                                <div className="border border-dashed border-neutral-300 dark:border-neutral-700 rounded-none p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                                    <div className="flex flex-col items-center justify-center gap-3">
+                                        {logoPreview || appLogo ? (
+                                            <div className="relative h-20 w-auto max-w-[200px]">
+                                                <img
+                                                    src={logoPreview || appLogo}
+                                                    alt="Logo"
+                                                    className="h-full w-full object-contain"
                                                 />
-                                                <Label htmlFor="logo" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-9 px-4 py-2">
-                                                    <UploadCloud className="mr-2 h-4 w-4" /> Pilih File Logo
-                                                </Label>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">Format gambar (PNG, JPG, SVG). Rasio disarankan: Landscape.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Icon Upload */}
-                                <div className="space-y-4">
-                                    <Label>Ikon Aplikasi (Favicon)</Label>
-                                    <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 transition-colors">
-                                        <div className="flex flex-col items-center justify-center gap-3">
-                                            {iconPreview || appIcon ? (
-                                                <div className="relative h-16 w-16">
-                                                    <img
-                                                        src={iconPreview || appIcon}
-                                                        alt="Icon"
-                                                        className="h-full w-full object-cover rounded shadow-sm"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="h-16 w-16 bg-muted rounded flex items-center justify-center">
-                                                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                                                </div>
-                                            )}
-                                            <div>
-                                                <Input
-                                                    type="file"
-                                                    id="icon"
-                                                    accept="image/png, image/jpeg, image/x-icon, image/svg+xml"
-                                                    className="hidden"
-                                                    onChange={handleIconChange}
-                                                />
-                                                <Label htmlFor="icon" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-9 px-4 py-2">
-                                                    <UploadCloud className="mr-2 h-4 w-4" /> Pilih File Ikon
-                                                </Label>
+                                        ) : (
+                                            <div className="h-16 w-16 bg-neutral-100 dark:bg-neutral-900 rounded-none flex items-center justify-center">
+                                                <ImageIcon className="h-8 w-8 text-neutral-400" />
                                             </div>
-                                            <p className="text-xs text-muted-foreground">Ikon browser. Disarankan bentuk persegi murni (1:1).</p>
+                                        )}
+                                        <div>
+                                            <Input
+                                                type="file"
+                                                id="logo"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleLogoChange}
+                                            />
+                                            <Label htmlFor="logo" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-none text-xs font-semibold border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none hover:bg-neutral-50 dark:hover:bg-neutral-800 h-8 px-3 gap-1.5">
+                                                <UploadCloud className="h-3.5 w-3.5" /> Pilih File Logo
+                                            </Label>
                                         </div>
+                                        <p className="text-[11px] text-neutral-500 font-mono">Format PNG, JPG, SVG. Rasio landscape disarankan.</p>
                                     </div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* Geofencing Location Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <MapPin className="h-5 w-5 text-teal-600" />
+                            {/* Icon Upload */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                                    Ikon Aplikasi (Favicon)
+                                </Label>
+                                <div className="border border-dashed border-neutral-300 dark:border-neutral-700 rounded-none p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-900/40 transition-colors">
+                                    <div className="flex flex-col items-center justify-center gap-3">
+                                        {iconPreview || appIcon ? (
+                                            <div className="relative h-16 w-16">
+                                                <img
+                                                    src={iconPreview || appIcon}
+                                                    alt="Icon"
+                                                    className="h-full w-full object-cover rounded-none"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="h-16 w-16 bg-neutral-100 dark:bg-neutral-900 rounded-none flex items-center justify-center">
+                                                <ImageIcon className="h-8 w-8 text-neutral-400" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <Input
+                                                type="file"
+                                                id="icon"
+                                                accept="image/png, image/jpeg, image/x-icon, image/svg+xml"
+                                                className="hidden"
+                                                onChange={handleIconChange}
+                                            />
+                                            <Label htmlFor="icon" className="cursor-pointer inline-flex items-center justify-center whitespace-nowrap rounded-none text-xs font-semibold border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none hover:bg-neutral-50 dark:hover:bg-neutral-800 h-8 px-3 gap-1.5">
+                                                <UploadCloud className="h-3.5 w-3.5" /> Pilih File Ikon
+                                            </Label>
+                                        </div>
+                                        <p className="text-[11px] text-neutral-500 font-mono">Ikon browser (1:1 / kotak).</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Geofencing Location */}
+                    <div className="space-y-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-3">
+                            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-neutral-700 dark:text-neutral-300" />
                                 Lokasi Presensi Kantor (Geofencing GPS)
-                            </CardTitle>
-                            <CardDescription>
-                                Tentukan lokasi kantor & radius maksimal bagi pegawai untuk melakukan check-in / check-out presensi.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Interactive Map Picker */}
+                            </h2>
+                            <p className="text-[11px] text-neutral-500 font-mono mt-0.5">
+                                Tentukan lokasi kantor &amp; radius toleransi bagi pegawai untuk presensi
+                            </p>
+                        </div>
+
+                        {/* Interactive Map Picker */}
+                        <div className="border border-neutral-200 dark:border-neutral-800 overflow-hidden">
                             <LocationPickerMap
                                 latitude={officeLat}
                                 longitude={officeLon}
@@ -269,74 +298,93 @@ export default function SettingsPage() {
                                     setOfficeLon(lon.toFixed(6));
                                 }}
                             />
+                        </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="officeName">Nama Lokasi Kantor</Label>
-                                    <Input
-                                        id="officeName"
-                                        value={officeName}
-                                        onChange={(e) => setOfficeName(e.target.value)}
-                                        placeholder="Contoh: Kantor Pusat Jakarta"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="officeRadius">Radius Toleransi Presensi (Meter)</Label>
-                                    <Input
-                                        id="officeRadius"
-                                        type="number"
-                                        value={officeRadius}
-                                        onChange={(e) => setOfficeRadius(e.target.value)}
-                                        placeholder="Contoh: 100"
-                                    />
-                                    <p className="text-xs text-muted-foreground">Jarak maksimum dalam meter dari titik koordinat kantor.</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="officeLat">Latitude Kantor</Label>
-                                    <Input
-                                        id="officeLat"
-                                        value={officeLat}
-                                        onChange={(e) => setOfficeLat(e.target.value)}
-                                        placeholder="Contoh: -6.200000"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="officeLon">Longitude Kantor</Label>
-                                    <Input
-                                        id="officeLon"
-                                        value={officeLon}
-                                        onChange={(e) => setOfficeLon(e.target.value)}
-                                        placeholder="Contoh: 106.816666"
-                                    />
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="officeName" className="text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                                    Nama Lokasi Kantor
+                                </Label>
+                                <Input
+                                    id="officeName"
+                                    value={officeName}
+                                    onChange={(e) => setOfficeName(e.target.value)}
+                                    placeholder="Contoh: Kantor Utama"
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-sm"
+                                />
                             </div>
 
-                            <div className="pt-2 flex flex-wrap gap-3">
-                                <Button
-                                    type="button"
-                                    onClick={() => navigate('/hr/master-data/work-location')}
-                                    className="bg-teal-600 hover:bg-teal-700 text-white"
-                                >
-                                    <MapPin className="mr-2 h-4 w-4" />
-                                    Kelola Master Lokasi (Tambah Banyak Tempat)
-                                </Button>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="officeRadius" className="text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                                    Radius Toleransi (Meter)
+                                </Label>
+                                <Input
+                                    id="officeRadius"
+                                    type="number"
+                                    value={officeRadius}
+                                    onChange={(e) => setOfficeRadius(e.target.value)}
+                                    placeholder="Contoh: 100"
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-sm font-mono"
+                                />
+                                <p className="text-[11px] text-neutral-500 font-mono">Jarak maksimum dalam meter dari koordinat kantor.</p>
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* Form Actions (Sticky Footer) */}
-                    {canEdit && (
-                        <div className="sticky bottom-0 z-40 mt-auto -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                            <Button type="submit" size="sm" className="h-9 px-6 bg-teal-600 hover:bg-teal-700" disabled={processing}>
-                                <Save className="mr-2 h-4 w-4" />
-                                {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="officeLat" className="text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                                    Latitude Kantor
+                                </Label>
+                                <Input
+                                    id="officeLat"
+                                    value={officeLat}
+                                    onChange={(e) => setOfficeLat(e.target.value)}
+                                    placeholder="Contoh: -6.200000"
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-sm font-mono"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="officeLon" className="text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
+                                    Longitude Kantor
+                                </Label>
+                                <Input
+                                    id="officeLon"
+                                    value={officeLon}
+                                    onChange={(e) => setOfficeLon(e.target.value)}
+                                    placeholder="Contoh: 106.816666"
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-sm font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-1">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => navigate('/hr/master-data/work-location')}
+                                className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 text-xs shadow-none gap-1.5"
+                            >
+                                <MapPin className="h-3.5 w-3.5" />
+                                <span>Kelola Master Lokasi (Multi Lokasi)</span>
                             </Button>
                         </div>
-                    )}
+                    </div>
                 </form>
+
+                {/* Footer Toolbar */}
+                {canEdit && (
+                    <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 flex items-center justify-end gap-3 shrink-0">
+                        <Button 
+                            type="submit" 
+                            form="settings-form" 
+                            size="sm" 
+                            className="h-8 px-4 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 shadow-none text-xs font-semibold gap-1.5" 
+                            disabled={processing}
+                        >
+                            <Save className="h-3.5 w-3.5" />
+                            {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                        </Button>
+                    </div>
+                )}
             </div>
         </AdminLayout>
     );

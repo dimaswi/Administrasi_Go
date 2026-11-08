@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/layouts/admin-layout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { ChevronLeft, Save, MapPin } from 'lucide-react';
+import { DoorOpen } from 'lucide-react';
+import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
 
 export default function RoomCreate() {
@@ -52,136 +52,138 @@ export default function RoomCreate() {
 
     return (
         <AdminLayout>
-            <div className="flex items-center gap-4 mb-6">
-                <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => navigate('/admin/rooms')}
-                    className="shrink-0"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Tambah Ruangan</h1>
-                    <p className="text-muted-foreground">Isi formulir di bawah untuk menambahkan ruangan baru.</p>
+            <FormCard
+                title="Tambah Ruangan Baru"
+                subtitle="Daftarkan ruangan pertemuan atau fasilitas gedung baru"
+                icon={DoorOpen}
+                onBack={() => navigate('/admin/rooms')}
+                onSubmit={handleSubmit}
+                loading={submitting}
+                submitText="Simpan Ruangan"
+                onCancel={() => navigate('/admin/rooms')}
+            >
+                <div className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kode Ruangan <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="code" 
+                                name="code" 
+                                required 
+                                value={formData.code} 
+                                onChange={handleChange} 
+                                placeholder="Contoh: R-01"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nama Ruangan <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="name" 
+                                name="name" 
+                                required 
+                                value={formData.name} 
+                                onChange={handleChange} 
+                                placeholder="Contoh: Ruang Rapat Utama"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="building" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Gedung / Lokasi
+                            </Label>
+                            <Input 
+                                id="building" 
+                                name="building" 
+                                value={formData.building} 
+                                onChange={handleChange} 
+                                placeholder="Contoh: Gedung A"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="floor" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Lantai
+                            </Label>
+                            <Input 
+                                id="floor" 
+                                name="floor" 
+                                value={formData.floor} 
+                                onChange={handleChange} 
+                                placeholder="Contoh: Lantai 2"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="capacity" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kapasitas (Orang)
+                            </Label>
+                            <Input 
+                                id="capacity" 
+                                name="capacity" 
+                                type="number"
+                                value={formData.capacity} 
+                                onChange={handleChange} 
+                                placeholder="Contoh: 20"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label htmlFor="facilities" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Fasilitas
+                        </Label>
+                        <Textarea 
+                            id="facilities" 
+                            name="facilities" 
+                            value={formData.facilities} 
+                            onChange={handleChange} 
+                            placeholder="Contoh: Proyektor, AC, Whiteboard, Sound System, TV Display"
+                            rows={3}
+                            className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label htmlFor="description" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Keterangan Tambahan
+                        </Label>
+                        <Textarea 
+                            id="description" 
+                            name="description" 
+                            value={formData.description} 
+                            onChange={handleChange} 
+                            rows={3}
+                            placeholder="Catatan penggunaan ruangan..."
+                            className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between border border-neutral-200 dark:border-neutral-800 p-3 bg-neutral-50/50 dark:bg-neutral-900/40">
+                        <div>
+                            <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 uppercase tracking-wide block">
+                                Status Ruangan
+                            </span>
+                            <p className="text-xs text-neutral-500">
+                                {formData.is_active ? 'Ruangan aktif dan dapat dipilih untuk peminjaman rapat' : 'Ruangan dinonaktifkan / dalam perawatan'}
+                            </p>
+                        </div>
+                        <Switch 
+                            id="is_active" 
+                            checked={formData.is_active}
+                            onCheckedChange={handleSwitchChange}
+                        />
+                    </div>
                 </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <form onSubmit={handleSubmit}>
-                    <div className="p-6 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="code">Kode Ruangan <span className="text-red-500">*</span></Label>
-                                <Input 
-                                    id="code" 
-                                    name="code" 
-                                    required 
-                                    value={formData.code} 
-                                    onChange={handleChange} 
-                                    placeholder="Contoh: R-01"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Nama Ruangan <span className="text-red-500">*</span></Label>
-                                <Input 
-                                    id="name" 
-                                    name="name" 
-                                    required 
-                                    value={formData.name} 
-                                    onChange={handleChange} 
-                                    placeholder="Contoh: Ruang Rapat Utama"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="building">Gedung/Lokasi</Label>
-                                <Input 
-                                    id="building" 
-                                    name="building" 
-                                    value={formData.building} 
-                                    onChange={handleChange} 
-                                    placeholder="Contoh: Gedung A"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="floor">Lantai</Label>
-                                <Input 
-                                    id="floor" 
-                                    name="floor" 
-                                    value={formData.floor} 
-                                    onChange={handleChange} 
-                                    placeholder="Contoh: 2"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="capacity">Kapasitas (Orang)</Label>
-                                <Input 
-                                    id="capacity" 
-                                    name="capacity" 
-                                    type="number"
-                                    value={formData.capacity} 
-                                    onChange={handleChange} 
-                                    placeholder="Contoh: 20"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="facilities">Fasilitas</Label>
-                            <Textarea 
-                                id="facilities" 
-                                name="facilities" 
-                                value={formData.facilities} 
-                                onChange={handleChange} 
-                                placeholder="Contoh: Proyektor, AC, Whiteboard, Kursi 20 buah"
-                                rows={3}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Keterangan Tambahan</Label>
-                            <Textarea 
-                                id="description" 
-                                name="description" 
-                                value={formData.description} 
-                                onChange={handleChange} 
-                                rows={3}
-                            />
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            <Switch 
-                                id="is_active" 
-                                checked={formData.is_active}
-                                onCheckedChange={handleSwitchChange}
-                            />
-                            <Label htmlFor="is_active">Aktif (Dapat digunakan untuk rapat)</Label>
-                        </div>
-                    </div>
-
-                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
-                        <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => navigate('/admin/rooms')}
-                            disabled={submitting}
-                        >
-                            Batal
-                        </Button>
-                        <Button 
-                            type="submit" 
-                            disabled={submitting}
-                            className="bg-primary text-primary-foreground"
-                        >
-                            <Save className="h-4 w-4 mr-2" />
-                            {submitting ? 'Menyimpan...' : 'Simpan Ruangan'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+            </FormCard>
         </AdminLayout>
     );
 }

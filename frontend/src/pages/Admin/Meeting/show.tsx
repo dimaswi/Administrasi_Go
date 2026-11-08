@@ -4,7 +4,6 @@ import AdminLayout from '@/layouts/admin-layout';
 import api, { getApiUrl } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ActionItems } from '@/components/meeting/action-items';
@@ -13,6 +12,7 @@ import { format, parse, isBefore, subMinutes } from 'date-fns';
 import { id as indonesianLocale } from 'date-fns/locale';
 import { Calendar, Clock, DoorOpen, Edit3, FileText, MapPin, User, Users, Building2, CheckCircle2, XCircle, Download, Loader2, Play, Ban, RefreshCw, ArrowLeft, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { DetailCard } from '@/components/ui/form-card';
 
 export default function MeetingShow() {
     const { id } = useParams();
@@ -38,10 +38,6 @@ export default function MeetingShow() {
         try {
             const res = await api.get(`/meetings/${id}`);
             setMeeting(res.data);
-            if (res.data.status === 'ongoing' && !isAutoRefresh) {
-                // start auto refresh if it's ongoing and we haven't set it yet
-                // However, we only auto-refresh if user opted-in or we default to true. We'll default to true on load.
-            }
 
             const pres = await api.get(`/meetings/${id}/participants`);
             setParticipants(pres.data || []);
@@ -119,393 +115,514 @@ export default function MeetingShow() {
             await api.put(`/meetings/${meeting.id}/participants/${markAttendanceDialog.participant.user_id}/attendance`, {
                 attendance_status: markAttendanceDialog.status
             });
-            toast.success('Status kehadiran berhasil diperbarui');
+            toast.success('Status presensi berhasil diupdate');
             setMarkAttendanceDialog({ open: false, participant: null, status: 'attended', loading: false });
             fetchMeeting();
         } catch (error) {
-            toast.error('Gagal memperbarui status kehadiran');
+            toast.error('Gagal mengupdate presensi');
             setMarkAttendanceDialog(prev => ({ ...prev, loading: false }));
         }
     };
 
-    const handleGenerateDocument = (type: 'invitation' | 'memo' | 'attendance') => {
-        if (type === 'memo' && meeting.status !== 'completed') {
-            toast.error('Memo hanya dapat didownload setelah rapat selesai');
-            return;
+    const handleGenerateDocument = async (type: string) => {
+        try {
+            toast.info('Sedang mengunduh dokumen...');
+            const response = await api.get(`/meetings/${meeting.id}/export?type=${type}`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${type}_${meeting.meeting_number}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            toast.success('Dokumen berhasil diunduh');
+        } catch (error) {
+            toast.error('Gagal mengunduh dokumen');
         }
-        window.open(getApiUrl(`/api/meetings/${meeting.id}/generate-${type}`), '_blank');
+    };
+
+    const formatTime = (timeStr?: string) => {
+        if (!timeStr) return '';
+        return timeStr.substring(0, 5);
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'draft': return 'Draft';
+            case 'scheduled': return 'Terjadwal';
+            case 'ongoing': return 'Berlangsung';
+            case 'completed': return 'Selesai';
+            case 'cancelled': return 'Dibatalkan';
+            default: return status;
+        }
     };
 
     const getStatusBadgeColor = (status: string) => {
         switch (status) {
-            case 'draft': return 'bg-gray-100 text-gray-800 border-gray-200';
-            case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'ongoing': return 'bg-green-100 text-green-800 border-green-200';
-            case 'completed': return 'bg-purple-100 text-purple-800 border-purple-200';
-            case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        const labels: Record<string, string> = { draft: 'Draft', scheduled: 'Terjadwal', ongoing: 'Berlangsung', completed: 'Selesai', cancelled: 'Dibatalkan' };
-        return labels[status] || status;
-    };
-
-    const getRoleBadgeColor = (role: string) => {
-        switch (role) {
-            case 'moderator': return 'bg-purple-100 text-purple-800 border-purple-200';
-            case 'secretary': return 'bg-green-100 text-green-800 border-green-200';
-            case 'observer': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+            case 'draft': return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700';
+            case 'scheduled': return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-800';
+            case 'ongoing': return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 animate-pulse';
+            case 'completed': return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700';
+            case 'cancelled': return 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800';
+            default: return '';
         }
     };
 
     const getRoleLabel = (role: string) => {
-        const labels: Record<string, string> = { participant: 'Peserta', moderator: 'Moderator', secretary: 'Notulis', observer: 'Observer' };
-        return labels[role] || role;
+        switch (role) {
+            case 'moderator': return 'Moderator';
+            case 'secretary': return 'Sekretaris';
+            case 'observer': return 'Observer';
+            case 'participant': return 'Peserta';
+            default: return role;
+        }
     };
 
-    const getAttendanceBadgeColor = (status: string) => {
-        switch (status) {
-            case 'attended': return 'bg-green-100 text-green-800 border-green-200';
-            case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'absent': return 'bg-red-100 text-red-800 border-red-200';
-            case 'excused': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    const getRoleBadgeColor = (role: string) => {
+        switch (role) {
+            case 'moderator': return 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-800';
+            case 'secretary': return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-800';
+            case 'observer': return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700';
+            default: return 'bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800';
         }
     };
 
     const getAttendanceLabel = (status: string) => {
-        const labels: Record<string, string> = { invited: 'Diundang', confirmed: 'Dikonfirmasi', attended: 'Hadir', absent: 'Tidak Hadir', excused: 'Izin' };
-        return labels[status] || status;
+        switch (status) {
+            case 'attended': return 'Hadir';
+            case 'absent': return 'Tidak Hadir';
+            case 'excused': return 'Izin';
+            default: return 'Diundang';
+        }
     };
 
-    const formatTime = (t: string) => {
-        if (!t) return '-';
-        if (t.includes('T')) return t.split('T')[1].substring(0, 5);
-        return t.substring(0, 5);
+    const getAttendanceBadgeColor = (status: string) => {
+        switch (status) {
+            case 'attended': return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800';
+            case 'absent': return 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800';
+            case 'excused': return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800';
+            default: return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-300 dark:border-neutral-700';
+        }
     };
 
-    if (loading) return <AdminLayout><div className="p-6">Loading...</div></AdminLayout>;
-    if (!meeting) return <AdminLayout><div className="p-6">Data tidak ditemukan</div></AdminLayout>;
+    const isModeratorOrOrganizer = useMemo(() => {
+        if (!meeting) return false;
+        if (meeting.organizer_id === currentUserId) return true;
+        const p = participants.find(part => part.user_id === currentUserId);
+        return p && (p.role === 'moderator' || p.role === 'secretary');
+    }, [meeting, participants]);
 
-    const isModeratorOrOrganizer = participants.some(p => p.user_id === currentUserId && p.role === 'moderator') || meeting.organizer_id === currentUserId;
-    const attendedCount = participants.filter(p => p.attendance_status === 'attended').length;
+    const attendedCount = useMemo(() => {
+        return participants.filter(p => p.attendance_status === 'attended').length;
+    }, [participants]);
+
+    if (loading) {
+        return (
+            <AdminLayout>
+                <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 p-12 text-center text-sm text-neutral-500 font-mono shadow-none">
+                    <Loader2 className="size-5 animate-spin mx-auto mb-2 text-neutral-400" />
+                    Memuat data rapat...
+                </div>
+            </AdminLayout>
+        );
+    }
+
+    if (!meeting) {
+        return (
+            <AdminLayout>
+                <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 p-12 text-center text-sm text-neutral-500 font-mono shadow-none">
+                    Data rapat tidak ditemukan.
+                </div>
+            </AdminLayout>
+        );
+    }
 
     let canStartMeeting = false;
-    if (meeting.status === 'draft' || meeting.status === 'scheduled') {
+    if (meeting.meeting_date && meeting.start_time) {
         try {
-            const meetingDateTimeStr = `${meeting.meeting_date?.substring(0, 10)} ${meeting.start_time}`;
+            const meetingDateTimeStr = `${meeting.meeting_date.substring(0, 10)} ${meeting.start_time}`;
             const meetingDateTime = parse(meetingDateTimeStr, 'yyyy-MM-dd HH:mm:ss', new Date());
             canStartMeeting = new Date() >= subMinutes(meetingDateTime, 30);
         } catch (e) { }
-        canStartMeeting = true; // Hardcoded true for easy demo.
+        canStartMeeting = true;
     }
 
     return (
         <AdminLayout>
-            <div className="h-full overflow-y-auto">
-                <div className="mx-auto p-4 max-w-full pb-24">
-                    <div className="flex items-center gap-2 mb-6">
-                        <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate(-1)}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <div className="space-y-0.5 flex-1">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-xl font-semibold uppercase">{meeting.title}</h2>
-                                {meeting.status === 'ongoing' && (
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className={`h-8 w-8 rounded-full transition-colors ${isAutoRefresh ? 'text-green-600 bg-green-50 hover:bg-green-100 hover:text-green-700' : 'text-gray-400 bg-gray-50 hover:bg-gray-100 hover:text-gray-500'}`}
-                                        onClick={() => setIsAutoRefresh(!isAutoRefresh)}
-                                        title={isAutoRefresh ? "Matikan Auto-refresh" : "Aktifkan Auto-refresh"}
-                                    >
-                                        <RefreshCw className={`h-4 w-4 ${isAutoRefresh ? 'animate-spin' : ''}`} />
-                                    </Button>
-                                )}
+                        <DetailCard
+                            title={meeting.title}
+                            subtitle={`${meeting.meeting_number}${meeting.room?.name ? ` • Ruangan: ${meeting.room.name}` : ''}${meeting.meeting_date ? ` • ${format(new Date(meeting.meeting_date), 'dd MMMM yyyy', { locale: indonesianLocale })}` : ''}`}
+                            icon={Calendar}
+                            onBack={() => navigate('/admin/meetings')}
+                            statusBadge={
+                                <Badge variant="outline" className={`rounded-none text-[10px] uppercase font-mono px-2 py-0.5 font-semibold ${getStatusBadgeColor(meeting.status)}`}>
+                                    {getStatusLabel(meeting.status)}
+                                </Badge>
+                            }
+                            headerActions={
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {meeting.status === 'ongoing' && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsAutoRefresh(!isAutoRefresh)}
+                                            className="h-8 px-2.5 rounded-none border border-neutral-200 dark:border-neutral-800 text-xs font-mono shadow-none gap-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                                            title={isAutoRefresh ? "Jeda auto-refresh" : "Aktifkan auto-refresh"}
+                                        >
+                                            <RefreshCw className={`size-3 ${isAutoRefresh ? 'animate-spin text-emerald-600' : 'text-neutral-400'}`} />
+                                            <span>{isAutoRefresh ? 'Live' : 'Jeda'}</span>
+                                        </Button>
+                                    )}
+                                    {(meeting.status === 'draft' || meeting.status === 'cancelled') && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 text-xs shadow-none gap-1.5 font-semibold"
+                                            onClick={() => navigate(`/admin/meetings/${meeting.id}/edit`)}
+                                        >
+                                            <Edit className="size-3.5" />
+                                            <span>{meeting.status === 'cancelled' ? 'Jadwalkan Ulang' : 'Edit'}</span>
+                                        </Button>
+                                    )}
+                                    {(meeting.status === 'draft' || meeting.status === 'scheduled') && (
+                                        <Button
+                                            size="sm"
+                                            className="h-8 px-3.5 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 text-xs shadow-none gap-1.5 font-semibold"
+                                            onClick={handleStartMeeting}
+                                            disabled={!canStartMeeting}
+                                        >
+                                            <Play className="size-3.5" />
+                                            <span>Mulai Rapat</span>
+                                        </Button>
+                                    )}
+                                    {meeting.status === 'ongoing' && (
+                                        <Button
+                                            size="sm"
+                                            onClick={() => setCompleteDialog({ ...completeDialog, open: true })}
+                                            className="h-8 px-3.5 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 text-xs shadow-none font-semibold gap-1.5"
+                                        >
+                                            <CheckCircle2 className="size-3.5 text-emerald-400" />
+                                            <span>Selesaikan Rapat</span>
+                                        </Button>
+                                    )}
+                                    {(meeting.status === 'draft' || meeting.status === 'scheduled' || meeting.status === 'ongoing') && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 px-3 rounded-none border-rose-200 dark:border-rose-900 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs shadow-none gap-1.5 font-semibold"
+                                            onClick={() => setCancelDialog({ ...cancelDialog, open: true })}
+                                        >
+                                            <Ban className="size-3.5" />
+                                            <span>Batalkan Rapat</span>
+                                        </Button>
+                                    )}
+                                </div>
+                }
+            >
+                        {/* 1. INFORMASI RAPAT */}
+                        <div className="space-y-3">
+                            <div className="border-b border-neutral-200 dark:border-neutral-800 pb-2 flex items-center justify-between">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                                    <Calendar className="h-3.5 w-3.5 text-neutral-500" /> Informasi Jadwal & Lokasi
+                                </h3>
+                                <span className="text-[11px] font-mono text-neutral-500 uppercase">
+                                    {meeting.meeting_date ? format(new Date(meeting.meeting_date), 'dd MMMM yyyy', { locale: indonesianLocale }) : '-'}
+                                </span>
                             </div>
-                            <p className="text-sm text-muted-foreground font-mono">{meeting.meeting_number}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
 
-                            {(meeting.status === 'draft' || meeting.status === 'cancelled') && (
-                                <Button variant="outline" onClick={() => navigate(`/admin/meetings/${meeting.id}/edit`)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    {meeting.status === 'cancelled' ? 'Jadwalkan Ulang' : 'Edit'}
-                                </Button>
-                            )}
-                            {(meeting.status === 'draft' || meeting.status === 'scheduled') && (
-                                <Button variant="default" onClick={handleStartMeeting} disabled={!canStartMeeting}>
-                                    <Play className="mr-2 h-4 w-4" /> Mulai Rapat
-                                </Button>
-                            )}
-                            {meeting.status === 'ongoing' && (
-                                <Button variant="default" onClick={() => setCompleteDialog({ ...completeDialog, open: true })} className="bg-purple-600 hover:bg-purple-700 text-white">
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Selesaikan Rapat
-                                </Button>
-                            )}
-                            {(meeting.status === 'draft' || meeting.status === 'scheduled' || meeting.status === 'ongoing') && (
-                                <Button variant="destructive" onClick={() => setCancelDialog({ ...cancelDialog, open: true })}>
-                                    <Ban className="mr-2 h-4 w-4" /> Batalkan Rapat
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid gap-6">
-                        {/* Informasi Rapat */}
-                        <Card className="shadow-none">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Calendar className="h-5 w-5" /> Informasi Rapat
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <dl className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <div>
-                                        <dt className="text-sm font-medium text-muted-foreground mb-1">Status</dt>
-                                        <dd className="flex flex-wrap items-center gap-2">
-                                            <Badge variant="outline" className={getStatusBadgeColor(meeting.status)}>{getStatusLabel(meeting.status)}</Badge>
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-sm font-medium text-muted-foreground mb-1">Penyelenggara</dt>
-                                        <dd className="text-sm flex items-center gap-2">
-                                            <User className="h-4 w-4 text-muted-foreground" />
-                                            {meeting.organizer?.name || '-'}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-sm font-medium text-muted-foreground mb-1">Tanggal</dt>
-                                        <dd className="text-sm flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            {meeting.meeting_date ? format(new Date(meeting.meeting_date), 'EEEE, dd MMMM yyyy', { locale: indonesianLocale }) : '-'}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-sm font-medium text-muted-foreground mb-1">Waktu</dt>
-                                        <dd className="text-sm flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-muted-foreground" />
-                                            {formatTime(meeting.start_time)} - {formatTime(meeting.end_time)} WIB
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-sm font-medium text-muted-foreground mb-1">Ruangan</dt>
-                                        <dd className="text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <DoorOpen className="h-4 w-4 text-muted-foreground" />
-                                                {meeting.room?.name || '-'}
-                                            </div>
-                                            {meeting.room?.location && (
-                                                <div className="mt-1 ml-6 text-muted-foreground flex items-center gap-2">
-                                                    <MapPin className="h-3 w-3" /> {meeting.room.location}
-                                                </div>
-                                            )}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-sm font-medium text-muted-foreground mb-1">Unit Organisasi</dt>
-                                        <dd className="text-sm flex items-center gap-2">
-                                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                                            {meeting.organization_unit?.name || '-'}
-                                        </dd>
-                                    </div>
-                                    <div className="lg:col-span-3 md:col-span-2">
-                                        <dt className="text-sm font-medium text-muted-foreground mb-1">Agenda</dt>
-                                        <dd className="text-sm whitespace-pre-line">{meeting.agenda || '-'}</dd>
-                                    </div>
-                                </dl>
-                            </CardContent>
-                        </Card>
-
-                        {/* Daftar Peserta */}
-                        <Card className="shadow-none">
-                            <CardHeader className="p-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                                            <Users className="h-5 w-5" /> Daftar Peserta ({participants.length})
-                                        </CardTitle>
-                                        <CardDescription>
-                                            {attendedCount} hadir dari {participants.length} peserta
-                                        </CardDescription>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => navigate(`/admin/meetings/${meeting.id}/attendance`)}
-                                        className="w-full sm:w-auto"
-                                        disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}
-                                    >
-                                        <Users className="h-4 w-4 mr-2" /> Kelola Daftar Hadir
-                                    </Button>
+                            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 py-2">
+                                <div>
+                                    <dt className="text-[11px] font-mono uppercase text-neutral-500 mb-0.5">Penyelenggara</dt>
+                                    <dd className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                        <User className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                                        <span>{meeting.organizer?.name || '-'}</span>
+                                    </dd>
                                 </div>
-                            </CardHeader>
-                            <CardContent>
-                                {participants.length > 0 ? (
-                                    <div className="rounded-md border overflow-x-auto">
-                                        <Table>
-                                            <TableHeader className="bg-muted/50">
-                                                <TableRow>
-                                                    <TableHead>No.</TableHead>
-                                                    <TableHead>Nama</TableHead>
-                                                    <TableHead>NIP</TableHead>
-                                                    <TableHead>Unit</TableHead>
-                                                    <TableHead>Peran</TableHead>
-                                                    <TableHead>Status Kehadiran</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {participants.map((participant, index) => (
-                                                    <TableRow key={participant.id}>
-                                                        <TableCell>{index + 1}</TableCell>
-                                                        <TableCell className="font-medium">{participant.user?.name || '-'}</TableCell>
-                                                        <TableCell className="font-mono text-sm">{participant.user?.nip || '-'}</TableCell>
-                                                        <TableCell className="text-sm">{participant.user?.organization_unit?.name || '-'}</TableCell>
-                                                        <TableCell>
-                                                            <Badge variant="outline" className={getRoleBadgeColor(participant.role)}>
-                                                                {getRoleLabel(participant.role)}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-2">
-                                                                <Badge variant="outline" className={getAttendanceBadgeColor(participant.attendance_status)}>
-                                                                    {getAttendanceLabel(participant.attendance_status)}
-                                                                </Badge>
-                                                                {isModeratorOrOrganizer && meeting.status === 'ongoing' && (
-                                                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setMarkAttendanceDialog({ open: true, participant, status: 'attended', loading: false })}>
-                                                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                <div>
+                                    <dt className="text-[11px] font-mono uppercase text-neutral-500 mb-0.5">Waktu Pelaksanaan</dt>
+                                    <dd className="text-sm font-mono font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                                        <span>{formatTime(meeting.start_time)} - {formatTime(meeting.end_time)} WIB</span>
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt className="text-[11px] font-mono uppercase text-neutral-500 mb-0.5">Ruangan / Tempat</dt>
+                                    <dd className="text-sm font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                        <DoorOpen className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                                        <span>{meeting.room?.name || 'Belum ditentukan'}</span>
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt className="text-[11px] font-mono uppercase text-neutral-500 mb-0.5">Unit Organisasi</dt>
+                                    <dd className="text-sm font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
+                                        <Building2 className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                                        <span>{meeting.organization_unit?.name || '-'}</span>
+                                    </dd>
+                                </div>
+                                <div className="col-span-1 sm:col-span-2 lg:col-span-4 pt-3 border-t border-neutral-100 dark:border-neutral-900">
+                                    <dt className="text-[11px] font-mono uppercase text-neutral-500 mb-1">Agenda Utama</dt>
+                                    <dd className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-line font-medium leading-relaxed">
+                                        {meeting.agenda || 'Tidak ada agenda khusus'}
+                                    </dd>
+                                </div>
+                                {meeting.notes && (
+                                    <div className="col-span-1 sm:col-span-2 lg:col-span-4 pt-3 border-t border-neutral-100 dark:border-neutral-900">
+                                        <dt className="text-[11px] font-mono uppercase text-neutral-500 mb-1">Catatan Tambahan</dt>
+                                        <dd className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                                            {meeting.notes}
+                                        </dd>
                                     </div>
-                                ) : (
-                                    <div className="text-center py-8 text-muted-foreground">Belum ada peserta</div>
                                 )}
-                            </CardContent>
-                        </Card>
+                            </dl>
+                        </div>
 
-                        <CheckinQRCode
-                            meetingId={meeting.id}
-                            meetingStatus={meeting.status}
-                            meetingTitle={meeting.title}
-                            meetingNumber={meeting.meeting_number}
-                            roomName={meeting.room?.name || meeting.room_name}
-                            meetingDate={meeting.meeting_date || meeting.date}
-                            startTime={meeting.start_time}
-                            endTime={meeting.end_time}
-                            isModeratorOrOrganizer={isModeratorOrOrganizer}
-                            attendedCount={attendedCount}
-                            totalParticipants={participants.length}
-                        />
+                        {/* 2. DAFTAR PESERTA RAPAT */}
+                        <div className="space-y-3">
+                            <div className="border-b border-neutral-200 dark:border-neutral-800 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                                        <Users className="h-3.5 w-3.5 text-neutral-500" /> Daftar Peserta Undangan ({participants.length})
+                                    </h3>
+                                    <p className="text-[11px] text-neutral-500 font-mono">
+                                        {attendedCount} hadir dari {participants.length} peserta undangan
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/admin/meetings/${meeting.id}/attendance`)}
+                                    className="h-7 px-3 rounded-none border-neutral-300 dark:border-neutral-700 text-xs shadow-none font-semibold gap-1.5 self-start sm:self-auto"
+                                    disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}
+                                >
+                                    <Users className="h-3.5 w-3.5" /> Kelola Presensi
+                                </Button>
+                            </div>
 
-                        {/* Dokumen */}
-                        <Card className="shadow-none">
-                            <CardHeader className="p-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                                            <FileText className="h-5 w-5" /> Dokumen Rapat
-                                        </CardTitle>
-                                        <CardDescription>Generate dan kelola dokumen terkait rapat</CardDescription>
+                            <div className="border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+                                <Table>
+                                    <TableHeader className="bg-neutral-100/70 dark:bg-neutral-900/60 border-b border-neutral-200 dark:border-neutral-800 font-mono text-[11px] uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                                        <TableRow>
+                                            <TableHead className="w-12 text-center">#</TableHead>
+                                            <TableHead>Nama Pegawai</TableHead>
+                                            <TableHead className="w-36">NIP</TableHead>
+                                            <TableHead className="w-48">Unit Kerja</TableHead>
+                                            <TableHead className="w-32">Peran</TableHead>
+                                            <TableHead className="w-36">Kehadiran</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody className="divide-y divide-neutral-200 dark:border-neutral-800 text-xs">
+                                        {participants.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center py-6 text-neutral-500 font-mono">
+                                                    Belum ada peserta yang didaftarkan.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            participants.map((participant, index) => (
+                                                <TableRow key={participant.id} className="hover:bg-neutral-50/70 dark:hover:bg-neutral-900/50">
+                                                    <TableCell className="py-2.5 text-center font-mono text-neutral-400">{index + 1}</TableCell>
+                                                    <TableCell className="py-2.5 font-semibold text-neutral-900 dark:text-white">{participant.user?.name || '-'}</TableCell>
+                                                    <TableCell className="py-2.5 font-mono text-neutral-500">{participant.user?.nip || '-'}</TableCell>
+                                                    <TableCell className="py-2.5 text-neutral-600 dark:text-neutral-400">{participant.user?.organization_unit?.name || '-'}</TableCell>
+                                                    <TableCell className="py-2.5">
+                                                        <Badge variant="outline" className={`rounded-none text-[10px] py-0 px-1.5 font-mono ${getRoleBadgeColor(participant.role)}`}>
+                                                            {getRoleLabel(participant.role)}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="py-2.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className={`rounded-none text-[10px] py-0 px-1.5 font-mono ${getAttendanceBadgeColor(participant.attendance_status)}`}>
+                                                                {getAttendanceLabel(participant.attendance_status)}
+                                                            </Badge>
+                                                            {isModeratorOrOrganizer && meeting.status === 'ongoing' && (
+                                                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-none text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => setMarkAttendanceDialog({ open: true, participant, status: 'attended', loading: false })}>
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+
+                        {/* 3. DOKUMEN & NOTULENSI */}
+                        <div className="space-y-3">
+                            <div className="border-b border-neutral-200 dark:border-neutral-800 pb-2 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                                        <FileText className="h-3.5 w-3.5 text-neutral-500" /> Dokumen & Notulensi Rapat
+                                    </h3>
+                                    <p className="text-[11px] text-neutral-500 font-mono">Undangan resmi, konfirmasi kehadiran, dan memo hasil rapat</p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/admin/meetings/${meeting.id}/memo`)}
+                                    className="h-7 px-3 rounded-none border-neutral-300 dark:border-neutral-700 text-xs shadow-none font-semibold gap-1.5"
+                                    disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}
+                                >
+                                    <Edit3 className="h-3.5 w-3.5" /> Edit Memo Hasil Rapat
+                                </Button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleGenerateDocument('invitation')}
+                                    className="text-left p-3 bg-white hover:bg-neutral-50 dark:bg-neutral-950 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 transition-colors flex items-start gap-3 rounded-none group cursor-pointer"
+                                >
+                                    <div className="size-8 rounded-none bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center shrink-0 text-neutral-600 dark:text-neutral-400 group-hover:bg-neutral-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-neutral-900 transition-colors">
+                                        <Download className="h-4 w-4" />
                                     </div>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => navigate(`/admin/meetings/${meeting.id}/memo`)}
-                                        className="w-full sm:w-auto"
-                                        disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}
-                                    >
-                                        <FileText className="h-4 w-4 mr-2" /> Edit Memo
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                                    <Button variant="outline" className="h-auto flex-col items-start gap-2 p-4" onClick={() => handleGenerateDocument('invitation')}>
-                                        <Download className="h-5 w-5" />
-                                        <div className="text-left">
-                                            <div className="font-semibold text-sm md:text-base">Undangan Rapat</div>
-                                            <div className="text-xs text-muted-foreground">Download undangan format PDF</div>
-                                        </div>
-                                    </Button>
-                                    <Button variant="outline" className="h-auto flex-col items-start gap-2 p-4" onClick={() => navigate(`/admin/meetings/${meeting.id}/attendance`)} disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}>
-                                        <CheckCircle2 className="h-5 w-5" />
-                                        <div className="text-left">
-                                            <div className="font-semibold text-sm md:text-base">Konfirmasi Kehadiran</div>
-                                            <div className="text-xs text-muted-foreground">Konfirmasi kehadiran Anda di rapat</div>
-                                        </div>
-                                    </Button>
-                                    <Button variant="outline" className="h-auto flex-col items-start gap-2 p-4" onClick={() => navigate(`/admin/meetings/${meeting.id}/memo`)} disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}>
-                                        <Edit3 className="h-5 w-5" />
-                                        <div className="text-left">
-                                            <div className="font-semibold text-sm md:text-base">Memo Hasil Rapat</div>
-                                            <div className="text-xs text-muted-foreground">Buat dan download memo rapat</div>
-                                        </div>
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    <div className="min-w-0">
+                                        <div className="font-bold text-xs text-neutral-900 dark:text-white uppercase tracking-tight">Undangan Rapat Resmi</div>
+                                        <div className="text-[11px] text-neutral-500 font-mono mt-0.5 truncate">Download dokumen undangan PDF</div>
+                                    </div>
+                                </button>
 
-                        {(meeting.status === 'ongoing' || meeting.status === 'completed') && (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(`/admin/meetings/${meeting.id}/attendance`)}
+                                    disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}
+                                    className="text-left p-3 bg-white hover:bg-neutral-50 dark:bg-neutral-950 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 transition-colors flex items-start gap-3 rounded-none group disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                                >
+                                    <div className="size-8 rounded-none bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shrink-0 text-emerald-700 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="font-bold text-xs text-neutral-900 dark:text-white uppercase tracking-tight">Konfirmasi Kehadiran</div>
+                                        <div className="text-[11px] text-neutral-500 font-mono mt-0.5 truncate">Check-in mandiri peserta rapat</div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(`/admin/meetings/${meeting.id}/memo`)}
+                                    disabled={meeting.status !== 'ongoing' && meeting.status !== 'completed'}
+                                    className="text-left p-3 bg-white hover:bg-neutral-50 dark:bg-neutral-950 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 transition-colors flex items-start gap-3 rounded-none group disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                                >
+                                    <div className="size-8 rounded-none bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0 text-blue-700 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                        <FileText className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="font-bold text-xs text-neutral-900 dark:text-white uppercase tracking-tight">Memo Hasil & Notulensi</div>
+                                        <div className="text-[11px] text-neutral-500 font-mono mt-0.5 truncate">Baca notulensi dan unduh memo PDF</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 4. TINDAK LANJUT / ACTION ITEMS */}
+                        <div className="space-y-3">
+                            <div className="border-b border-neutral-200 dark:border-neutral-800 pb-2">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
+                                    Tindak Lanjut & Action Items
+                                </h3>
+                                <p className="text-[11px] text-neutral-500 font-mono">Daftar penugasan dan aksi nyata pasca pertemuan</p>
+                            </div>
                             <ActionItems meetingId={meeting.id} canEdit={isModeratorOrOrganizer} />
+                        </div>
+
+                        {/* QR Code Checkin Section if ongoing */}
+                        {meeting.status === 'ongoing' && (
+                            <div className="space-y-3 pt-2 border-t border-neutral-200 dark:border-neutral-800">
+                                <div className="border-b border-neutral-200 dark:border-neutral-800 pb-2">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
+                                        QR Code Presensi Cepat
+                                    </h3>
+                                    <p className="text-[11px] text-neutral-500 font-mono">Scan untuk presensi kehadiran peserta secara instan</p>
+                                </div>
+                                <CheckinQRCode
+                                    meetingId={meeting.id}
+                                    meetingStatus={meeting.status}
+                                    meetingTitle={meeting.title}
+                                    meetingNumber={meeting.meeting_number}
+                                    roomName={meeting.room?.name}
+                                    meetingDate={meeting.meeting_date}
+                                    startTime={meeting.start_time}
+                                    endTime={meeting.end_time}
+                                    isModeratorOrOrganizer={isModeratorOrOrganizer}
+                                    attendedCount={attendedCount}
+                                    totalParticipants={participants.length}
+                                />
+                            </div>
                         )}
+            </DetailCard>
+
+            {/* Complete Dialog */}
+            <Dialog open={completeDialog.open} onOpenChange={(open) => setCompleteDialog({ ...completeDialog, open })}>
+                <DialogContent className="rounded-none border border-neutral-200 dark:border-neutral-800 p-6 shadow-none">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-bold">Selesaikan Rapat</DialogTitle>
+                        <DialogDescription className="text-xs text-neutral-500">
+                            Apakah Anda yakin ingin menandai rapat ini sebagai selesai? Peserta tidak dapat melakukan presensi lagi setelah selesai.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0 mt-3">
+                        <Button variant="outline" size="sm" onClick={() => setCompleteDialog({ open: false, loading: false })} disabled={completeDialog.loading} className="rounded-none text-xs">
+                            Batal
+                        </Button>
+                        <Button size="sm" onClick={handleCompleteMeeting} disabled={completeDialog.loading} className="rounded-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">
+                            {completeDialog.loading ? 'Menyelesaikan...' : 'Ya, Selesaikan'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Cancel Dialog */}
+            <Dialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog({ ...cancelDialog, open })}>
+                <DialogContent className="rounded-none border border-neutral-200 dark:border-neutral-800 p-6 shadow-none">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-bold">Batalkan Rapat</DialogTitle>
+                        <DialogDescription className="text-xs text-neutral-500">
+                            Apakah Anda yakin ingin membatalkan jadwal rapat ini? Status rapat akan diubah menjadi Dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0 mt-3">
+                        <Button variant="outline" size="sm" onClick={() => setCancelDialog({ open: false, loading: false })} disabled={cancelDialog.loading} className="rounded-none text-xs">
+                            Kembali
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={handleCancelMeeting} disabled={cancelDialog.loading} className="rounded-none text-xs font-semibold">
+                            {cancelDialog.loading ? 'Membatalkan...' : 'Batalkan Rapat'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Mark Attendance Dialog */}
+            <Dialog open={markAttendanceDialog.open} onOpenChange={(open) => setMarkAttendanceDialog({ ...markAttendanceDialog, open })}>
+                <DialogContent className="rounded-none border border-neutral-200 dark:border-neutral-800 p-6 shadow-none">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-bold">Konfirmasi Kehadiran</DialogTitle>
+                        <DialogDescription className="text-xs text-neutral-500">
+                            Ubah status kehadiran untuk <strong>{markAttendanceDialog.participant?.user?.name}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-3">
+                        <select
+                            value={markAttendanceDialog.status}
+                            onChange={(e) => setMarkAttendanceDialog({ ...markAttendanceDialog, status: e.target.value })}
+                            className="w-full h-9 px-3 text-xs border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 focus:outline-none"
+                        >
+                            <option value="attended">Hadir</option>
+                            <option value="excused">Izin</option>
+                            <option value="absent">Tidak Hadir</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-
-            {/* Modals */}
-            <Dialog open={markAttendanceDialog.open} onOpenChange={(open) => !open && setMarkAttendanceDialog({ open: false, participant: null, status: 'attended', loading: false })}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Konfirmasi Kehadiran</DialogTitle>
-                        <DialogDescription>
-                            Tandai <strong>{markAttendanceDialog.participant?.user?.name}</strong> sebagai <strong>Hadir</strong>?
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setMarkAttendanceDialog({ open: false, participant: null, status: 'attended', loading: false })} disabled={markAttendanceDialog.loading}>Batal</Button>
-                        <Button onClick={handleConfirmMarkAttendance} disabled={markAttendanceDialog.loading}>
-                            {markAttendanceDialog.loading ? 'Menyimpan...' : 'Konfirmasi'}
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" size="sm" onClick={() => setMarkAttendanceDialog({ open: false, participant: null, status: 'attended', loading: false })} className="rounded-none text-xs">
+                            Batal
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={completeDialog.open} onOpenChange={(open) => !open && setCompleteDialog({ open: false, loading: false })}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Selesaikan Rapat</DialogTitle>
-                        <DialogDescription>
-                            Apakah Anda yakin ingin menyelesaikan rapat <strong>{meeting?.title}</strong>? Setelah diselesaikan, status menjadi "Selesai" dan rapat tidak dapat diubah lagi.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setCompleteDialog({ open: false, loading: false })} disabled={completeDialog.loading}>Tidak</Button>
-                        <Button onClick={handleCompleteMeeting} disabled={completeDialog.loading} className="bg-purple-600 hover:bg-purple-700 text-white">
-                            {completeDialog.loading ? 'Menyelesaikan...' : 'Ya, Selesaikan Rapat'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={cancelDialog.open} onOpenChange={(open) => !open && setCancelDialog({ open: false, loading: false })}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Batalkan Rapat</DialogTitle>
-                        <DialogDescription>
-                            Apakah Anda yakin ingin membatalkan rapat <strong>{meeting?.title}</strong>?
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setCancelDialog({ open: false, loading: false })} disabled={cancelDialog.loading}>Tidak</Button>
-                        <Button variant="destructive" onClick={handleCancelMeeting} disabled={cancelDialog.loading}>
-                            {cancelDialog.loading ? 'Membatalkan...' : 'Ya, Batalkan'}
+                        <Button size="sm" onClick={handleConfirmMarkAttendance} disabled={markAttendanceDialog.loading} className="rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-semibold">
+                            {markAttendanceDialog.loading ? 'Menyimpan...' : 'Simpan Status'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

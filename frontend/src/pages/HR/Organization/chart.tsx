@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, User, Users, Building2, Save, ZoomIn, ZoomOut, Move, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -23,7 +22,7 @@ export default function OrganizationChart() {
     const [assignEmployeeId, setAssignEmployeeId] = useState('');
     const [saving, setSaving] = useState(false);
     const [assigning, setAssigning] = useState(false);
-    
+
     // Custom Dialog State for Alerts & Confirms
     const [dialogState, setDialogState] = useState<{
         open: boolean;
@@ -80,7 +79,7 @@ export default function OrganizationChart() {
             setIsDragging(false);
             try {
                 (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-            } catch (_) {}
+            } catch (_) { }
         }
     };
 
@@ -192,7 +191,7 @@ export default function OrganizationChart() {
             const empToAssign = employees.find(e => e.id.toString() === assignEmployeeId);
             if (empToAssign) {
                 await api.put(`/employees/${empToAssign.id}`, cleanEmpPayload(empToAssign, selectedUnit.id));
-                
+
                 // Refresh data to show updated member list
                 await fetchData();
                 setAssignEmployeeId('');
@@ -305,73 +304,97 @@ export default function OrganizationChart() {
 
     return (
         <HrLayout>
-            <div className="w-full flex flex-col h-[calc(100vh-80px)] relative overflow-hidden select-none">
-                {/* Zoom & Pan Controls */}
-                <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5 bg-white/90 backdrop-blur p-1.5 rounded-xl shadow-md border border-slate-200">
-                    <span className="text-[11px] text-muted-foreground px-2 hidden sm:inline-flex items-center gap-1">
-                        <Move className="size-3 text-primary" /> Geser: Drag Pointer
-                    </span>
-                    <div className="h-4 w-px bg-slate-200 hidden sm:block" />
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.min(s + 0.1, 2.5))} title="Zoom In (Perbesar)">
-                        <ZoomIn className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs font-mono font-semibold" onClick={handleResetView} title="Klik untuk Reset Zoom (100%)">
-                        {Math.round(scale * 100)}%
-                    </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setScale(s => Math.max(s - 0.1, 0.3))} title="Zoom Out (Perkecil)">
-                        <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8 text-slate-600 hover:text-primary" onClick={handleResetView} title="Pusatkan / Reset Posisi">
-                        <RotateCcw className="h-4 w-4" />
-                    </Button>
+            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col h-[calc(100vh-120px)] font-sans">
+                {/* Header Toolbar */}
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 shrink-0"
+                            type="button"
+                            onClick={() => navigate('/hr/organizations')}
+                            title="Kembali"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0 rounded-none">
+                            <Building2 className="size-4" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                            <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                                Struktur Organisasi
+                            </h1>
+                            <p className="text-[11px] text-neutral-500 font-mono truncate">
+                                Bagan hierarki unit kerja dan penempatan pejabat struktural
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Integrated Zoom Controls */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[11px] text-neutral-500 font-mono px-2 hidden sm:inline-flex items-center gap-1">
+                            <Move className="size-3 text-neutral-600 dark:text-neutral-400" /> Drag untuk geser
+                        </span>
+                        <div className="h-4 w-px bg-neutral-200 dark:border-neutral-800 hidden sm:block" />
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none" onClick={() => setScale(s => Math.min(s + 0.1, 2.5))} title="Zoom In">
+                            <ZoomIn className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs font-mono font-semibold rounded-none border-neutral-200 dark:border-neutral-800 shadow-none" onClick={handleResetView} title="Reset Zoom">
+                            {Math.round(scale * 100)}%
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none" onClick={() => setScale(s => Math.max(s - 0.1, 0.3))} title="Zoom Out">
+                            <ZoomOut className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none" onClick={handleResetView} title="Reset Posisi">
+                            <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Chart Canvas Container */}
-                <Card className="flex-1 overflow-hidden flex flex-col shadow-sm border-slate-200 rounded-none border-0">
-                    <CardContent 
-                        ref={containerRef}
-                        onPointerDown={handlePointerDown}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        onPointerCancel={handlePointerUp}
-                        onWheel={handleWheel}
-                        className={`p-0 flex-1 overflow-hidden bg-[#f8fafc] relative select-none ${
-                            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                {/* Chart Canvas */}
+                <div
+                    ref={containerRef}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    onWheel={handleWheel}
+                    className={`p-0 flex-1 overflow-hidden bg-neutral-50/60 dark:bg-neutral-900/30 relative select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
                         }`}
-                        style={{ touchAction: 'none' }}
-                    >
-                        {/* Interactive Dot Grid Pattern */}
-                        <div 
-                            className="absolute inset-0 pointer-events-none opacity-40"
-                            style={{
-                                backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
-                                backgroundSize: `${24 * scale}px ${24 * scale}px`,
-                                backgroundPosition: `${position.x}px ${position.y}px`,
-                            }}
-                        />
+                    style={{ touchAction: 'none' }}
+                >
+                    {/* Interactive Dot Grid Pattern */}
+                    <div
+                        className="absolute inset-0 pointer-events-none opacity-40"
+                        style={{
+                            backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
+                            backgroundSize: `${24 * scale}px ${24 * scale}px`,
+                            backgroundPosition: `${position.x}px ${position.y}px`,
+                        }}
+                    />
 
-                        {loading ? (
-                            <div className="flex items-center justify-center h-full text-muted-foreground">Memuat struktur...</div>
-                        ) : rootNodes.length === 0 ? (
-                            <div className="flex items-center justify-center h-full text-muted-foreground">Belum ada Unit Organisasi (Root).</div>
-                        ) : (
-                            <div
-                                className="w-full h-full flex justify-center items-start pt-16"
-                                style={{
-                                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                                    transformOrigin: 'top center',
-                                    transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                                }}
-                            >
-                                <div className="flex gap-16 min-w-max pb-32">
-                                    {rootNodes.map(root => (
-                                        <OrgNode key={root.id} node={root} />
-                                    ))}
-                                </div>
+                    {loading ? (
+                        <div className="flex items-center justify-center h-full text-xs font-mono text-neutral-500">Memuat struktur...</div>
+                    ) : rootNodes.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-xs font-mono text-neutral-500">Belum ada Unit Organisasi (Root).</div>
+                    ) : (
+                        <div
+                            className="w-full h-full flex justify-center items-start pt-16"
+                            style={{
+                                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                                transformOrigin: 'top center',
+                                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                            }}
+                        >
+                            <div className="flex gap-16 min-w-max pb-32">
+                                {rootNodes.map(root => (
+                                    <OrgNode key={root.id} node={root} />
+                                ))}
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Modal Edit Node */}
@@ -444,7 +467,7 @@ export default function OrganizationChart() {
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 {/* Assign Employee Form */}
                                 <div className="mt-4 p-3 bg-slate-50 border rounded-lg flex flex-col gap-2">
                                     <Label className="text-sm font-semibold">Tambah Anggota Unit</Label>
@@ -462,8 +485,8 @@ export default function OrganizationChart() {
                                                     }))}
                                             />
                                         </div>
-                                        <Button 
-                                            size="sm" 
+                                        <Button
+                                            size="sm"
                                             disabled={!assignEmployeeId || assigning}
                                             onClick={handleAssignEmployee}
                                         >
@@ -504,7 +527,7 @@ export default function OrganizationChart() {
                                 Batal
                             </Button>
                         )}
-                        <Button 
+                        <Button
                             variant={dialogState.type === 'confirm' ? 'default' : 'secondary'}
                             onClick={() => {
                                 setDialogState(prev => ({ ...prev, open: false }));

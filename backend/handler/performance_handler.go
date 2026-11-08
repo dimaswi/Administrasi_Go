@@ -163,6 +163,79 @@ func (h *PerformanceHandler) DeleteReview(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Review deleted successfully"})
 }
 
+type SelfReviewRequest struct {
+	Items         []models.PerformanceReviewItem `json:"items"`
+	EmployeeNotes *string                        `json:"employee_notes"`
+}
+
+func (h *PerformanceHandler) SubmitSelfReview(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+	var req SelfReviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.repo.SubmitSelfReview(id, req.Items, req.EmployeeNotes); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Self review berhasil disimpan"})
+}
+
+type ManagerReviewRequest struct {
+	Items           []models.PerformanceReviewItem `json:"items"`
+	ManagerNotes    *string                        `json:"manager_notes"`
+	Strengths       *string                        `json:"strengths"`
+	Improvements    *string                        `json:"improvements"`
+	DevelopmentPlan *string                        `json:"development_plan"`
+}
+
+func (h *PerformanceHandler) SubmitManagerReview(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+	var req ManagerReviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var reviewerID *int
+	if uidVal, exists := c.Get("user_id"); exists {
+		if f, ok := uidVal.(float64); ok {
+			rid := int(f)
+			reviewerID = &rid
+		} else if i, ok := uidVal.(int); ok {
+			reviewerID = &i
+		}
+	}
+
+	if err := h.repo.SubmitManagerReview(id, reviewerID, req.Items, req.ManagerNotes, req.Strengths, req.Improvements, req.DevelopmentPlan); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Review atasan berhasil disimpan"})
+}
+
+func (h *PerformanceHandler) CompleteReview(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+	if err := h.repo.CompleteReview(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Penilaian berhasil diselesaikan"})
+}
+
 // ==================== 360 Feedback ====================
 
 func (h *PerformanceHandler) GetAllFeedback360Sessions(c *gin.Context) {

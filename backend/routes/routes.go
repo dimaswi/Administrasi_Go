@@ -455,6 +455,9 @@ func SetupRouter(db *sqlx.DB, jwtSecret string) *gin.Engine {
 				performanceReviews.POST("", performanceHandler.CreateReview)
 				performanceReviews.PUT("/:id", performanceHandler.UpdateReview)
 				performanceReviews.DELETE("/:id", performanceHandler.DeleteReview)
+				performanceReviews.POST("/:id/self-review", performanceHandler.SubmitSelfReview)
+				performanceReviews.POST("/:id/manager-review", performanceHandler.SubmitManagerReview)
+				performanceReviews.POST("/:id/complete", performanceHandler.CompleteReview)
 			}
 
 			// 360 Feedback Sessions

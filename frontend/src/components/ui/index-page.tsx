@@ -2,7 +2,6 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import {
     Select,
     SelectContent,
@@ -139,7 +138,7 @@ export function IndexPage<T extends { id: number | string }>({
     onFilterSubmit,
     onFilterReset,
     searchValue,
-    searchPlaceholder = "Cari...",
+    searchPlaceholder = "Cari data...",
     onSearchChange,
     emptyMessage = "Tidak ada data",
     emptyIcon: EmptyIcon,
@@ -152,6 +151,34 @@ export function IndexPage<T extends { id: number | string }>({
     const [filterOpen, setFilterOpen] = React.useState(false);
     const [sortKey, setSortKey] = React.useState<string | null>(null);
     const [sortDir, setSortDir] = React.useState<"asc" | "desc" | null>(null);
+
+    // Keep ref to latest onFilterSubmit to avoid stale closures in debounce effect
+    const onFilterSubmitRef = React.useRef(onFilterSubmit);
+    onFilterSubmitRef.current = onFilterSubmit;
+    const isFirstRender = React.useRef(true);
+    const prevSearchValRef = React.useRef(searchValue);
+
+    // Live search debounced auto-submit (otomatis cari tanpa perlu tekan Enter)
+    React.useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            prevSearchValRef.current = searchValue;
+            return;
+        }
+
+        if (prevSearchValRef.current === searchValue) {
+            return;
+        }
+        prevSearchValRef.current = searchValue;
+
+        if (!onFilterSubmitRef.current) return;
+
+        const timer = setTimeout(() => {
+            onFilterSubmitRef.current?.();
+        }, 350);
+
+        return () => clearTimeout(timer);
+    }, [searchValue]);
 
     const handleSort = (key: string) => {
         if (sortKey !== key) {
@@ -186,23 +213,32 @@ export function IndexPage<T extends { id: number | string }>({
         ([key, v]) => key !== 'search' && v && v !== "" && v !== "all"
     ).length;
 
+    const fromCount = pagination?.from ?? (pagination ? ((pagination.current_page - 1) * pagination.per_page + 1) : 0);
+    const toCount = pagination?.to ?? (pagination ? Math.min(pagination.current_page * pagination.per_page, pagination.total) : (data?.length || 0));
+    const totalCount = pagination?.total ?? (data?.length || 0);
+
     return (
         <div className="w-full max-w-full space-y-4">
-            {/* ─── Unified Card Container: KOTAK (rounded-none border border-neutral-200) ─── */}
-            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
+            {/* ─── Unified Card Container: Kawan-Dolan Sharp Frame ─── */}
+            <div className="w-full rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
                 
-                {/* ─── Card Header: Icon + Title (Left) & Search + Filters + Actions (Right) ──────── */}
-                <div className="px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+                {/* 1. Header Bar */}
+                <div className="px-4 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
                     <div className="flex items-center gap-2.5">
-                        <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+                        <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-xs shrink-0">
                             {EmptyIcon ? <EmptyIcon className="size-4" /> : <Search className="size-4" />}
                         </div>
                         <div>
-                            <h2 className="text-sm md:text-base font-bold uppercase tracking-tight text-neutral-900 dark:text-white leading-tight">
-                                {title}
-                            </h2>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100 uppercase">
+                                    {title}
+                                </h1>
+                                <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400">
+                                    {totalCount} Data
+                                </span>
+                            </div>
                             {description && (
-                                <p className="text-[11px] text-neutral-500 font-mono mt-0.5">
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                                     {description}
                                 </p>
                             )}
@@ -210,28 +246,43 @@ export function IndexPage<T extends { id: number | string }>({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* Search Input */}
+                        {/* Search Input in Header Bar */}
                         {onSearchChange && (
-                            <div className="relative w-44 sm:w-56 md:w-60">
+                            <div className="relative w-44 sm:w-56 md:w-64">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-neutral-400 pointer-events-none" />
                                 <Input
                                     placeholder={searchPlaceholder}
                                     value={searchValue || ""}
-                                    onChange={(e) => onSearchChange(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && onFilterSubmit?.()}
-                                    className="h-8 rounded-none border border-neutral-200 text-xs bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+                                    onChange={(e) => {
+                                        onSearchChange(e.target.value);
+                                        onPageChange?.(1);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            onFilterSubmitRef.current?.();
+                                        }
+                                    }}
+                                    className="h-8 pl-8 pr-7 text-xs rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
                                 />
                                 {searchValue && (
                                     <button
                                         type="button"
                                         onClick={() => {
                                             onSearchChange("");
+                                            onPageChange?.(1);
                                             const newParams = new URLSearchParams(searchParams);
                                             newParams.delete('search');
+                                            newParams.set('page', '1');
                                             navigate(`?${newParams.toString()}`);
+                                            if (onFilterSubmitRef.current) {
+                                                setTimeout(() => onFilterSubmitRef.current?.(), 0);
+                                            }
                                         }}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
+                                        title="Hapus pencarian"
                                     >
-                                        <X className="h-3.5 w-3.5" />
+                                        <X className="size-3.5" />
                                     </button>
                                 )}
                             </div>
@@ -240,37 +291,37 @@ export function IndexPage<T extends { id: number | string }>({
                         {/* Extra Toolbar Actions */}
                         {headerExtra}
 
-                        {/* Filter Trigger */}
+                        {/* Filter Trigger Button */}
                         {filterFields && filterFields.length > 0 && (
                             <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
-                                <CollapsibleTrigger 
+                                <CollapsibleTrigger
                                     className={cn(
-                                        buttonVariants({ variant: "outline", size: "sm" }), 
-                                        "h-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-xs font-medium gap-1.5 px-3 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 shadow-none",
-                                        filterOpen && "bg-neutral-50"
+                                        buttonVariants({ variant: "outline", size: "sm" }),
+                                        "h-8 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-medium gap-1.5 px-3 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 shadow-none",
+                                        filterOpen && "bg-neutral-100 dark:bg-neutral-800"
                                     )}
                                 >
-                                    <Filter className="h-3.5 w-3.5" />
+                                    <Filter className="size-3.5" />
                                     <span>Filter</span>
                                     {activeFilterCount > 0 && (
-                                        <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-none bg-neutral-900 text-[10px] text-white font-mono font-bold">
+                                        <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-none bg-neutral-900 text-[10px] text-white font-mono font-bold dark:bg-white dark:text-neutral-900">
                                             {activeFilterCount}
                                         </span>
                                     )}
-                                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", filterOpen && "rotate-180")} />
+                                    <ChevronDown className={cn("size-3.5 transition-transform duration-200", filterOpen && "rotate-180")} />
                                 </CollapsibleTrigger>
                             </Collapsible>
                         )}
 
-                        {/* Header Action Buttons (misal: Tambah Data) */}
+                        {/* Header Action Buttons (e.g. Tambah Data) */}
                         {actions && actions.map((action, index) => {
                             const Icon = action.icon || Plus;
                             const isPrimary = !action.variant || action.variant === "default";
                             const btnClass = cn(
                                 "h-8 px-3 rounded-none text-xs font-semibold gap-1.5 shadow-none transition-colors inline-flex items-center justify-center",
                                 isPrimary
-                                    ? "bg-black text-white hover:bg-neutral-800"
-                                    : "border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50"
+                                    ? "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+                                    : "border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                             );
 
                             if (action.href) {
@@ -297,17 +348,16 @@ export function IndexPage<T extends { id: number | string }>({
                     </div>
                 </div>
 
-
-                {/* Collapsible Filter Panel */}
+                {/* 2. Shaded Filter Strip */}
                 {filterFields && filterFields.length > 0 && (
                     <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
                         <CollapsibleContent>
-                            <div className="border-b border-border bg-muted/20 p-3.5 px-4">
+                            <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/40 p-3.5 px-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                     {filterFields.map((field) => (
                                         <div key={field.key} className="space-y-1">
                                             {field.label && (
-                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                <label className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
                                                     {field.label}
                                                 </label>
                                             )}
@@ -326,7 +376,7 @@ export function IndexPage<T extends { id: number | string }>({
                                                     onChange={(e) => onFilterChange?.(field.key, e.target.value)}
                                                     onKeyDown={(e) => e.key === "Enter" && onFilterSubmit?.()}
                                                     placeholder={field.placeholder}
-                                                    className={cn("h-8 rounded-none text-xs bg-background border-neutral-200", field.className)}
+                                                    className={cn("h-8 rounded-none text-xs bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800", field.className)}
                                                 />
                                             )}
                                             {field.type === "date" && (
@@ -335,7 +385,7 @@ export function IndexPage<T extends { id: number | string }>({
                                                         type="date"
                                                         value={filterValues[field.key] || ""}
                                                         onChange={(e) => onFilterChange?.(field.key, e.target.value)}
-                                                        className={cn("h-8 w-full rounded-none text-xs bg-background border-neutral-200 flex items-center justify-between", field.className)}
+                                                        className={cn("h-8 w-full rounded-none text-xs bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 flex items-center justify-between", field.className)}
                                                     />
                                                 </div>
                                             )}
@@ -347,16 +397,16 @@ export function IndexPage<T extends { id: number | string }>({
                                                 variant="outline" 
                                                 size="sm" 
                                                 onClick={onFilterReset} 
-                                                className="h-7 rounded-none text-xs gap-1 border-neutral-200"
+                                                className="h-8 rounded-none text-xs gap-1 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
                                             >
-                                                <RotateCcw className="h-3 w-3" />
+                                                <RotateCcw className="size-3.5" />
                                                 Reset
                                             </Button>
                                         )}
                                         <Button 
                                             onClick={onFilterSubmit} 
                                             size="sm" 
-                                            className="h-7 rounded-none text-xs font-semibold bg-black text-white hover:bg-neutral-800"
+                                            className="h-8 rounded-none text-xs font-semibold bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900"
                                         >
                                             Terapkan Filter
                                         </Button>
@@ -367,18 +417,18 @@ export function IndexPage<T extends { id: number | string }>({
                     </Collapsible>
                 )}
 
-                {/* Table or custom content */}
+                {/* 3. Table or Custom Content */}
                 {tableContent ?? (
-                    <div className="relative w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="relative w-full overflow-x-auto select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         <Table className="w-full">
                             <TableHeader>
-                                <TableRow className="border-b border-border hover:bg-transparent bg-transparent">
+                                <TableRow className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/80 hover:bg-neutral-100/70">
                                     {columns.map((column) => (
                                         <TableHead
                                             key={column.key}
                                             className={cn(
-                                                "h-8 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider select-none",
-                                                column.sortable !== false && column.label && "cursor-pointer hover:text-foreground transition-colors",
+                                                "h-8 px-3 text-[11px] font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 select-none",
+                                                column.sortable !== false && column.label && "cursor-pointer hover:text-neutral-900 dark:hover:text-white transition-colors",
                                                 column.className
                                             )}
                                             onClick={() => column.sortable !== false && column.label ? handleSort(column.key) : undefined}
@@ -389,10 +439,10 @@ export function IndexPage<T extends { id: number | string }>({
                                                     {column.sortable !== false && (
                                                         sortKey === column.key ? (
                                                             sortDir === "asc"
-                                                                ? <ArrowUp className="h-3 w-3 text-foreground" />
-                                                                : <ArrowDown className="h-3 w-3 text-foreground" />
+                                                                ? <ArrowUp className="size-3 text-neutral-900 dark:text-neutral-100" />
+                                                                : <ArrowDown className="size-3 text-neutral-900 dark:text-neutral-100" />
                                                         ) : (
-                                                            <ArrowUpDown className="h-3 w-3 opacity-30 hover:opacity-70 transition-opacity" />
+                                                            <ArrowUpDown className="size-3 opacity-30 hover:opacity-70 transition-opacity" />
                                                         )
                                                     )}
                                                 </span>
@@ -405,8 +455,8 @@ export function IndexPage<T extends { id: number | string }>({
                                 {isLoading ? (
                                     <TableRow className="border-0">
                                         <TableCell colSpan={columns.length} className="h-32 text-center">
-                                            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                                            <div className="flex flex-col items-center justify-center gap-2 text-neutral-500">
+                                                <div className="size-4 animate-spin rounded-full border-2 border-neutral-900 dark:border-white border-t-transparent" />
                                                 <span className="text-xs font-mono">Memuat data...</span>
                                             </div>
                                         </TableCell>
@@ -414,16 +464,16 @@ export function IndexPage<T extends { id: number | string }>({
                                 ) : sortedData.length === 0 ? (
                                     <TableRow className="border-0">
                                         <TableCell colSpan={columns.length} className="h-36 text-center">
-                                            <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
+                                            <div className="flex flex-col items-center justify-center gap-1.5 text-neutral-500">
                                                 {EmptyIcon ? (
-                                                    <EmptyIcon className="h-8 w-8 opacity-30 mb-0.5" />
+                                                    <EmptyIcon className="size-8 opacity-30 mb-0.5" />
                                                 ) : (
-                                                    <div className="size-9 rounded-sm bg-muted/50 flex items-center justify-center mb-0.5">
+                                                    <div className="size-9 rounded-none bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-0.5">
                                                         <Search className="size-4 opacity-40" />
                                                     </div>
                                                 )}
-                                                <span className="text-xs font-bold uppercase tracking-wider text-foreground">{emptyMessage}</span>
-                                                <p className="text-[11px] text-muted-foreground font-mono max-w-sm">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{emptyMessage}</span>
+                                                <p className="text-[11px] text-neutral-500 font-mono max-w-sm">
                                                     Tidak ada data yang cocok dengan kriteria pencarian atau filter yang dipilih.
                                                 </p>
                                             </div>
@@ -433,10 +483,10 @@ export function IndexPage<T extends { id: number | string }>({
                                     sortedData.map((item) => (
                                         <TableRow
                                             key={item.id}
-                                            className="border-b border-border/50 hover:bg-muted/30 transition-colors h-9"
+                                            className="border-b border-neutral-100 dark:border-neutral-900 hover:bg-neutral-50/70 dark:hover:bg-neutral-900/50 transition-colors h-9"
                                         >
                                             {columns.map((column) => (
-                                                <TableCell key={column.key} className={cn("px-3 py-2 text-xs", column.className)}>
+                                                <TableCell key={column.key} className={cn("px-3 py-1.5 text-xs text-neutral-800 dark:text-neutral-200", column.className)}>
                                                     {column.render
                                                         ? column.render(item)
                                                         : (item as any)[column.key]}
@@ -450,27 +500,27 @@ export function IndexPage<T extends { id: number | string }>({
                     </div>
                 )}
 
-                {/* ─── Card Footer: Pagination ──────────────────────────────────────────── */}
+                {/* 4. Footer Pagination Bar */}
                 {pagination && pagination.total > 0 && (
-                    <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-neutral-200 dark:border-neutral-800 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
-                        {/* Left: 0 row(s) */}
+                    <div className="p-3.5 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
+                        {/* Left: Summary */}
                         <div>
-                            {pagination.total} row(s)
+                            Menampilkan <span className="font-semibold text-neutral-900 dark:text-neutral-100">{fromCount}</span> - <span className="font-semibold text-neutral-900 dark:text-neutral-100">{toCount}</span> dari <span className="font-semibold text-neutral-900 dark:text-neutral-100">{totalCount}</span> data
                         </div>
 
-                        {/* Right: Rows per page [ 10 ˅ ]   Page 1 of X   << < > >> */}
-                        <div className="flex items-center gap-4 self-end sm:self-center">
-                            <div className="flex items-center gap-2">
-                                <span>Rows per page</span>
+                        {/* Right: Controls */}
+                        <div className="flex items-center gap-3 self-end sm:self-center">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs">Baris:</span>
                                 {onPerPageChange ? (
                                     <Select
                                         value={pagination.per_page.toString()}
                                         onValueChange={(val) => val && onPerPageChange(parseInt(val))}
                                     >
-                                        <SelectTrigger className="h-8 w-20 text-xs font-mono rounded-none border border-neutral-200 bg-white">
+                                        <SelectTrigger className="h-8 w-18 text-xs font-mono rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none">
                                             <SelectValue placeholder="10" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="rounded-none border-neutral-200 dark:border-neutral-800 shadow-none">
                                             <SelectItem value="10">10</SelectItem>
                                             <SelectItem value="25">25</SelectItem>
                                             <SelectItem value="50">50</SelectItem>
@@ -480,54 +530,54 @@ export function IndexPage<T extends { id: number | string }>({
                                         </SelectContent>
                                     </Select>
                                 ) : (
-                                    <span className="font-semibold text-neutral-900">{pagination.per_page}</span>
+                                    <span className="font-semibold text-neutral-900 dark:text-neutral-100 font-mono text-xs">{pagination.per_page}</span>
                                 )}
                             </div>
 
-                            <div className="whitespace-nowrap">
-                                Page {pagination.total === 0 ? 0 : pagination.current_page} of {pagination.total === 0 ? 0 : pagination.last_page}
+                            <div className="whitespace-nowrap font-mono text-xs text-neutral-500 dark:text-neutral-400">
+                                Hal {pagination.total === 0 ? 0 : pagination.current_page} / {pagination.total === 0 ? 0 : pagination.last_page}
                             </div>
 
                             <div className="flex items-center gap-1">
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
-                                    title="First page"
+                                    className="size-8 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="Halaman pertama"
                                     onClick={() => onPageChange?.(1)}
                                     disabled={pagination.current_page <= 1}
                                 >
-                                    <ChevronsLeft className="size-4" />
+                                    <ChevronsLeft className="size-3.5" />
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
-                                    title="Previous page"
+                                    className="size-8 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="Halaman sebelumnya"
                                     onClick={() => onPageChange?.(pagination.current_page - 1)}
                                     disabled={pagination.current_page <= 1}
                                 >
-                                    <ChevronLeft className="size-4" />
+                                    <ChevronLeft className="size-3.5" />
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
-                                    title="Next page"
+                                    className="size-8 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="Halaman berikutnya"
                                     onClick={() => onPageChange?.(pagination.current_page + 1)}
                                     disabled={pagination.current_page >= pagination.last_page || pagination.total === 0}
                                 >
-                                    <ChevronRight className="size-4" />
+                                    <ChevronRight className="size-3.5" />
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="size-8 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
-                                    title="Last page"
+                                    className="size-8 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none p-0 shadow-none"
+                                    title="Halaman terakhir"
                                     onClick={() => onPageChange?.(pagination.last_page)}
                                     disabled={pagination.current_page >= pagination.last_page || pagination.total === 0}
                                 >
-                                    <ChevronsRight className="size-4" />
+                                    <ChevronsRight className="size-3.5" />
                                 </Button>
                             </div>
                         </div>

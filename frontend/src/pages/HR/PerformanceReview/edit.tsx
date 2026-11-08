@@ -1,118 +1,303 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { ArrowLeft, Save, Loader2, Award } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Award,
+    Plus,
+    Trash2,
+    Layers,
+    Search,
+    CheckSquare,
+    Square,
+    Loader2,
+    FileSpreadsheet,
+} from 'lucide-react';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 import api from '@/lib/api';
 
-const REVIEW_STATUSES = [
-    { value: 'draft', label: 'Draft' },
-    { value: 'self_review', label: 'Self Review (Menunggu Pegawai)' },
-    { value: 'manager_review', label: 'Review Atasan (Manager Review)' },
-    { value: 'calibration', label: 'Tahap Kalibrasi' },
-    { value: 'completed', label: 'Selesai (Final)' },
+const MEASUREMENT_TYPES = [
+    { value: 'numeric', label: 'Angka (Numeric)' },
+    { value: 'percentage', label: 'Persentase (%)' },
+    { value: 'rating', label: 'Rating (1 - 5)' },
+    { value: 'yes_no', label: 'Ya / Tidak' },
 ];
+
+interface KpiCategory {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface KpiTemplate {
+    id: number;
+    category_id: number;
+    category_name: string;
+    name: string;
+    code: string;
+    description: string | null;
+    measurement_type: string;
+    unit: string | null;
+    target_min: number | null;
+    target_max: number | null;
+    weight: number;
+    is_active: boolean;
+}
+
+interface ReviewItemForm {
+    temp_id: string;
+    id?: number;
+    template_id?: number | null;
+    category_id: number;
+    category_name?: string;
+    name: string;
+    description?: string;
+    measurement_type: string;
+    unit?: string;
+    target?: number | string;
+    weight: number;
+    actual?: number | null;
+    self_score?: number | null;
+    manager_score?: number | null;
+}
 
 export default function PerformanceReviewEdit() {
     const navigate = useNavigate();
     const { id } = useParams();
     const [loading, setLoading] = useState(false);
     const [fetchLoading, setFetchLoading] = useState(true);
+
     const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
     const [periods, setPeriods] = useState<{ id: number; name: string }[]>([]);
-    const [formData, setFormData] = useState({
-        employee_id: '',
-        period_id: '',
-        status: 'draft',
-        self_score: '',
-        manager_score: '',
-        final_score: '',
-        final_grade: '',
-        employee_notes: '',
-        manager_notes: '',
-        strengths: '',
-        improvements: '',
-        development_plan: '',
-    });
+    const [categories, setCategories] = useState<KpiCategory[]>([]);
+    const [templates, setTemplates] = useState<KpiTemplate[]>([]);
+
+    // Form Main State
+    const [employeeId, setEmployeeId] = useState('');
+    const [periodId, setPeriodId] = useState('');
+    const [status, setStatus] = useState('draft');
+    const [employeeNotes, setEmployeeNotes] = useState('');
+    const [managerNotes, setManagerNotes] = useState('');
+    const [items, setItems] = useState<ReviewItemForm[]>([]);
+
+    // Template Picker Modal State
+    const [isPickerOpen, setIsPickerOpen] = useState(false);
+    const [pickerSearch, setPickerSearch] = useState('');
+    const [pickerCategory, setPickerCategory] = useState<string>('all');
+    const [selectedTemplateIds, setSelectedTemplateIds] = useState<number[]>([]);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchInitialData = async () => {
             try {
-                const [empRes, periodRes, reviewRes] = await Promise.all([
+                const [empRes, periodRes, catRes, tplRes, reviewRes] = await Promise.all([
                     api.get('/employees'),
                     api.get('/performance-periods'),
+                    api.get('/kpi/categories'),
+                    api.get('/kpi/templates'),
                     api.get(`/performance-reviews/${id}`),
                 ]);
 
-                setEmployees((empRes.data?.data || empRes.data || []).map((e: any) => ({
+                const empList = (empRes.data?.data || empRes.data || []).map((e: any) => ({
                     id: e.id,
                     name: `${e.first_name || ''} ${e.last_name || ''} (${e.employee_id || ''})`,
-                })));
-
-                setPeriods((Array.isArray(periodRes.data) ? periodRes.data : []).map((p: any) => ({
+                }));
+                const periodList = (Array.isArray(periodRes.data) ? periodRes.data : []).map((p: any) => ({
                     id: p.id,
                     name: p.name,
-                })));
+                }));
+                const catList = Array.isArray(catRes.data) ? catRes.data : [];
+                const tplList = Array.isArray(tplRes.data) ? tplRes.data : [];
 
-                const d = reviewRes.data;
-                setFormData({
-                    employee_id: String(d.employee_id || ''),
-                    period_id: String(d.period_id || ''),
-                    status: d.status || 'draft',
-                    self_score: d.self_score !== null && d.self_score !== undefined ? String(d.self_score) : '',
-                    manager_score: d.manager_score !== null && d.manager_score !== undefined ? String(d.manager_score) : '',
-                    final_score: d.final_score !== null && d.final_score !== undefined ? String(d.final_score) : '',
-                    final_grade: d.final_grade || '',
-                    employee_notes: d.employee_notes || '',
-                    manager_notes: d.manager_notes || '',
-                    strengths: d.strengths || '',
-                    improvements: d.improvements || '',
-                    development_plan: d.development_plan || '',
-                });
+                setEmployees(empList);
+                setPeriods(periodList);
+                setCategories(catList);
+                setTemplates(tplList);
+
+                const r = reviewRes.data;
+                setEmployeeId(String(r.employee_id || ''));
+                setPeriodId(String(r.period_id || ''));
+                setStatus(r.status || 'draft');
+                setEmployeeNotes(r.employee_notes || '');
+                setManagerNotes(r.manager_notes || '');
+
+                if (Array.isArray(r.items)) {
+                    setItems(r.items.map((item: any) => ({
+                        temp_id: `existing-${item.id}`,
+                        id: item.id,
+                        template_id: item.template_id,
+                        category_id: item.category_id,
+                        category_name: item.category_name,
+                        name: item.name,
+                        description: item.description || '',
+                        measurement_type: item.measurement_type || 'numeric',
+                        unit: item.unit || '',
+                        target: item.target !== null && item.target !== undefined ? item.target : '',
+                        weight: item.weight || 1,
+                        actual: item.actual,
+                        self_score: item.self_score,
+                        manager_score: item.manager_score,
+                    })));
+                }
             } catch (error) {
-                console.error('Error fetching review details:', error);
+                console.error('Error fetching review edit details:', error);
             } finally {
                 setFetchLoading(false);
             }
         };
 
         if (id) {
-            fetchData();
+            fetchInitialData();
         }
     }, [id]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    // Add Blank Custom Item
+    const handleAddCustomItem = () => {
+        const defaultCategory = categories[0]?.id || 1;
+        const newItem: ReviewItemForm = {
+            temp_id: `custom-${Date.now()}-${Math.random()}`,
+            template_id: null,
+            category_id: defaultCategory,
+            name: '',
+            description: '',
+            measurement_type: 'numeric',
+            unit: '',
+            target: '',
+            weight: 10,
+        };
+        setItems(prev => [...prev, newItem]);
     };
+
+    // Open Template Picker Dialog
+    const handleOpenPicker = () => {
+        setSelectedTemplateIds([]);
+        setPickerSearch('');
+        setPickerCategory('all');
+        setIsPickerOpen(true);
+    };
+
+    const toggleSelectTemplate = (tplId: number) => {
+        setSelectedTemplateIds(prev =>
+            prev.includes(tplId) ? prev.filter(item => item !== tplId) : [...prev, tplId]
+        );
+    };
+
+    const handleSelectAllFiltered = () => {
+        const filtered = filteredTemplates.map(t => t.id);
+        const allSelected = filtered.every(item => selectedTemplateIds.includes(item));
+        if (allSelected) {
+            setSelectedTemplateIds(prev => prev.filter(item => !filtered.includes(item)));
+        } else {
+            setSelectedTemplateIds(prev => Array.from(new Set([...prev, ...filtered])));
+        }
+    };
+
+    // Apply Selected Templates to Review Items
+    const handleApplyTemplates = () => {
+        const selected = templates.filter(t => selectedTemplateIds.includes(t.id));
+        const newItems: ReviewItemForm[] = selected.map(tpl => ({
+            temp_id: `tpl-${tpl.id}-${Date.now()}-${Math.random()}`,
+            template_id: tpl.id,
+            category_id: tpl.category_id,
+            category_name: tpl.category_name,
+            name: tpl.name,
+            description: tpl.description || '',
+            measurement_type: tpl.measurement_type || 'numeric',
+            unit: tpl.unit || '',
+            target: tpl.target_min ?? tpl.target_max ?? '',
+            weight: tpl.weight || 10,
+        }));
+
+        setItems(prev => [...prev, ...newItems]);
+        setIsPickerOpen(false);
+    };
+
+    const handleItemChange = (index: number, field: keyof ReviewItemForm, value: any) => {
+        setItems(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], [field]: value };
+            return next;
+        });
+    };
+
+    const handleRemoveItem = (index: number) => {
+        setItems(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const filteredTemplates = useMemo(() => {
+        return templates.filter(t => {
+            const matchSearch =
+                t.name.toLowerCase().includes(pickerSearch.toLowerCase()) ||
+                t.code.toLowerCase().includes(pickerSearch.toLowerCase()) ||
+                (t.description || '').toLowerCase().includes(pickerSearch.toLowerCase());
+            const matchCategory = pickerCategory === 'all' || String(t.category_id) === pickerCategory;
+            return matchSearch && matchCategory;
+        });
+    }, [templates, pickerSearch, pickerCategory]);
+
+    const totalWeight = useMemo(() => {
+        return items.reduce((sum, item) => sum + (Number(item.weight) || 0), 0);
+    }, [items]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!employeeId || !periodId) {
+            alert('Silakan pilih pegawai dan periode penilaian');
+            return;
+        }
+
+        if (items.length === 0) {
+            alert('Harap tambahkan minimal 1 indikator KPI untuk penilaian');
+            return;
+        }
+
+        const hasEmptyName = items.some(item => !item.name.trim());
+        if (hasEmptyName) {
+            alert('Setiap indikator KPI wajib memiliki nama/indikator');
+            return;
+        }
+
         setLoading(true);
 
         const payload = {
-            employee_id: Number(formData.employee_id),
-            period_id: Number(formData.period_id),
-            status: formData.status,
-            self_score: formData.self_score ? Number(formData.self_score) : null,
-            manager_score: formData.manager_score ? Number(formData.manager_score) : null,
-            final_score: formData.final_score ? Number(formData.final_score) : null,
-            final_grade: formData.final_grade || null,
-            employee_notes: formData.employee_notes || null,
-            manager_notes: formData.manager_notes || null,
-            strengths: formData.strengths || null,
-            improvements: formData.improvements || null,
-            development_plan: formData.development_plan || null,
+            employee_id: Number(employeeId),
+            period_id: Number(periodId),
+            status: status,
+            employee_notes: employeeNotes || null,
+            manager_notes: managerNotes || null,
+            items: items.map(item => ({
+                id: item.id || undefined,
+                template_id: item.template_id || null,
+                category_id: Number(item.category_id),
+                name: item.name,
+                description: item.description || null,
+                measurement_type: item.measurement_type,
+                unit: item.unit || null,
+                target: item.target !== '' && item.target !== null && item.target !== undefined ? Number(item.target) : null,
+                actual: item.actual !== undefined ? item.actual : null,
+                weight: Number(item.weight) || 1,
+                self_score: item.self_score !== undefined ? item.self_score : null,
+                manager_score: item.manager_score !== undefined ? item.manager_score : null,
+            })),
         };
 
         try {
             await api.put(`/performance-reviews/${id}`, payload);
-            navigate('/hr/performance-reviews');
-        } catch (error) {
-            console.error('Error updating review:', error);
+            navigate(`/hr/performance-reviews/${id}`);
+        } catch (error: any) {
+            console.error('Error updating performance review:', error);
+            alert(error?.response?.data?.error || 'Gagal memperbarui sesi penilaian kinerja');
         } finally {
             setLoading(false);
         }
@@ -131,237 +316,390 @@ export default function PerformanceReviewEdit() {
 
     return (
         <HrLayout>
-            <div className="w-full max-w-full space-y-4">
-                {/* ─── Satu Kontainer Card Utuh (Single Unified Card Container) ──── */}
-                <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 overflow-hidden shadow-none">
-                    {/* Card Header */}
-                    <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
-                        <div className="flex items-center gap-3">
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => navigate('/hr/performance-reviews')}
-                                className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300"
-                                title="Kembali"
-                            >
-                                <ArrowLeft className="size-4" />
-                            </Button>
-                            <div className="flex items-center gap-2.5">
-                                <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
-                                    <Award className="size-4" />
-                                </div>
-                                <div>
-                                    <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white">
-                                        Edit Penilaian Kinerja
-                                    </h1>
-                                    <p className="text-[11px] text-neutral-500 font-mono">
-                                        Perbarui skor penilaian, evaluasi atasan, dan rencana pengembangan
-                                    </p>
-                                </div>
-                            </div>
+            <FormCard
+                title="Edit Sesi Penilaian Kinerja"
+                subtitle="Sesuaikan konfigurasi indikator KPI, bobot, atau target acuan penilaian"
+                icon={Award}
+                onBack={() => navigate(`/hr/performance-reviews/${id}`)}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Perubahan Penilaian"
+                cancelText="Batal"
+                onCancel={() => navigate(`/hr/performance-reviews/${id}`)}
+            >
+                {/* 1. Header Information */}
+                <FormSection
+                    title="1. Informasi Pegawai & Periode Evaluasi"
+                    description="Identitas pegawai yang dinilai dan siklus periode evaluasi kerja"
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs sm:text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+                                Pegawai yang Dinilai <span className="text-rose-500">*</span>
+                            </label>
+                            <SearchableSelect
+                                options={employees.map(e => ({ value: String(e.id), label: e.name }))}
+                                value={employeeId}
+                                onChange={setEmployeeId}
+                                placeholder="Pilih Pegawai"
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs sm:text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+                                Periode Penilaian <span className="text-rose-500">*</span>
+                            </label>
+                            <SearchableSelect
+                                options={periods.map(p => ({ value: String(p.id), label: p.name }))}
+                                value={periodId}
+                                onChange={setPeriodId}
+                                placeholder="Pilih Periode"
+                            />
                         </div>
                     </div>
+                </FormSection>
 
-                    {/* Form Body */}
-                    <form onSubmit={handleSubmit}>
-                        <div className="p-6 space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="employee_id" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Pegawai <span className="text-rose-500">*</span>
-                                    </label>
-                                    <SearchableSelect
-                                        options={employees.map(e => ({ value: String(e.id), label: e.name }))}
-                                        value={formData.employee_id}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, employee_id: val }))}
-                                        placeholder="Pilih Pegawai"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="period_id" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Periode Penilaian <span className="text-rose-500">*</span>
-                                    </label>
-                                    <SearchableSelect
-                                        options={periods.map(p => ({ value: String(p.id), label: p.name }))}
-                                        value={formData.period_id}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, period_id: val }))}
-                                        placeholder="Pilih Periode"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="status" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Status Review
-                                    </label>
-                                    <SearchableSelect
-                                        options={REVIEW_STATUSES}
-                                        value={formData.status}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
-                                        placeholder="Pilih Status"
-                                    />
-                                </div>
+                {/* 2. Multiple KPI Indicators Section */}
+                <FormSection
+                    title="2. Rincian Indikator Kinerja (KPI Items)"
+                    description="Sesuaikan daftar indikator capaian, bobot tertimbang, dan target acuan"
+                >
+                    <div className="space-y-4">
+                        {/* Action Header & Weights Info Bar */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Button
+                                    type="button"
+                                    onClick={handleOpenPicker}
+                                    size="sm"
+                                    className="h-8 rounded-none bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 text-xs font-semibold gap-1.5 shadow-none"
+                                >
+                                    <Layers className="size-3.5" /> Ambil dari Template KPI
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={handleAddCustomItem}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 rounded-none border-neutral-300 dark:border-neutral-700 text-xs font-semibold gap-1.5 shadow-none"
+                                >
+                                    <Plus className="size-3.5" /> Tambah Indikator Manual
+                                </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="self_score" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Self Score
-                                    </label>
-                                    <Input
-                                        id="self_score"
-                                        name="self_score"
-                                        type="number"
-                                        step="any"
-                                        value={formData.self_score}
-                                        onChange={handleChange}
-                                        placeholder="0-100"
-                                        className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="manager_score" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Manager Score
-                                    </label>
-                                    <Input
-                                        id="manager_score"
-                                        name="manager_score"
-                                        type="number"
-                                        step="any"
-                                        value={formData.manager_score}
-                                        onChange={handleChange}
-                                        placeholder="0-100"
-                                        className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="final_score" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Skor Akhir
-                                    </label>
-                                    <Input
-                                        id="final_score"
-                                        name="final_score"
-                                        type="number"
-                                        step="any"
-                                        value={formData.final_score}
-                                        onChange={handleChange}
-                                        placeholder="0-100"
-                                        className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="final_grade" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Grade / Predikat
-                                    </label>
-                                    <Input
-                                        id="final_grade"
-                                        name="final_grade"
-                                        value={formData.final_grade}
-                                        onChange={handleChange}
-                                        placeholder="A / B / C / Sangat Baik"
-                                        className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="employee_notes" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Komentar / Catatan Pegawai
-                                    </label>
-                                    <Textarea
-                                        id="employee_notes"
-                                        name="employee_notes"
-                                        value={formData.employee_notes}
-                                        onChange={handleChange}
-                                        rows={3}
-                                        placeholder="Refleksi atau tanggapan dari karyawan..."
-                                        className="rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="manager_notes" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Evaluasi Atasan
-                                    </label>
-                                    <Textarea
-                                        id="manager_notes"
-                                        name="manager_notes"
-                                        value={formData.manager_notes}
-                                        onChange={handleChange}
-                                        rows={3}
-                                        placeholder="Catatan penilaian dari penilai/atasan..."
-                                        className="rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="strengths" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Kekuatan (Strengths)
-                                    </label>
-                                    <Textarea
-                                        id="strengths"
-                                        name="strengths"
-                                        value={formData.strengths}
-                                        onChange={handleChange}
-                                        rows={3}
-                                        placeholder="Poin-poin keunggulan..."
-                                        className="rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="improvements" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Area Perbaikan (Improvements)
-                                    </label>
-                                    <Textarea
-                                        id="improvements"
-                                        name="improvements"
-                                        value={formData.improvements}
-                                        onChange={handleChange}
-                                        rows={3}
-                                        placeholder="Hal-hal yang perlu ditingkatkan..."
-                                        className="rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="development_plan" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                        Rencana Pengembangan (IDP)
-                                    </label>
-                                    <Textarea
-                                        id="development_plan"
-                                        name="development_plan"
-                                        value={formData.development_plan}
-                                        onChange={handleChange}
-                                        rows={3}
-                                        placeholder="Pelatihan / program pengembangan..."
-                                        className="rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                                    />
-                                </div>
+                            {/* Weight badge indicator */}
+                            <div className="flex items-center gap-2 text-xs font-mono">
+                                <span className="text-neutral-500">Total Indikator: <strong>{items.length}</strong></span>
+                                <span className="text-neutral-300 dark:text-neutral-700">•</span>
+                                <span className="text-neutral-500">Total Bobot:</span>
+                                <Badge
+                                    variant="outline"
+                                    className={`rounded-none font-bold text-xs ${
+                                        totalWeight === 100
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                            : 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400'
+                                    }`}
+                                >
+                                    {totalWeight}% {totalWeight === 100 ? '✓ Tepat 100%' : '(Disarankan 100%)'}
+                                </Badge>
                             </div>
                         </div>
 
-                        {/* Card Footer: Actions */}
-                        <div className="px-6 py-4 bg-neutral-50/50 dark:bg-neutral-900/50 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-2.5">
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={() => navigate('/hr/performance-reviews')}
-                                className="h-9 px-4 rounded-none border border-neutral-200 bg-white dark:bg-neutral-900 text-xs sm:text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 shadow-none"
-                            >
-                                Batal
-                            </Button>
-                            <Button 
-                                type="submit" 
-                                disabled={loading}
-                                className="h-9 px-5 rounded-none bg-black text-white hover:bg-neutral-800 text-xs sm:text-sm font-semibold gap-1.5 shadow-none"
-                            >
-                                {loading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                                Simpan Perubahan
-                            </Button>
+                        {/* Items Table */}
+                        {items.length === 0 ? (
+                            <div className="border border-dashed border-neutral-300 dark:border-neutral-800 p-8 text-center bg-neutral-50/50 dark:bg-neutral-950/50">
+                                <FileSpreadsheet className="size-8 text-neutral-400 mx-auto mb-2" />
+                                <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+                                    Belum ada indikator KPI yang ditambahkan
+                                </div>
+                                <p className="text-xs text-neutral-500 mt-1 max-w-md mx-auto">
+                                    Klik tombol <span className="font-semibold text-neutral-700 dark:text-neutral-300">"Ambil dari Template KPI"</span> atau <span className="font-semibold text-neutral-700 dark:text-neutral-300">"Tambah Indikator Manual"</span>.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+                                <table className="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr className="bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 font-mono text-[11px] uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                                            <th className="py-2.5 px-3 w-10 text-center">#</th>
+                                            <th className="py-2.5 px-3 w-48">Kategori KPI</th>
+                                            <th className="py-2.5 px-3 min-w-[220px]">Indikator & Deskripsi</th>
+                                            <th className="py-2.5 px-3 w-40">Tipe Pengukuran</th>
+                                            <th className="py-2.5 px-3 w-32">Target</th>
+                                            <th className="py-2.5 px-3 w-28">Satuan</th>
+                                            <th className="py-2.5 px-3 w-24">Bobot (%)</th>
+                                            <th className="py-2.5 px-2 w-12 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                                        {items.map((item, index) => (
+                                            <tr key={item.temp_id} className="hover:bg-neutral-50/70 dark:hover:bg-neutral-900/50">
+                                                <td className="py-2.5 px-3 text-center font-mono text-neutral-400 align-top pt-3">
+                                                    {index + 1}
+                                                </td>
+
+                                                {/* Category */}
+                                                <td className="py-2.5 px-3 align-top">
+                                                    <select
+                                                        value={item.category_id}
+                                                        onChange={(e) => handleItemChange(index, 'category_id', Number(e.target.value))}
+                                                        className="w-full h-8 px-2 text-xs border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 rounded-none focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                                                    >
+                                                        {categories.map(c => (
+                                                            <option key={c.id} value={c.id}>
+                                                                {c.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </td>
+
+                                                {/* Name & Description */}
+                                                <td className="py-2.5 px-3 space-y-1 align-top">
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="Nama Indikator KPI *"
+                                                        value={item.name}
+                                                        onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                                                        className="h-8 rounded-none border border-neutral-200 dark:border-neutral-800 text-xs px-2 bg-white dark:bg-neutral-950 shadow-none font-medium"
+                                                    />
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="Keterangan / cara pengukuran (opsional)"
+                                                        value={item.description || ''}
+                                                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                                                        className="h-7 rounded-none border border-neutral-200 dark:border-neutral-800 text-[11px] px-2 bg-white dark:bg-neutral-950 shadow-none text-neutral-500"
+                                                    />
+                                                </td>
+
+                                                {/* Measurement Type */}
+                                                <td className="py-2.5 px-3 align-top">
+                                                    <select
+                                                        value={item.measurement_type}
+                                                        onChange={(e) => handleItemChange(index, 'measurement_type', e.target.value)}
+                                                        className="w-full h-8 px-2 text-xs border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 rounded-none focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                                                    >
+                                                        {MEASUREMENT_TYPES.map(m => (
+                                                            <option key={m.value} value={m.value}>
+                                                                {m.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </td>
+
+                                                {/* Target */}
+                                                <td className="py-2.5 px-3 align-top">
+                                                    <Input
+                                                        type="number"
+                                                        step="any"
+                                                        placeholder="e.g. 100"
+                                                        value={item.target ?? ''}
+                                                        onChange={(e) => handleItemChange(index, 'target', e.target.value)}
+                                                        className="h-8 rounded-none border border-neutral-200 dark:border-neutral-800 text-xs px-2 bg-white dark:bg-neutral-950 shadow-none font-mono"
+                                                    />
+                                                </td>
+
+                                                {/* Unit */}
+                                                <td className="py-2.5 px-3 align-top">
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="e.g. %, berkas"
+                                                        value={item.unit || ''}
+                                                        onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                                                        className="h-8 rounded-none border border-neutral-200 dark:border-neutral-800 text-xs px-2 bg-white dark:bg-neutral-950 shadow-none"
+                                                    />
+                                                </td>
+
+                                                {/* Weight */}
+                                                <td className="py-2.5 px-3 align-top">
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max="100"
+                                                        value={item.weight}
+                                                        onChange={(e) => handleItemChange(index, 'weight', Number(e.target.value))}
+                                                        className="h-8 rounded-none border border-neutral-200 dark:border-neutral-800 text-xs px-2 bg-white dark:bg-neutral-950 shadow-none font-mono font-bold"
+                                                    />
+                                                </td>
+
+                                                {/* Remove */}
+                                                <td className="py-2.5 px-2 text-center align-top pt-2.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveItem(index)}
+                                                        className="p-1.5 text-neutral-400 hover:text-rose-600 transition-colors"
+                                                        title="Hapus Indikator"
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </FormSection>
+
+                {/* 3. Notes */}
+                <FormSection
+                    title="3. Catatan & Rekomendasi"
+                    description="Catatan pegawai dan arahan atasan terkait pelaksanaan evaluasi"
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                                Catatan Pegawai (Self Notes)
+                            </label>
+                            <Textarea
+                                rows={3}
+                                value={employeeNotes}
+                                onChange={(e) => setEmployeeNotes(e.target.value)}
+                                placeholder="Refleksi atau kendala kerja pegawai..."
+                                className="rounded-none border border-neutral-200 dark:border-neutral-800 text-xs sm:text-sm bg-white dark:bg-neutral-950 shadow-none"
+                            />
                         </div>
-                    </form>
-                </div>
-            </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                                Catatan / Ulasan Atasan
+                            </label>
+                            <Textarea
+                                rows={3}
+                                value={managerNotes}
+                                onChange={(e) => setManagerNotes(e.target.value)}
+                                placeholder="Feedback atau instruksi supervisor..."
+                                className="rounded-none border border-neutral-200 dark:border-neutral-800 text-xs sm:text-sm bg-white dark:bg-neutral-950 shadow-none"
+                            />
+                        </div>
+                    </div>
+                </FormSection>
+            </FormCard>
+
+            {/* Template Picker Dialog */}
+            <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+                <DialogContent className="max-w-3xl rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 shadow-none">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+                            <Layers className="size-4" /> Pilih Template Indikator KPI
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-neutral-500 font-mono">
+                            Pilih satu atau beberapa indikator KPI baku yang sudah disiapkan di master template.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex flex-col sm:flex-row gap-3 py-2">
+                        <div className="relative flex-1">
+                            <Search className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                            <Input
+                                placeholder="Cari nama indikator atau kode..."
+                                value={pickerSearch}
+                                onChange={(e) => setPickerSearch(e.target.value)}
+                                className="h-8 pl-8 rounded-none text-xs border-neutral-200 dark:border-neutral-800 shadow-none"
+                            />
+                        </div>
+                        <select
+                            value={pickerCategory}
+                            onChange={(e) => setPickerCategory(e.target.value)}
+                            className="h-8 px-2 text-xs border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 rounded-none focus:outline-none"
+                        >
+                            <option value="all">Semua Kategori</option>
+                            {categories.map(c => (
+                                <option key={c.id} value={String(c.id)}>
+                                    {c.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="border border-neutral-200 dark:border-neutral-800 max-h-[380px] overflow-y-auto divide-y divide-neutral-200 dark:divide-neutral-800">
+                        <div className="p-2 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-between text-xs font-mono border-b border-neutral-200 dark:border-neutral-800">
+                            <button
+                                type="button"
+                                onClick={handleSelectAllFiltered}
+                                className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 font-semibold hover:underline"
+                            >
+                                <CheckSquare className="size-3.5" /> Pilih Semua di Tampilan ({filteredTemplates.length})
+                            </button>
+                            <span className="text-neutral-500">
+                                {selectedTemplateIds.length} item terpilih
+                            </span>
+                        </div>
+
+                        {filteredTemplates.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-neutral-500 font-mono">
+                                Tidak ada template KPI yang sesuai dengan kriteria pencarian.
+                            </div>
+                        ) : (
+                            filteredTemplates.map(tpl => {
+                                const isSelected = selectedTemplateIds.includes(tpl.id);
+                                return (
+                                    <div
+                                        key={tpl.id}
+                                        onClick={() => toggleSelectTemplate(tpl.id)}
+                                        className={`p-3 flex items-start gap-3 cursor-pointer transition-colors ${
+                                            isSelected
+                                                ? 'bg-neutral-100 dark:bg-neutral-900 font-medium'
+                                                : 'hover:bg-neutral-50 dark:hover:bg-neutral-900/60'
+                                        }`}
+                                    >
+                                        <div className="pt-0.5 text-neutral-700 dark:text-neutral-300">
+                                            {isSelected ? (
+                                                <CheckSquare className="size-4 text-neutral-900 dark:text-white" />
+                                            ) : (
+                                                <Square className="size-4 text-neutral-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-semibold text-neutral-900 dark:text-white">
+                                                    {tpl.name}
+                                                </span>
+                                                <Badge variant="outline" className="text-[10px] rounded-none py-0 px-1 font-mono">
+                                                    {tpl.code}
+                                                </Badge>
+                                                <span className="text-[11px] text-neutral-500 font-mono">
+                                                    • {tpl.category_name}
+                                                </span>
+                                            </div>
+                                            {tpl.description && (
+                                                <p className="text-[11px] text-neutral-500 line-clamp-1 mt-0.5">
+                                                    {tpl.description}
+                                                </p>
+                                            )}
+                                            <div className="flex items-center gap-3 text-[11px] text-neutral-500 font-mono mt-1">
+                                                <span>Tipe: <strong>{tpl.measurement_type}</strong></span>
+                                                <span>Target: <strong>{tpl.target_min ?? tpl.target_max ?? '-'} {tpl.unit}</strong></span>
+                                                <span>Bobot Acuan: <strong>{tpl.weight}%</strong></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0 mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsPickerOpen(false)}
+                            className="rounded-none border-neutral-300 dark:border-neutral-700 text-xs shadow-none"
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            disabled={selectedTemplateIds.length === 0}
+                            onClick={handleApplyTemplates}
+                            className="rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 text-xs font-semibold shadow-none"
+                        >
+                            Gunakan {selectedTemplateIds.length} Indikator Terpilih
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </HrLayout>
     );
 }

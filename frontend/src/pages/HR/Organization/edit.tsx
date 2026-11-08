@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, Building2, Loader2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
 
 export default function OrganizationEdit() {
@@ -109,108 +109,120 @@ export default function OrganizationEdit() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                {/* Header Component */}
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/hr/organizations')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Edit Unit Organisasi</h2>
-                        <p className="text-sm text-muted-foreground">Buat departemen, bagian, atau unit baru</p>
+            <FormCard
+                title={`Edit Unit Organisasi: ${formData.name || 'Unit'}`}
+                subtitle={`Kode: ${formData.code || '-'} • Perbarui data departemen atau divisi`}
+                icon={Building2}
+                onBack={() => navigate('/hr/organizations')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Perubahan"
+                onCancel={() => navigate('/hr/organizations')}
+            >
+                <div className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kode Unit <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="code" 
+                                name="code" 
+                                value={formData.code} 
+                                onChange={handleChange} 
+                                required 
+                                placeholder="Contoh: DIR, HRD, IT" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" 
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nama Unit <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="name" 
+                                name="name" 
+                                value={formData.name} 
+                                onChange={handleChange} 
+                                required 
+                                placeholder="Contoh: Divisi Keuangan" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" 
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label htmlFor="description" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Deskripsi
+                        </Label>
+                        <Textarea 
+                            id="description" 
+                            name="description" 
+                            value={formData.description} 
+                            onChange={handleChange} 
+                            rows={3} 
+                            placeholder="Penjelasan singkat mengenai unit ini..." 
+                            className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" 
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-200 dark:border-neutral-800 pt-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="level" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Tingkat Hierarki (Level)
+                            </Label>
+                            <SearchableSelect
+                                value={formData.level}
+                                onValueChange={(val) => handleSelectChange('level', val)}
+                                placeholder="Pilih Level"
+                                options={[
+                                    { value: "1", label: "Level 1 (Direktorat / Tertinggi)" },
+                                    { value: "2", label: "Level 2 (Divisi / Departemen)" },
+                                    { value: "3", label: "Level 3 (Bagian / Seksi)" },
+                                    { value: "4", label: "Level 4 (Unit Terkecil)" }
+                                ]}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="parent_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Induk Unit (Parent)
+                            </Label>
+                            <SearchableSelect
+                                value={formData.parent_id}
+                                onValueChange={(val) => handleSelectChange('parent_id', val)}
+                                placeholder="Pilih Unit Induk (Opsional)"
+                                options={[{ value: '', label: '-- Tidak Ada Induk (Root) --' }, ...orgUnits]}
+                            />
+                            <p className="text-[11px] text-neutral-500 font-mono mt-1">Pilih unit atasan jika merupakan sub-unit.</p>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="head_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kepala Unit (Head)
+                            </Label>
+                            <SearchableSelect
+                                value={formData.head_id}
+                                onValueChange={(val) => handleSelectChange('head_id', val)}
+                                placeholder="Pilih Kepala Unit"
+                                options={[{ value: '', label: '-- Kosong --' }, ...employees]}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="is_active" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Status Aktif
+                            </Label>
+                            <SearchableSelect
+                                value={formData.is_active}
+                                onValueChange={(val) => handleSelectChange('is_active', val)}
+                                placeholder="Pilih Status"
+                                options={[
+                                    { value: "true", label: "Aktif" },
+                                    { value: "false", label: "Nonaktif" }
+                                ]}
+                            />
+                        </div>
                     </div>
                 </div>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                Informasi Unit
-                            </CardTitle>
-                            <CardDescription>Buat departemen, bagian, atau unit baru</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 gap-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="code">Kode Unit <span className="text-destructive">*</span></Label>
-                                    <Input id="code" name="code" value={formData.code} onChange={handleChange} required placeholder="Contoh: DIR, HRD, IT" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Nama Unit <span className="text-destructive">*</span></Label>
-                                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required placeholder="Contoh: Divisi Keuangan" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Deskripsi</Label>
-                                <Textarea id="description" name="description" value={formData.description} onChange={handleChange} className="resize-none" rows={3} placeholder="Penjelasan singkat mengenai unit ini..." />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6 mt-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="level">Tingkat Hierarki (Level)</Label>
-                                    <SearchableSelect
-                                        value={formData.level}
-                                        onValueChange={(val) => handleSelectChange('level', val)}
-                                        placeholder="Pilih Level"
-                                        options={[
-                                            { value: "1", label: "Level 1 (Direktorat / Tertinggi)" },
-                                            { value: "2", label: "Level 2 (Divisi / Departemen)" },
-                                            { value: "3", label: "Level 3 (Bagian / Seksi)" },
-                                            { value: "4", label: "Level 4 (Unit Terkecil)" }
-                                        ]}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="parent_id">Induk Unit (Parent)</Label>
-                                    <SearchableSelect
-                                        value={formData.parent_id}
-                                        onValueChange={(val) => handleSelectChange('parent_id', val)}
-                                        placeholder="Pilih Unit Induk (Opsional)"
-                                        options={[{ value: '', label: '-- Tidak Ada Induk (Root) --' }, ...orgUnits]}
-                                    />
-                                    <p className="text-[11px] text-muted-foreground mt-1">Isi dengan unit atasan (opsional).</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="head_id">Kepala Unit (Head)</Label>
-                                    <SearchableSelect
-                                        value={formData.head_id}
-                                        onValueChange={(val) => handleSelectChange('head_id', val)}
-                                        placeholder="Pilih Kepala Unit"
-                                        options={[{ value: '', label: '-- Kosong --' }, ...employees]}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="is_active">Status Aktif</Label>
-                                    <SearchableSelect
-                                        value={formData.is_active}
-                                        onValueChange={(val) => handleSelectChange('is_active', val)}
-                                        placeholder="Pilih Status"
-                                        options={[
-                                            { value: "true", label: "Aktif" },
-                                            { value: "false", label: "Nonaktif" }
-                                        ]}
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Form Actions (Sticky Footer) */}
-                    <div className="mt-auto sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" onClick={() => navigate('/hr/organizations')} disabled={loading}>Batal</Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="mr-2 h-4 w-4" />
-                            )}
-                            {loading ? 'Menyimpan...' : 'Simpan'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
-        </HrLayout >
+            </FormCard>
+        </HrLayout>
     );
 }

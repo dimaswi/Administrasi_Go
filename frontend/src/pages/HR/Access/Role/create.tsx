@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import api from '@/lib/api';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 
 export default function RoleCreate() {
     const navigate = useNavigate();
@@ -33,56 +32,47 @@ export default function RoleCreate() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/hr/access/roles')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Tambah Role</h2>
-                        <p className="text-sm text-muted-foreground">Isi formulir di bawah ini untuk menambahkan data baru.</p>
+            <FormCard
+                title="Tambah Role Baru"
+                subtitle="Definisikan kelompok peran dan hak otorisasi pengguna dalam sistem"
+                icon={Shield}
+                onBack={() => navigate('/hr/access/roles')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Role"
+                onCancel={() => navigate('/hr/access/roles')}
+            >
+                <FormSection title="1. Identitas Role" description="Nama pengenal unik dan keterangan tujuan peran">
+                    <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nama Role <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input
+                                id="name"
+                                required
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Contoh: hr_manager, staff, admin"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="description" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Deskripsi Peran
+                            </Label>
+                            <Textarea
+                                id="description"
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="Keterangan cakupan dan tanggung jawab hak akses role ini..."
+                                rows={3}
+                                className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
                     </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Informasi Role</CardTitle>
-                            <CardDescription>Isi data role yang akan ditambahkan</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Nama Role</Label>
-                                    <Input
-                                        required
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        placeholder="Misal: admin, hr_manager, staff"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Deskripsi</Label>
-                                    <Textarea
-                                        value={formData.description}
-                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="mt-auto sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button variant="outline" type="button" onClick={() => navigate('/hr/access/roles')}>
-                            Batal
-                        </Button>
-                        <Button type="submit" disabled={loading}>
-                            <Save className="h-4 w-4 mr-2" />
-                            {loading ? 'Menyimpan...' : 'Simpan'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                </FormSection>
+            </FormCard>
         </HrLayout>
     );
 }

@@ -94,14 +94,14 @@ export default function OutgoingLetterIndex() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'draft': return <Badge variant="secondary">Draf</Badge>;
-            case 'pending': return <Badge className="bg-yellow-500 hover:bg-yellow-600">Menunggu</Badge>;
-            case 'partially_signed': return <Badge className="bg-blue-500 hover:bg-blue-600">TTD Sebagian</Badge>;
-            case 'fully_signed': return <Badge className="bg-green-500 hover:bg-green-600">TTD Lengkap</Badge>;
-            case 'approved': return <Badge className="bg-green-500 hover:bg-green-600">Disetujui</Badge>;
-            case 'rejected': return <Badge variant="destructive">Ditolak</Badge>;
-            case 'revision_requested': return <Badge className="bg-orange-500 hover:bg-orange-600">Revisi</Badge>;
-            default: return <Badge variant="outline">{status}</Badge>;
+            case 'draft': return <Badge variant="outline" className="rounded-none border-neutral-300 text-neutral-600 uppercase text-[10px] font-mono">Draf</Badge>;
+            case 'pending': return <Badge variant="outline" className="rounded-none border-amber-500 text-amber-600 bg-amber-50/50 dark:bg-amber-950/20 uppercase text-[10px] font-mono">Menunggu</Badge>;
+            case 'partially_signed': return <Badge variant="outline" className="rounded-none border-blue-500 text-blue-600 bg-blue-50/50 dark:bg-blue-950/20 uppercase text-[10px] font-mono">TTD Sebagian</Badge>;
+            case 'fully_signed': return <Badge variant="outline" className="rounded-none border-emerald-500 text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 uppercase text-[10px] font-mono">TTD Lengkap</Badge>;
+            case 'approved': return <Badge variant="outline" className="rounded-none border-emerald-500 text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 uppercase text-[10px] font-mono">Disetujui</Badge>;
+            case 'rejected': return <Badge variant="outline" className="rounded-none border-rose-500 text-rose-600 bg-rose-50/50 dark:bg-rose-950/20 uppercase text-[10px] font-mono">Ditolak</Badge>;
+            case 'revision_requested': return <Badge variant="outline" className="rounded-none border-orange-500 text-orange-600 bg-orange-50/50 dark:bg-orange-950/20 uppercase text-[10px] font-mono">Revisi</Badge>;
+            default: return <Badge variant="outline" className="rounded-none uppercase text-[10px] font-mono">{status}</Badge>;
         }
     };
 
@@ -110,21 +110,21 @@ export default function OutgoingLetterIndex() {
             label: 'No Surat',
             key: 'letter_number',
             render: (item: OutgoingLetter) => (
-                <div className="font-medium text-blue-600">{item.letter_number || '-'}</div>
+                <div className="font-mono text-xs font-semibold text-neutral-900 dark:text-neutral-100">{item.letter_number || '-'}</div>
             )
         },
         {
             label: 'Tanggal Surat',
             key: 'letter_date',
             render: (item: OutgoingLetter) => (
-                <div>{new Date(item.letter_date).toLocaleDateString('id-ID')}</div>
+                <div className="font-mono text-xs">{new Date(item.letter_date).toLocaleDateString('id-ID')}</div>
             )
         },
         {
             label: 'Perihal',
             key: 'subject',
             render: (item: OutgoingLetter) => (
-                <div className="max-w-[300px] truncate" title={item.subject}>
+                <div className="max-w-[300px] truncate font-medium text-neutral-900 dark:text-neutral-100" title={item.subject}>
                     {item.subject}
                 </div>
             )
@@ -141,25 +141,25 @@ export default function OutgoingLetterIndex() {
             key: 'actions',
             className: 'w-[120px] text-right',
             render: (item: OutgoingLetter) => (
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-1.5">
                     <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 text-blue-500 border-blue-200 hover:bg-blue-50"
+                        className="h-8 w-8 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50"
                         onClick={() => navigate(`/admin/outgoing-letters/${item.id}`)}
                         title="Lihat"
                     >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-3.5 h-3.5" />
                     </Button>
                     {['draft', 'pending', 'revision_requested'].includes(item.status) && hasPermission('outgoing_letter.edit') && (
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 text-indigo-500 border-indigo-200 hover:bg-indigo-50"
+                            className="h-8 w-8 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50"
                             onClick={() => navigate(`/admin/outgoing-letters/${item.id}/edit`)}
                             title="Edit"
                         >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5" />
                         </Button>
                     )}
                 </div>
@@ -177,7 +177,7 @@ export default function OutgoingLetterIndex() {
             <div className="flex flex-col gap-6">
                 <IndexPage
                     headerExtra={
-                        <div className="bg-muted/50 p-1 rounded-lg flex items-center gap-1 border border-border/50">
+                        <div className="bg-neutral-100/60 dark:bg-neutral-900/40 p-0.5 rounded-none flex items-center gap-1 border border-neutral-200 dark:border-neutral-800">
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
@@ -186,14 +186,14 @@ export default function OutgoingLetterIndex() {
                                         key={tab.id}
                                         onClick={() => handleTabChange(tab.id)}
                                         className={`
-                                            inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all
+                                            inline-flex items-center justify-center whitespace-nowrap rounded-none px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all
                                             ${isActive 
-                                                ? 'bg-background text-foreground shadow-sm border border-border/50' 
-                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                ? 'bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white shadow-none border border-neutral-200 dark:border-neutral-800' 
+                                                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
                                             }
                                         `}
                                     >
-                                        <Icon className="h-4 w-4 mr-2" />
+                                        <Icon className="h-3.5 w-3.5 mr-1.5" />
                                         {tab.label}
                                     </button>
                                 );

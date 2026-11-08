@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
-import { ArrowLeft, Save, Loader2, Mail } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Mail } from 'lucide-react';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 import { getApiUrl } from '@/lib/api';
 
 export default function IncomingLetterCreate() {
@@ -31,7 +30,6 @@ export default function IncomingLetterCreate() {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    // Do not set Content-Type, browser will set it with boundary for FormData
                 },
                 body: formData
             });
@@ -52,104 +50,103 @@ export default function IncomingLetterCreate() {
 
     return (
         <AdminLayout>
-            <div className="w-full">
-                {/* Header Component */}
-                <div className="flex items-center gap-2 mb-6">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/admin/incoming-letters')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Catat Surat Masuk</h2>
-                        <p className="text-sm text-muted-foreground">Formulir pendaftaran surat masuk baru.</p>
-                    </div>
-                </div>
-
+            <FormCard
+                title="Catat Surat Masuk"
+                subtitle="Registrasi nomor agenda, pengirim, perihal, dan unggah berkas fisik surat masuk"
+                icon={Mail}
+                onBack={() => navigate('/admin/incoming-letters')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Surat Masuk"
+                onCancel={() => navigate('/admin/incoming-letters')}
+            >
                 {error && (
-                    <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-md text-sm mb-4">
+                    <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-none border border-destructive/20 text-sm mb-4">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Mail className="h-5 w-5 text-primary" />
-                                Data Surat Masuk
-                            </CardTitle>
-                            <CardDescription>
-                                Silahkan isi data surat masuk di bawah ini
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="incoming_number">Nomor Agenda (Masuk)</Label>
-                                <Input id="incoming_number" name="incoming_number" required placeholder="Contoh: 001/AGENDA/2026" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="original_number">Nomor Surat Asli</Label>
-                                <Input id="original_number" name="original_number" required placeholder="Sesuai fisik surat" />
-                            </div>
+                <FormSection title="1. Identitas & Penomoran Surat" description="Nomor agenda penerimaan dan tanggal surat asli">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="incoming_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nomor Agenda (Masuk) <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input id="incoming_number" name="incoming_number" required placeholder="Contoh: 001/AGENDA/2026" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="original_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nomor Surat Asli <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input id="original_number" name="original_number" required placeholder="Nomor tertera pada surat fisik" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                        </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="original_date">Tanggal Surat Asli</Label>
-                                <Input id="original_date" name="original_date" type="date" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="received_date">Tanggal Diterima</Label>
-                                <Input id="received_date" name="received_date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
-                            </div>
-
-                            <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="sender">Pengirim</Label>
-                                <Input id="sender" name="sender" required placeholder="Instansi / Nama Pengirim" />
-                            </div>
-
-                            <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="subject">Perihal / Hal</Label>
-                                <Input id="subject" name="subject" required placeholder="Tentang apa surat ini" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="category">Kategori</Label>
-                                <Input id="category" name="category" placeholder="Contoh: Undangan, Edaran, dll" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="classification">Klasifikasi</Label>
-                                <Input id="classification" name="classification" placeholder="Biasa / Penting / Rahasia" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="attachment_count">Jumlah Lampiran</Label>
-                                <Input id="attachment_count" name="attachment_count" type="number" min="0" defaultValue="0" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="file">File Scan Surat (PDF)</Label>
-                                <Input id="file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png" />
-                                <p className="text-xs text-muted-foreground mt-1">Format PDF/JPG, maks 10MB.</p>
-                            </div>
-
-                            <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="notes">Catatan Tambahan</Label>
-                                <Textarea id="notes" name="notes" placeholder="Catatan opsional..." rows={3} />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Form Actions (Sticky Footer) */}
-                    <div className="sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate('/admin/incoming-letters')} disabled={loading}>Batal</Button>
-                        <Button type="submit" size="sm" className="h-9 px-6" disabled={loading}>
-                            {loading ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="mr-2 h-4 w-4" />
-                            )}
-                            {loading ? 'Menyimpan...' : 'Simpan'}
-                        </Button>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="original_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Tanggal Surat Asli <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input id="original_date" name="original_date" type="date" required className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="received_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Tanggal Diterima <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input id="received_date" name="received_date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
                     </div>
-                </form>
-            </div>
+                </FormSection>
+
+                <FormSection title="2. Isi & Berkas Surat" description="Keterangan pengirim, hal/perihal, dan lampiran dokumen scan">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5 md:col-span-2">
+                            <Label htmlFor="sender" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Instansi / Pengirim <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input id="sender" name="sender" required placeholder="Nama instansi, kementerian, atau perorangan pengirim" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
+
+                        <div className="space-y-1.5 md:col-span-2">
+                            <Label htmlFor="subject" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Perihal / Judul Surat <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input id="subject" name="subject" required placeholder="Perihal atau ringkasan isi surat..." className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="category" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kategori Surat
+                            </Label>
+                            <Input id="category" name="category" placeholder="Contoh: Undangan, Edaran, Pemberitahuan" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="classification" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Klasifikasi Sifat
+                            </Label>
+                            <Input id="classification" name="classification" placeholder="Biasa / Penting / Rahasia / Segera" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="attachment_count" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Jumlah Berkas Lampiran
+                            </Label>
+                            <Input id="attachment_count" name="attachment_count" type="number" min="0" defaultValue="0" required className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="file" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Unggah File Scan (PDF / Gambar)
+                            </Label>
+                            <Input id="file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png" className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-xs file:mr-3 file:py-1 file:px-2 file:rounded-none file:border-0 file:bg-neutral-900 file:text-white" />
+                        </div>
+
+                        <div className="space-y-1.5 md:col-span-2">
+                            <Label htmlFor="notes" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Catatan Tambahan (Opsional)
+                            </Label>
+                            <Textarea id="notes" name="notes" placeholder="Catatan khusus atau disposisi awal..." rows={2} className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" />
+                        </div>
+                    </div>
+                </FormSection>
+            </FormCard>
         </AdminLayout>
     );
 }

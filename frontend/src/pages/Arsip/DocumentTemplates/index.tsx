@@ -185,12 +185,12 @@ export default function DocumentTemplatesIndex() {
                 <div className="max-w-[300px] md:max-w-[500px] lg:max-w-[700px] whitespace-normal text-wrap">
                     <Link 
                         to={`/arsip/document-templates/${template.id}`}
-                        className="font-medium hover:text-primary hover:underline block truncate"
+                        className="font-bold text-sm text-neutral-900 dark:text-neutral-100 hover:underline block truncate"
                     >
                         {template.name}
                     </Link>
                     {template.description && (
-                        <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        <div className="text-xs text-neutral-500 font-mono line-clamp-1 mt-0.5">
                             {template.description}
                         </div>
                     )}
@@ -201,7 +201,7 @@ export default function DocumentTemplatesIndex() {
             key: 'code',
             label: 'Kode',
             render: (template: Template) => (
-                <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">
+                <code className="text-xs bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-1.5 py-0.5 rounded-none font-mono font-semibold">
                     {template.code}
                 </code>
             ),
@@ -211,9 +211,9 @@ export default function DocumentTemplatesIndex() {
             label: 'Kategori',
             render: (template: Template) => (
                 template.category ? (
-                    <Badge variant="outline">{template.category}</Badge>
+                    <Badge variant="outline" className="rounded-none text-[10px] font-mono uppercase">{template.category}</Badge>
                 ) : (
-                    <span className="text-muted-foreground">-</span>
+                    <span className="text-neutral-400 font-mono text-xs">-</span>
                 )
             ),
         },
@@ -221,7 +221,7 @@ export default function DocumentTemplatesIndex() {
             key: 'is_active',
             label: 'Status',
             render: (template: Template) => (
-                <Badge variant={template.is_active ? 'default' : 'secondary'}>
+                <Badge variant={template.is_active ? 'outline' : 'secondary'} className={`rounded-none text-[10px] font-mono uppercase ${template.is_active ? 'border-emerald-500 text-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20' : ''}`}>
                     {template.is_active ? 'Aktif' : 'Non-aktif'}
                 </Badge>
             ),
@@ -230,58 +230,56 @@ export default function DocumentTemplatesIndex() {
             key: 'created_at',
             label: 'Dibuat',
             render: (template: Template) => (
-                <div>
-                    <div className="text-sm">
-                        {new Date(template.created_at).toLocaleDateString('id-ID')}
-                    </div>
+                <div className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                    {new Date(template.created_at).toLocaleDateString('id-ID')}
                 </div>
             ),
         },
         {
             key: 'actions',
-            label: '',
-            className: 'w-[180px]',
+            label: 'Aksi',
+            className: 'w-[140px] text-right',
             render: (template: Template) => (
-                <div className="flex justify-end gap-1">
+                <div className="flex items-center justify-end gap-1">
                     <Link to={`/arsip/document-templates/${template.id}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Lihat">
-                            <Eye className="h-4 w-4" />
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50" title="Lihat">
+                            <Eye className="h-3.5 w-3.5" />
                         </Button>
                     </Link>
                     {hasPermission('document_template.edit') && (
                         <>
                             <Link to={`/arsip/document-templates/${template.id}/edit`}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit">
-                                    <Edit className="h-4 w-4" />
+                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50" title="Edit">
+                                    <Edit className="h-3.5 w-3.5" />
                                 </Button>
                             </Link>
                             <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-8 w-8 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50"
                                 title={template.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                                 onClick={(e) => handleToggleActive(template.id, e)}
                             >
                                 {template.is_active ? (
-                                    <ToggleRight className="h-4 w-4 text-green-600" />
+                                    <ToggleRight className="h-3.5 w-3.5 text-emerald-600" />
                                 ) : (
-                                    <ToggleLeft className="h-4 w-4" />
+                                    <ToggleLeft className="h-3.5 w-3.5 text-neutral-400" />
                                 )}
                             </Button>
                         </>
                     )}
                     {hasPermission('document_template.delete') && (
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
                             title="Hapus"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleDelete(template.id);
                             }}
                         >
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                            <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                     )}
                 </div>

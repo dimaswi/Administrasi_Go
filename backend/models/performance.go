@@ -43,27 +43,32 @@ type PerformanceReview struct {
 	DevelopmentPlan   *string    `db:"development_plan" json:"development_plan"`
 	SelfReviewedAt    *time.Time `db:"self_reviewed_at" json:"self_reviewed_at"`
 	ManagerReviewedAt *time.Time `db:"manager_reviewed_at" json:"manager_reviewed_at"`
-	CompletedAt       *time.Time `db:"completed_at" json:"completed_at"`
-	CreatedAt         time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt         time.Time  `db:"updated_at" json:"updated_at"`
+	CompletedAt       *time.Time              `db:"completed_at" json:"completed_at"`
+	CreatedAt         time.Time               `db:"created_at" json:"created_at"`
+	UpdatedAt         time.Time               `db:"updated_at" json:"updated_at"`
+	Items             []PerformanceReviewItem `db:"-" json:"items,omitempty"`
 }
 
 type PerformanceReviewItem struct {
-	ID                 int      `db:"id" json:"id"`
-	ReviewID           int      `db:"review_id" json:"review_id"`
-	KpiTemplateID      int      `db:"kpi_template_id" json:"kpi_template_id"`
-	KpiTemplateName    string   `db:"kpi_template_name" json:"kpi_template_name"`
-	KpiCategoryName    string   `db:"kpi_category_name" json:"kpi_category_name"`
-	TargetMin          *float64 `db:"target_min" json:"target_min"`
-	TargetMax          *float64 `db:"target_max" json:"target_max"`
-	Unit               *string  `db:"unit" json:"unit"`
-	Weight             int      `db:"weight" json:"weight"`
-	ActualValue        *float64 `db:"actual_value" json:"actual_value"`
-	SelfScore          *float64 `db:"self_score" json:"self_score"`
-	ManagerScore       *float64 `db:"manager_score" json:"manager_score"`
-	FinalScore         *float64 `db:"final_score" json:"final_score"`
-	SelfNotes          *string  `db:"self_notes" json:"self_notes"`
-	ManagerNotes       *string  `db:"manager_notes" json:"manager_notes"`
+	ID              int       `db:"id" json:"id"`
+	ReviewID        int       `db:"review_id" json:"review_id"`
+	TemplateID      *int      `db:"template_id" json:"template_id"`
+	CategoryID      int       `db:"category_id" json:"category_id"`
+	CategoryName    string    `db:"category_name" json:"category_name"`
+	Name            string    `db:"name" json:"name"`
+	Description     *string   `db:"description" json:"description"`
+	MeasurementType string    `db:"measurement_type" json:"measurement_type"`
+	Unit            *string   `db:"unit" json:"unit"`
+	Target          *float64  `db:"target" json:"target"`
+	Actual          *float64  `db:"actual" json:"actual"`
+	Weight          int       `db:"weight" json:"weight"`
+	SelfScore       *float64  `db:"self_score" json:"self_score"`
+	ManagerScore    *float64  `db:"manager_score" json:"manager_score"`
+	FinalScore      *float64  `db:"final_score" json:"final_score"`
+	SelfComment     *string   `db:"self_comment" json:"self_comment"`
+	ManagerComment  *string   `db:"manager_comment" json:"manager_comment"`
+	CreatedAt       time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type Feedback360Session struct {

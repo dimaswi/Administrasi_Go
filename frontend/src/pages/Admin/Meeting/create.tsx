@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Loader2, Search, Users as UsersIcon, CheckSquare, XSquare } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Save, Loader2, Search, Users as UsersIcon, CheckSquare, XSquare, CalendarClock } from 'lucide-react';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Badge } from '@/components/ui/badge';
@@ -165,145 +165,191 @@ export default function MeetingCreate() {
 
     return (
         <AdminLayout>
-            <div className="w-full">
-                <div className="flex items-center gap-2 mb-6">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/admin/meetings')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Buat Rapat Baru</h2>
-                        <p className="text-sm text-muted-foreground">Isi formulir untuk menjadwalkan rapat.</p>
-                    </div>
-                </div>
+            <FormCard
+                title="Buat Rapat Baru"
+                subtitle="Jadwalkan rapat dinas, tentukan ruangan, dan undang peserta rapat"
+                icon={CalendarClock}
+                onBack={() => navigate('/admin/meetings')}
+                onSubmit={handleSubmit}
+                loading={submitting}
+                submitText="Simpan Rapat"
+                onCancel={() => navigate('/admin/meetings')}
+            >
+                <div className="space-y-6">
+                    {/* 1. Informasi Umum */}
+                    <FormSection title="1. Informasi Umum Rapat" description="Detail dasar terkait agenda rapat">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="meeting_number" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Nomor Rapat <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="meeting_number" 
+                                    name="meeting_number" 
+                                    required 
+                                    value={formData.meeting_number} 
+                                    onChange={handleChange} 
+                                    placeholder="Contoh: 001/RAPAT/2026" 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="title" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Judul Rapat <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="title" 
+                                    name="title" 
+                                    required 
+                                    value={formData.title} 
+                                    onChange={handleChange} 
+                                    placeholder="Contoh: Rapat Koordinasi Bulanan" 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                                />
+                            </div>
+                        </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="space-y-4">
-                        {/* Informasi Umum */}
-                        <Card className="shadow-none">
-                            <CardHeader>
-                                <CardTitle>Informasi Umum</CardTitle>
-                                <CardDescription>Detail dasar terkait rapat yang akan diadakan</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="meeting_number">Nomor Rapat *</Label>
-                                        <Input id="meeting_number" name="meeting_number" required value={formData.meeting_number} onChange={handleChange} placeholder="Contoh: 001/RAPAT/2024" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="title">Judul Rapat *</Label>
-                                        <Input id="title" name="title" required value={formData.title} onChange={handleChange} placeholder="Contoh: Rapat Koordinasi Bulanan" />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="agenda">Agenda Utama</Label>
-                                    <Textarea id="agenda" name="agenda" value={formData.agenda} onChange={handleChange} placeholder="Tuliskan agenda rapat..." rows={3} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="notes">Catatan</Label>
-                                    <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} placeholder="Catatan tambahan (opsional)..." rows={2} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="status">Status Rapat</Label>
-                                        <SearchableSelect
-                                            value={formData.status}
-                                            onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
-                                            placeholder="Pilih status"
-                                            options={[
-                                                { value: "draft", label: "Draft" },
-                                                { value: "scheduled", label: "Terjadwal" },
-                                            ]}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="agenda" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Agenda Utama
+                            </Label>
+                            <Textarea 
+                                id="agenda" 
+                                name="agenda" 
+                                value={formData.agenda} 
+                                onChange={handleChange} 
+                                placeholder="Tuliskan pokok bahasan rapat..." 
+                                rows={3} 
+                                className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
 
-                        {/* Waktu & Lokasi */}
-                        <Card className="shadow-none">
-                            <CardHeader>
-                                <CardTitle>Waktu & Lokasi</CardTitle>
-                                <CardDescription>Penjadwalan dan pemilihan ruangan rapat</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="meeting_date">Tanggal *</Label>
-                                        <Input id="meeting_date" name="meeting_date" type="date" required value={formData.meeting_date} onChange={handleChange} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="start_time">Waktu Mulai *</Label>
-                                        <Input id="start_time" name="start_time" type="time" required value={formData.start_time} onChange={handleChange} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="end_time">Waktu Selesai *</Label>
-                                        <Input id="end_time" name="end_time" type="time" required value={formData.end_time} onChange={handleChange} />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Ruangan</Label>
-                                        <SearchableSelect
-                                            value={formData.room_id}
-                                            onValueChange={(val) => setFormData(prev => ({ ...prev, room_id: val }))}
-                                            placeholder="Pilih ruangan"
-                                            options={rooms.length > 0 ? rooms : [{ value: "", label: "Loading..." }]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Unit Organisasi</Label>
-                                        <SearchableSelect
-                                            value={formData.organization_unit_id}
-                                            onValueChange={(val) => setFormData(prev => ({ ...prev, organization_unit_id: val }))}
-                                            placeholder="Pilih unit (opsional)"
-                                            options={[
-                                                { value: '', label: 'Tidak ada unit khusus' },
-                                                ...orgUnits.map(u => ({ value: u.id.toString(), label: u.name }))
-                                            ]}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="notes" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Catatan Tambahan
+                            </Label>
+                            <Textarea 
+                                id="notes" 
+                                name="notes" 
+                                value={formData.notes} 
+                                onChange={handleChange} 
+                                placeholder="Catatan tambahan bagi peserta rapat (opsional)..." 
+                                rows={2} 
+                                className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
 
-                        {/* Pemilihan Peserta */}
-                        <Card className="shadow-none">
-                            <CardHeader>
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <UsersIcon className="h-5 w-5" />
-                                            Pilih Peserta Rapat
-                                        </CardTitle>
-                                        <CardDescription>
-                                            {selectedParticipants.length} peserta dipilih
-                                        </CardDescription>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button type="button" variant="outline" size="sm" onClick={handleSelectAll}>
-                                            <CheckSquare className="h-4 w-4 mr-2" />
-                                            Pilih Semua
-                                        </Button>
-                                        <Button type="button" variant="outline" size="sm" onClick={handleDeselectAll}>
-                                            <XSquare className="h-4 w-4 mr-2" />
-                                            Batal Semua
-                                        </Button>
-                                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="status" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Status Rapat
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.status}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
+                                    placeholder="Pilih status"
+                                    options={[
+                                        { value: "draft", label: "Draft" },
+                                        { value: "scheduled", label: "Terjadwal" },
+                                    ]}
+                                />
+                            </div>
+                        </div>
+                    </FormSection>
+
+                    {/* 2. Waktu & Lokasi */}
+                    <FormSection title="2. Waktu & Lokasi Pelaksanaan" description="Penjadwalan tanggal, jam, dan lokasi ruangan">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="meeting_date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Tanggal <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="meeting_date" 
+                                    name="meeting_date" 
+                                    type="date" 
+                                    required 
+                                    value={formData.meeting_date} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="start_time" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Waktu Mulai <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="start_time" 
+                                    name="start_time" 
+                                    type="time" 
+                                    required 
+                                    value={formData.start_time} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="end_time" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Waktu Selesai <span className="text-rose-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="end_time" 
+                                    name="end_time" 
+                                    type="time" 
+                                    required 
+                                    value={formData.end_time} 
+                                    onChange={handleChange} 
+                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="room_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Ruangan Rapat
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.room_id}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, room_id: val }))}
+                                    placeholder="Pilih Ruangan"
+                                    options={rooms.length > 0 ? rooms : [{ value: "", label: "Loading..." }]}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="organization_unit_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                    Unit Penyelenggara
+                                </Label>
+                                <SearchableSelect
+                                    value={formData.organization_unit_id}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, organization_unit_id: val }))}
+                                    placeholder="Pilih Unit (opsional)"
+                                    options={[
+                                        { value: '', label: 'Tidak ada unit khusus' },
+                                        ...orgUnits.map(u => ({ value: u.id.toString(), label: u.name }))
+                                    ]}
+                                />
+                            </div>
+                        </div>
+                    </FormSection>
+
+                    {/* 3. Peserta Rapat */}
+                    <FormSection 
+                        title={`3. Peserta Rapat (${selectedParticipants.length} Dipilih)`} 
+                        description="Pilih pegawai yang diundang dan tentukan peran dalam rapat"
+                    >
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-400" />
+                                    <Input
+                                        placeholder="Cari nama atau NIP..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        className="pl-8 h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                                    />
                                 </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {/* Filter */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Cari nama atau NIP..."
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                            className="pl-10"
-                                        />
-                                    </div>
+                                <div className="w-full sm:w-60">
                                     <SearchableSelect
                                         value={filterOrgUnit}
                                         onValueChange={setFilterOrgUnit}
@@ -314,90 +360,110 @@ export default function MeetingCreate() {
                                         ]}
                                     />
                                 </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSelectAll}
+                                        className="h-9 rounded-none text-xs border-neutral-200 dark:border-neutral-800 shadow-none"
+                                        title="Pilih semua yang tampil"
+                                    >
+                                        <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                                        Semua
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleDeselectAll}
+                                        className="h-9 rounded-none text-xs border-neutral-200 dark:border-neutral-800 shadow-none text-rose-600"
+                                        title="Batal pilih semua"
+                                    >
+                                        <XSquare className="h-3.5 w-3.5 mr-1" />
+                                        Reset
+                                    </Button>
+                                </div>
+                            </div>
 
-                                {/* User List */}
-                                <div className="border rounded-lg">
-                                    <div className="max-h-80 overflow-y-auto">
-                                        {filteredUsers.length === 0 ? (
-                                            <div className="text-center py-8 text-muted-foreground text-sm">
-                                                Tidak ada pengguna ditemukan
+                            {/* User List */}
+                            <div className="border border-neutral-200 dark:border-neutral-800 rounded-none overflow-hidden max-h-72 overflow-y-auto divide-y divide-neutral-100 dark:divide-neutral-800 bg-white dark:bg-neutral-950">
+                                {filteredUsers.length === 0 ? (
+                                    <div className="p-4 text-center text-xs text-neutral-500 font-mono">
+                                        Tidak ada pengguna yang cocok dengan kriteria pencarian.
+                                    </div>
+                                ) : (
+                                    filteredUsers.map(user => {
+                                        const sel = isSelected(user.id);
+                                        const role = getRole(user.id);
+                                        return (
+                                            <div
+                                                key={user.id}
+                                                className={`flex items-center justify-between p-2.5 px-3 transition-colors ${
+                                                    sel ? 'bg-neutral-50/80 dark:bg-neutral-900/60' : 'hover:bg-neutral-50/50 dark:hover:bg-neutral-900/30'
+                                                }`}
+                                                onClick={() => handleToggle(user.id, !sel)}
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <Checkbox
+                                                        checked={sel}
+                                                        onCheckedChange={(checked) => handleToggle(user.id, checked as boolean)}
+                                                        className="rounded-none pointer-events-none"
+                                                        tabIndex={-1}
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-semibold text-neutral-900 dark:text-white truncate">{user.name}</p>
+                                                        <p className="text-[11px] text-neutral-500 font-mono truncate">
+                                                            {user.nip ? `NIP: ${user.nip}` : ''}
+                                                            {user.organization_unit ? ` • ${user.organization_unit.name}` : ''}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {sel && (
+                                                    <div className="flex items-center gap-1 shrink-0 ml-2" onClick={e => e.stopPropagation()}>
+                                                        {ROLE_OPTIONS.map(r => (
+                                                            <Button
+                                                                key={r.value}
+                                                                type="button"
+                                                                size="sm"
+                                                                variant={role === r.value ? 'default' : 'outline'}
+                                                                onClick={() => handleRoleChange(user.id, r.value)}
+                                                                className="h-6 text-[10px] px-2 rounded-none shadow-none uppercase font-bold"
+                                                            >
+                                                                {r.label}
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <div className="divide-y">
-                                                {filteredUsers.map(user => {
-                                                    const sel = isSelected(user.id);
-                                                    const role = getRole(user.id);
-                                                    return (
-                                                        <div
-                                                            key={user.id}
-                                                            className={`flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/40 transition-colors ${sel ? 'bg-muted/25' : ''}`}
-                                                            onClick={() => handleToggle(user.id, !sel)}
-                                                        >
-                                                            <Checkbox
-                                                                checked={sel}
-                                                                onCheckedChange={(checked) => handleToggle(user.id, checked as boolean)}
-                                                                className="mt-1 pointer-events-none"
-                                                                tabIndex={-1}
-                                                            />
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-medium text-sm">{user.name}</p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {user.nip} • {user.organization_unit?.name || 'Tanpa Unit'}
-                                                                </p>
-                                                                {sel && (
-                                                                    <div className="flex flex-wrap gap-1.5 mt-2" onClick={e => e.stopPropagation()}>
-                                                                        {ROLE_OPTIONS.map(r => (
-                                                                            <Button
-                                                                                key={r.value}
-                                                                                type="button"
-                                                                                size="sm"
-                                                                                variant={role === r.value ? 'default' : 'outline'}
-                                                                                onClick={() => handleRoleChange(user.id, r.value)}
-                                                                                className="h-6 text-xs px-2"
-                                                                            >
-                                                                                {r.label}
-                                                                            </Button>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* Selected preview */}
+                            {selectedParticipants.length > 0 && (
+                                <div className="border border-neutral-200 dark:border-neutral-800 p-3 bg-neutral-50/50 dark:bg-neutral-900/40 space-y-1.5">
+                                    <span className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                        Ringkasan Peserta Terpilih ({selectedParticipants.length})
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedParticipants.map(p => {
+                                            const u = users.find(u => u.id === p.user_id);
+                                            return (
+                                                <span key={p.user_id} className="font-mono text-xs px-2 py-0.5 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200">
+                                                    {u?.name} ({ROLE_OPTIONS.find(r => r.value === p.role)?.label})
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                 </div>
-
-                                {/* Selected preview */}
-                                {selectedParticipants.length > 0 && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground mb-2 font-medium">Peserta Terpilih:</p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {selectedParticipants.map(p => {
-                                                const u = users.find(u => u.id === p.user_id);
-                                                return (
-                                                    <Badge key={p.user_id} variant="secondary" className="text-xs">
-                                                        {u?.name} ({ROLE_OPTIONS.find(r => r.value === p.role)?.label})
-                                                    </Badge>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <div className="sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate('/admin/meetings')} disabled={submitting}>Batal</Button>
-                        <Button type="submit" size="sm" className="h-9 px-6" disabled={submitting}>
-                            {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                            {submitting ? 'Menyimpan...' : 'Simpan'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                            )}
+                        </div>
+                    </FormSection>
+                </div>
+            </FormCard>
         </AdminLayout>
     );
 }

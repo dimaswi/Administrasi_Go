@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, ShieldCheck } from 'lucide-react';
@@ -112,82 +111,113 @@ export default function RolePermissions() {
 
     return (
         <HrLayout>
-            <div className="w-full space-y-6 pb-10">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
+            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col font-sans mb-12">
+                {/* Header Toolbar */}
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => navigate('/hr/access/roles')} 
+                            className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 shrink-0"
+                            title="Kembali"
+                        >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <div>
-                            <h2 className="text-lg font-semibold leading-tight flex items-center gap-2">
-                                <ShieldCheck className="h-5 w-5 text-amber-500" />
+                        <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+                            <ShieldCheck className="size-4" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                            <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
                                 Atur Hak Akses: {role?.name || '...'}
-                            </h2>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                                Tentukan fitur apa saja yang dapat diakses oleh role ini
+                            </h1>
+                            <p className="text-[11px] text-neutral-500 font-mono">
+                                {assignedIds.size} permission aktif • Tentukan modul & aksi yang diizinkan untuk role ini
                             </p>
                         </div>
                     </div>
-                    <Button onClick={handleSave} disabled={loading || saving} className="gap-2">
-                        <Save className="h-4 w-4" />
-                        {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                    <Button 
+                        onClick={handleSave} 
+                        disabled={loading || saving} 
+                        className="h-8 px-4 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 shadow-none text-xs font-semibold gap-1.5"
+                    >
+                        <Save className="h-3.5 w-3.5" />
+                        {saving ? 'Menyimpan...' : 'Simpan Hak Akses'}
                     </Button>
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center h-40">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <div className="flex items-center justify-center h-48 bg-white dark:bg-neutral-950">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-900 dark:border-white border-t-transparent" />
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {Object.entries(groupedPermissions).map(([module, perms]) => {
-                            const isAllSelected = perms.every(p => assignedIds.has(p.id));
+                    <div className="p-4 sm:p-6 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {Object.entries(groupedPermissions).map(([module, perms]) => {
+                                const isAllSelected = perms.every(p => assignedIds.has(p.id));
 
-                            return (
-                                <Card key={module} className="shadow-sm">
-                                    <CardHeader className="p-4 pb-2 border-b">
-                                        <div className="flex items-center justify-between">
+                                return (
+                                    <div key={module} className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+                                        <div className="px-3.5 py-2.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex items-center justify-between">
                                             <div>
-                                                <CardTitle className="text-base font-semibold capitalize">{module.replace(/_/g, ' ')}</CardTitle>
-                                                <CardDescription className="text-xs">{perms.length} hak akses</CardDescription>
+                                                <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">{module.replace(/_/g, ' ')}</h4>
+                                                <p className="text-[11px] text-neutral-500 font-mono">{perms.length} hak akses</p>
                                             </div>
                                             <Switch 
                                                 checked={isAllSelected}
                                                 onCheckedChange={(checked) => handleSelectAllModule(module, checked)}
-                                                className="data-[state=checked]:bg-amber-500"
+                                                className="data-[state=checked]:bg-neutral-900 dark:data-[state=checked]:bg-white"
                                             />
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="p-0">
-                                        <div className="flex flex-col divide-y">
+                                        <div className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
                                             {perms.map(perm => (
                                                 <div 
                                                     key={perm.id} 
-                                                    className="flex items-start justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                                                    className="flex items-start justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-900/60 transition-colors cursor-pointer"
                                                     onClick={() => handleToggle(perm.id)}
                                                 >
-                                                    <div className="flex-1 pr-4">
-                                                        <p className="text-sm font-medium">{perm.display_name}</p>
+                                                    <div className="flex-1 pr-3">
+                                                        <p className="text-xs font-semibold text-neutral-900 dark:text-white leading-tight">{perm.display_name}</p>
                                                         {perm.description && (
-                                                            <p className="text-xs text-muted-foreground mt-0.5">{perm.description}</p>
+                                                            <p className="text-[11px] text-neutral-500 mt-0.5 leading-snug">{perm.description}</p>
                                                         )}
-                                                        <p className="text-[10px] font-mono text-muted-foreground/60 mt-1">{perm.name}</p>
+                                                        <p className="text-[10px] font-mono text-neutral-400 mt-1">{perm.name}</p>
                                                     </div>
                                                     <Switch 
                                                         checked={assignedIds.has(perm.id)}
                                                         onCheckedChange={() => handleToggle(perm.id)}
                                                         onClick={(e) => e.stopPropagation()}
+                                                        className="data-[state=checked]:bg-neutral-900 dark:data-[state=checked]:bg-white"
                                                     />
                                                 </div>
                                             ))}
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
+
+                {/* Footer Toolbar */}
+                <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 flex items-center justify-between gap-3 shrink-0">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/hr/access/roles')}
+                        className="h-8 px-4 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-xs font-semibold"
+                    >
+                        Batal
+                    </Button>
+                    <Button 
+                        onClick={handleSave} 
+                        disabled={loading || saving} 
+                        className="h-8 px-4 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 shadow-none text-xs font-semibold gap-1.5"
+                    >
+                        <Save className="h-3.5 w-3.5" />
+                        {saving ? 'Menyimpan...' : 'Simpan Hak Akses'}
+                    </Button>
+                </div>
             </div>
         </HrLayout>
     );

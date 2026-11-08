@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
     QrCode,
@@ -114,36 +113,36 @@ export function CheckinQRCode({
     const attendancePercent = totalParticipants > 0 ? Math.round((attendedCount / totalParticipants) * 100) : 0;
 
     return (
-        <Card className="shadow-none border border-border/80 overflow-hidden">
-            <CardHeader className="bg-muted/30 pb-4 border-b">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
-                            <QrCode className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-base font-semibold">QR Code Presensi Rapat</CardTitle>
-                            <CardDescription className="text-xs">Tampilkan QR code agar peserta dapat check-in mandiri lewat aplikasi mobile</CardDescription>
-                        </div>
+        <>
+            <div className="border border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-50/50 dark:bg-neutral-900/30 p-4 sm:p-5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+                <div className="flex items-center gap-2.5">
+                    <div className="size-7 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-xs shrink-0 rounded-none">
+                        <QrCode className="size-3.5" />
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-full border text-xs font-medium">
-                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-semibold text-primary">{attendedCount}</span>
-                        <span className="text-muted-foreground">/ {totalParticipants} Hadir</span>
-                        <span className="text-xs text-muted-foreground">({attendancePercent}%)</span>
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-neutral-800 dark:text-neutral-200">Presensi Cepat QR Code</h4>
+                        <p className="text-[11px] text-neutral-500 font-mono">Scan via kamera aplikasi mobile untuk check-in mandiri</p>
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent className="pt-6">
+                <div className="flex items-center gap-2 px-2.5 py-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-none text-xs font-mono">
+                    <Users className="size-3 text-neutral-500" />
+                    <span className="font-bold text-neutral-900 dark:text-white">{attendedCount}</span>
+                    <span className="text-neutral-500">/ {totalParticipants} Hadir</span>
+                    <span className="text-neutral-400">({attendancePercent}%)</span>
+                </div>
+            </div>
+
+            <div>
                 {!token ? (
-                    <div className="flex flex-col items-center gap-5 py-6">
-                        <div className="w-44 h-44 bg-muted/40 rounded-2xl border-2 border-dashed border-primary/25 flex flex-col items-center justify-center gap-2.5">
-                            <QrCode className="h-14 w-14 text-muted-foreground/35" />
-                            <p className="text-xs text-muted-foreground text-center px-4">QR Code presensi belum aktif</p>
+                    <div className="flex flex-col items-center gap-4 py-4">
+                        <div className="w-36 h-36 bg-white dark:bg-neutral-950 rounded-none border border-dashed border-neutral-300 dark:border-neutral-700 flex flex-col items-center justify-center gap-2">
+                            <QrCode className="size-10 text-neutral-300 dark:text-neutral-700" />
+                            <p className="text-[11px] font-mono text-neutral-400 text-center px-2">QR Code belum aktif</p>
                         </div>
-                        <div className="flex items-center gap-3 flex-wrap justify-center">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground font-medium">Durasi:</span>
+                        <div className="flex items-center gap-2 flex-wrap justify-center">
+                            <div className="flex items-center gap-1.5 text-xs font-mono">
+                                <span className="text-neutral-500">Durasi:</span>
                                 <SearchableSelect
                                     options={[
                                         { value: "15", label: "15 menit" },
@@ -154,95 +153,95 @@ export function CheckinQRCode({
                                     value={String(expiresIn)}
                                     onChange={(val) => setExpiresIn(Number(val))}
                                     placeholder="Pilih Waktu"
-                                    className="w-[130px]"
+                                    className="w-[120px] h-8 text-xs rounded-none"
                                 />
                             </div>
-                            <Button onClick={handleGenerate} disabled={loading} size="sm">
-                                <QrCode className="h-4 w-4 mr-2" />
+                            <Button onClick={handleGenerate} disabled={loading} size="sm" className="h-8 px-3 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-semibold shadow-none gap-1.5">
+                                <QrCode className="size-3.5" />
                                 {loading ? 'Membuat QR...' : 'Aktifkan QR Code'}
                             </Button>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col lg:flex-row items-center gap-8 py-2">
+                    <div className="flex flex-col lg:flex-row items-center gap-6 py-1">
                         {/* QR Box Left */}
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="p-4 bg-white rounded-2xl border-2 border-primary/20 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex flex-col items-center gap-2 shrink-0">
+                            <div className="p-3 bg-white border border-neutral-200 dark:border-neutral-800 rounded-none">
                                 <QRCodeSVG
                                     value={checkinUrl!}
-                                    size={180}
+                                    size={160}
                                     level="Q"
                                     includeMargin={false}
                                     style={{ display: 'block' }}
                                 />
                             </div>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-xs font-medium">
-                                <Timer className="h-3.5 w-3.5 text-amber-600" />
-                                <span className="text-muted-foreground">Berlaku:</span>
-                                <span className={`font-mono font-bold ${countdown && countdown < 120 ? 'text-red-500 animate-pulse' : 'text-amber-700'}`}>
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-none text-[11px] font-mono">
+                                <Timer className="size-3 text-amber-600" />
+                                <span className="text-neutral-500">Berlaku:</span>
+                                <span className={`font-bold ${countdown && countdown < 120 ? 'text-rose-600 animate-pulse' : 'text-amber-700 dark:text-amber-400'}`}>
                                     {countdown !== null ? formatCountdown(countdown) : '--:--'}
                                 </span>
                             </div>
                         </div>
 
                         {/* Controls & Details Right */}
-                        <div className="flex-1 flex flex-col gap-4 w-full">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="flex-1 flex flex-col gap-3 w-full">
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-mono uppercase text-neutral-500">
                                     Tautan Presensi Langsung
                                 </label>
                                 <div className="flex items-center gap-2">
-                                    <div className="flex-1 font-mono text-xs bg-muted/50 border rounded-lg px-3 py-2 text-foreground truncate">
+                                    <div className="flex-1 font-mono text-xs bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-none px-3 py-1.5 text-neutral-800 dark:text-neutral-200 truncate">
                                         {checkinUrl}
                                     </div>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={handleCopy}
-                                        className="shrink-0 text-xs"
+                                        className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 text-xs shadow-none shrink-0"
                                         title="Salin Tautan"
                                     >
-                                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                                        {copied ? <Check className="size-3 text-emerald-600 mr-1" /> : <Copy className="size-3 mr-1" />}
                                         {copied ? 'Tersalin' : 'Salin'}
                                     </Button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-muted/30 p-3 rounded-xl border">
-                                <div className="flex items-start gap-2">
-                                    <Smartphone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                                    <span>Scan via <strong>Aplikasi Mobile Administrasi</strong> pada tab <strong>Ambil Gambar</strong>.</span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono bg-white dark:bg-neutral-950 p-2.5 rounded-none border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400">
+                                <div className="flex items-start gap-1.5">
+                                    <Smartphone className="size-3.5 text-neutral-700 dark:text-neutral-300 shrink-0 mt-0.5" />
+                                    <span>Scan via aplikasi mobile Administrasi pada tab Ambil Gambar.</span>
                                 </div>
-                                <div className="flex items-start gap-2">
-                                    <Users className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                                    <span>Check-in otomatis mencatat nama peserta dan waktu kehadiran.</span>
+                                <div className="flex items-start gap-1.5">
+                                    <Users className="size-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                                    <span>Presensi otomatis mencatat nama pegawai dan timestamp.</span>
                                 </div>
                             </div>
 
-                            <div className="flex gap-2.5 flex-wrap pt-1">
+                            <div className="flex gap-2 flex-wrap pt-1">
                                 <Button
-                                    variant="default"
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => setFullscreenOpen(true)}
-                                    className="gap-2"
+                                    className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 text-xs shadow-none font-semibold gap-1.5"
                                 >
-                                    <Maximize2 className="h-4 w-4" />
-                                    Tampilkan Layar Penuh (Proyektor)
+                                    <Maximize2 className="size-3" />
+                                    <span>Layar Penuh (Proyektor)</span>
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={handleGenerate}
                                     disabled={loading}
                                     size="sm"
-                                    className="gap-2"
+                                    className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 text-xs shadow-none gap-1.5"
                                 >
-                                    <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                                    Refresh Token
+                                    <RefreshCw className={`size-3 ${loading ? 'animate-spin' : ''}`} />
+                                    <span>Refresh Token</span>
                                 </Button>
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-muted-foreground hover:text-destructive"
+                                    className="h-8 px-2 rounded-none text-neutral-500 hover:text-rose-600 text-xs"
                                     onClick={() => { setToken(null); setCheckinUrl(null); setCountdown(null); }}
                                 >
                                     Tutup QR
@@ -251,7 +250,8 @@ export function CheckinQRCode({
                         </div>
                     </div>
                 )}
-            </CardContent>
+            </div>
+        </div>
 
             {/* Projector Fullscreen Dialog - Spacious, Neat & Professional */}
             <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
@@ -385,7 +385,7 @@ export function CheckinQRCode({
                     </div>
                 </DialogContent>
             </Dialog>
-        </Card>
+        </>
     );
 }
 

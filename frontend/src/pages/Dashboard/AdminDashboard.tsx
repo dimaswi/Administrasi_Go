@@ -76,35 +76,49 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="flex-1 space-y-4 p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2 mb-6">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-800">Dashboard Administrasi</h2>
-        </div>
-        
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {statCards.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className="border-none shadow-md hover:shadow-lg transition-shadow bg-white">
-                <CardContent className="p-6">
+      <div className="w-full space-y-4 pb-12 font-sans">
+        {/* Header Toolbar */}
+        <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col">
+          <div className="px-4 py-3.5 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0 rounded-none">
+                <Box className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-base font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                  Dashboard Administrasi
+                </h1>
+                <p className="text-[11px] text-neutral-500 font-mono truncate mt-0.5">
+                  Ringkasan statistik surat masuk, surat keluar, rapat, dan ruangan
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Stat Cards: Mobile-first 2x2 on mobile, 4 in row on lg */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 divide-x-0 sm:divide-x divide-neutral-200 dark:divide-neutral-800 bg-white dark:bg-neutral-950">
+            {statCards.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div key={index} className="p-4 sm:p-5 space-y-2 border-b lg:border-b-0 border-r lg:border-r border-neutral-200 dark:border-neutral-800 last:border-r-0">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
-                      <h3 className="text-3xl font-bold text-gray-800">
-                        {loading ? <span className="text-gray-300 text-2xl">...</span> : stat.value}
-                      </h3>
-                    </div>
-                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${stat.bgColor}`}>
-                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-neutral-500">
+                      {stat.title}
+                    </span>
+                    <div className="size-7 rounded-none border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center">
+                      <Icon className="size-3.5 text-neutral-700 dark:text-neutral-300" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-4">
+                  <div className="text-2xl sm:text-3xl font-extrabold font-mono text-neutral-900 dark:text-white tracking-tight">
+                    {loading ? <span className="text-neutral-300 animate-pulse">...</span> : stat.value}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 font-mono truncate">
                     {stat.description}
                   </p>
-                </CardContent>
-              </Card>
-            )
-          })}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </AdminLayout>

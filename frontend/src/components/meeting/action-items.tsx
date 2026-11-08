@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, ChevronRight, ChevronLeft, CalendarCheck } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
 import api from '@/lib/api';
 
 interface ActionItem {
@@ -76,7 +75,11 @@ export function ActionItems({ meetingId, canEdit = true }: { meetingId: string |
     };
 
     if (loading) {
-        return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-muted-foreground" /></div>;
+        return (
+            <div className="flex justify-center p-6 text-neutral-400 font-mono text-xs">
+                <Loader2 className="size-4 animate-spin mr-2" /> Memuat action items...
+            </div>
+        );
     }
 
     const todoItems = items.filter(i => i.status === 'todo');
@@ -84,80 +87,70 @@ export function ActionItems({ meetingId, canEdit = true }: { meetingId: string |
     const doneItems = items.filter(i => i.status === 'completed');
 
     const Column = ({ title, colItems }: { title: string, colItems: ActionItem[] }) => (
-        <div className="flex-1 min-w-[280px] bg-muted/30 rounded-xl border p-4">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">{title}</h3>
-                <Badge variant="secondary">{colItems.length}</Badge>
-            </div>
-            <div className="space-y-3">
-                {colItems.map(item => (
-                    <Card key={item.id} className="shadow-sm">
-                        <CardContent className="p-3">
-                            <p className="font-medium text-sm mb-3">{item.title}</p>
+        <div className="flex-1 min-w-[240px] bg-neutral-50/50 dark:bg-neutral-900/30 rounded-none border border-neutral-200 dark:border-neutral-800 p-3 flex flex-col justify-between">
+            <div>
+                <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-neutral-200 dark:border-neutral-800">
+                    <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-neutral-800 dark:text-neutral-200">{title}</h4>
+                    <Badge variant="outline" className="rounded-none font-mono text-[10px] px-1.5 py-0 bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800">{colItems.length}</Badge>
+                </div>
+                <div className="space-y-2">
+                    {colItems.map(item => (
+                        <div key={item.id} className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-2.5 rounded-none shadow-none text-xs">
+                            <p className="font-medium text-neutral-900 dark:text-white leading-snug">{item.title}</p>
                             {canEdit && (
-                                <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-900">
                                     <div className="flex gap-1">
                                         {item.status !== 'todo' && (
-                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatusChange(item.id, item.status === 'completed' ? 'in_progress' : 'todo')}>
+                                            <Button size="icon" variant="ghost" className="h-5 w-5 rounded-none text-neutral-500 hover:text-neutral-900 dark:hover:text-white" onClick={() => handleStatusChange(item.id, item.status === 'completed' ? 'in_progress' : 'todo')} title="Kembalikan">
                                                 <ChevronLeft className="h-3 w-3" />
                                             </Button>
                                         )}
                                         {item.status !== 'completed' && (
-                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStatusChange(item.id, item.status === 'todo' ? 'in_progress' : 'completed')}>
+                                            <Button size="icon" variant="ghost" className="h-5 w-5 rounded-none text-neutral-500 hover:text-neutral-900 dark:hover:text-white" onClick={() => handleStatusChange(item.id, item.status === 'todo' ? 'in_progress' : 'completed')} title="Majukan">
                                                 <ChevronRight className="h-3 w-3" />
                                             </Button>
                                         )}
                                     </div>
-                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
+                                    <Button size="icon" variant="ghost" className="h-5 w-5 rounded-none text-neutral-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={() => handleDelete(item.id)} title="Hapus">
                                         <Trash2 className="h-3 w-3" />
                                     </Button>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-                ))}
-                {colItems.length === 0 && (
-                    <div className="text-center p-4 text-xs text-muted-foreground border-2 border-dashed rounded-lg">
-                        Kosong
-                    </div>
-                )}
+                        </div>
+                    ))}
+                    {colItems.length === 0 && (
+                        <div className="text-center py-4 text-[11px] font-mono text-neutral-400 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-none bg-white/40 dark:bg-neutral-950/40">
+                            Tidak ada tugas
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center gap-2">
-                    <CalendarCheck className="h-5 w-5 text-primary" />
-                    <div>
-                        <CardTitle>Tindak Lanjut (Action Items)</CardTitle>
-                        <CardDescription>Papan Kanban untuk tugas-tugas hasil rapat</CardDescription>
-                    </div>
+        <div className="space-y-3">
+            {canEdit && (
+                <div className="flex gap-2 max-w-md">
+                    <Input 
+                        placeholder="Ketik tugas / tindak lanjut baru..." 
+                        value={newItemTitle} 
+                        onChange={e => setNewItemTitle(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                        className="h-8 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none text-xs"
+                    />
+                    <Button onClick={handleCreate} className="h-8 px-3 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 text-xs font-semibold shadow-none shrink-0 gap-1">
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Tambah</span>
+                    </Button>
                 </div>
-            </CardHeader>
-            <CardContent>
-                {canEdit && (
-                    <div className="flex gap-2 mb-6">
-                        <Input 
-                            placeholder="Tambahkan tugas baru..." 
-                            value={newItemTitle} 
-                            onChange={e => setNewItemTitle(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                        />
-                        <Button onClick={handleCreate}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Tambah
-                        </Button>
-                    </div>
-                )}
+            )}
 
-                <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-4">
-                    <Column title="To Do" colItems={todoItems} />
-                    <Column title="In Progress" colItems={inProgressItems} />
-                    <Column title="Done" colItems={doneItems} />
-                </div>
-            </CardContent>
-        </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Column title="To Do" colItems={todoItems} />
+                <Column title="In Progress" colItems={inProgressItems} />
+                <Column title="Done" colItems={doneItems} />
+            </div>
+        </div>
     );
 }

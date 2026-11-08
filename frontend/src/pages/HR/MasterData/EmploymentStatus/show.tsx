@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Edit, Database } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Edit, UserCheck } from 'lucide-react';
 import api from '@/lib/api';
+import { DetailCard } from '@/components/ui/form-card';
 
 export default function EmploymentStatusShow() {
     const navigate = useNavigate();
@@ -19,40 +20,44 @@ export default function EmploymentStatusShow() {
 
     return (
         <HrLayout>
-            <div className="w-full">
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate(-1)}>
-                        <ArrowLeft className="h-4 w-4" />
+            <DetailCard
+                title={data.name}
+                subtitle="Data Master Status Kepegawaian"
+                icon={UserCheck}
+                onBack={() => navigate('/hr/master-data/employmentstatus')}
+                statusBadge={
+                    <Badge variant={data.is_active ? 'default' : 'secondary'} className="rounded-none text-xs">
+                        {data.is_active ? 'Aktif' : 'Non-Aktif'}
+                    </Badge>
+                }
+                actions={
+                    <Button 
+                        size="sm" 
+                        onClick={() => navigate(`/hr/master-data/employmentstatus/${id}/edit`)}
+                        className="h-8 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs shadow-none font-semibold"
+                    >
+                        <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit Data
                     </Button>
-                    <div className="space-y-0.5 flex-1">
-                        <h2 className="text-xl font-semibold">Detail Status Kepegawaian</h2>
-                        <p className="text-sm text-muted-foreground">Informasi lengkap tentang data ini.</p>
-                    </div>
-                    <Button onClick={() => navigate(`/hr/master-data/employmentstatus/${id}/edit`)}>
-                        <Edit className="h-4 w-4 mr-2" /> Edit
-                    </Button>
-                </div>
-
-                <div className="flex flex-col gap-4">
-
-                <Card>
-                    <CardHeader>
-                            <div className="flex items-center gap-2">
-                                
-                                <div>
-                                    <CardTitle>Data Master</CardTitle>
-                                </div>
-                            </div>
-                        </CardHeader>
-                    <CardContent>
+                }
+            >
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider mb-4 border-b border-neutral-200 dark:border-neutral-800 pb-2">
+                            Informasi Status Kepegawaian
+                        </h3>
                         <dl className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <div><dt className="text-sm font-medium text-muted-foreground">Nama Status</dt><dd className="mt-1 text-sm">{data.name}</dd></div>
-                            <div><dt className="text-sm font-medium text-muted-foreground">Aktif</dt><dd className="mt-1 text-sm">{data.is_active ? 'Ya' : 'Tidak'}</dd></div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Nama Status</dt>
+                                <dd className="text-sm font-semibold text-neutral-900 dark:text-white">{data.name}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Status Keaktifan</dt>
+                                <dd className="text-sm font-medium text-neutral-900 dark:text-white">{data.is_active ? 'Aktif Digunakan' : 'Dinonaktifkan'}</dd>
+                            </div>
                         </dl>
-                    </CardContent>
-                </Card>
+                    </div>
                 </div>
-            </div>
+            </DetailCard>
         </HrLayout>
     );
 }

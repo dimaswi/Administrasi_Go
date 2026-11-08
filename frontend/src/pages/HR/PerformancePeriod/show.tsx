@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Loader2, Calendar } from 'lucide-react';
+import { Edit, Loader2, Calendar } from 'lucide-react';
 import api from '@/lib/api';
+import { DetailCard } from '@/components/ui/form-card';
 
 export default function PerformancePeriodShow() {
     const navigate = useNavigate();
@@ -52,105 +53,73 @@ export default function PerformancePeriodShow() {
 
     return (
         <HrLayout>
-            <div className="w-full max-w-full space-y-4">
-                {/* ─── Satu Kontainer Card Utuh (Single Unified Card Container) ──── */}
-                <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 overflow-hidden shadow-none">
-                    {/* Card Header */}
-                    <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
-                        <div className="flex items-center gap-3">
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => navigate('/hr/performance-periods')}
-                                className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300"
-                                title="Kembali"
-                            >
-                                <ArrowLeft className="size-4" />
-                            </Button>
-                            <div className="flex items-center gap-2.5">
-                                <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
-                                    <Calendar className="size-4" />
-                                </div>
-                                <div>
-                                    <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white">
-                                        Detail Periode: {data.name}
-                                    </h1>
-                                    <p className="text-[11px] text-neutral-500 font-mono">
-                                        Siklus: {data.type_label || data.type} • Status: {data.status}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Action */}
-                        <div className="flex items-center gap-2">
-                            <Button 
-                                onClick={() => navigate(`/hr/performance-periods/${id}/edit`)}
-                                className="h-8 px-3 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 text-xs font-semibold gap-1.5 shadow-none"
-                            >
-                                <Edit className="size-3.5" /> Edit Periode
-                            </Button>
-                        </div>
+            <DetailCard
+                title={`Periode: ${data.name}`}
+                subtitle={`Siklus: ${data.type_label || data.type} • Status: ${data.status}`}
+                icon={Calendar}
+                onBack={() => navigate('/hr/performance-periods')}
+                statusBadge={
+                    <div className="flex items-center gap-1.5">
+                        <Badge variant={data.status === 'active' ? 'default' : 'outline'} className="rounded-none uppercase text-xs">
+                            {data.status || 'Draft'}
+                        </Badge>
+                        {data.is_current && (
+                            <Badge variant="outline" className="rounded-none text-xs border-emerald-500 text-emerald-600 font-mono">
+                                Berjalan (Current)
+                            </Badge>
+                        )}
                     </div>
-
-                    {/* Card Body */}
-                    <div className="p-6 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Nama Periode</div>
-                                    <div className="text-base font-bold text-neutral-900 dark:text-white mt-0.5">{data.name}</div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Siklus Periode</div>
-                                        <div className="text-sm font-bold capitalize mt-0.5">{data.type_label || data.type}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Status Periode</div>
-                                        <div className="mt-1">
-                                            <Badge variant="outline" className="rounded-none uppercase text-xs">
-                                                {data.status}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Tanggal Mulai</div>
-                                        <div className="text-sm font-medium mt-0.5">{data.start_date ? data.start_date.substring(0, 10) : '-'}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Tanggal Selesai</div>
-                                        <div className="text-sm font-medium mt-0.5">{data.end_date ? data.end_date.substring(0, 10) : '-'}</div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Siklus Berjalan (Active Cycle)</div>
-                                    <div className="mt-1">
-                                        <Badge variant={data.is_current ? 'default' : 'secondary'} className="rounded-none text-xs">
-                                            {data.is_current ? 'Periode Aktif Utama' : 'Bukan Periode Aktif'}
-                                        </Badge>
-                                    </div>
-                                </div>
+                }
+                actions={
+                    <Button 
+                        size="sm" 
+                        onClick={() => navigate(`/hr/performance-periods/${id}/edit`)}
+                        className="h-8 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs shadow-none font-semibold"
+                    >
+                        <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit Periode
+                    </Button>
+                }
+            >
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider mb-4 border-b border-neutral-200 dark:border-neutral-800 pb-2">
+                            Informasi Siklus Evaluasi
+                        </h3>
+                        <dl className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Nama Periode</dt>
+                                <dd className="text-sm font-semibold text-neutral-900 dark:text-white">{data.name}</dd>
                             </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Deskripsi & Pedoman Periode</div>
-                                    <div className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 mt-1 whitespace-pre-wrap bg-neutral-50 dark:bg-neutral-900 p-3 border border-neutral-200 dark:border-neutral-800">
-                                        {data.description || 'Tidak ada deskripsi khusus.'}
-                                    </div>
-                                </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Siklus Evaluasi</dt>
+                                <dd className="text-sm font-medium capitalize text-neutral-900 dark:text-white">{data.type_label || data.type}</dd>
                             </div>
-                        </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Status Periode</dt>
+                                <dd className="text-sm font-medium capitalize text-neutral-900 dark:text-white">{data.status}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Tanggal Mulai</dt>
+                                <dd className="text-sm font-medium text-neutral-900 dark:text-white">{data.start_date ? data.start_date.substring(0, 10) : '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Tanggal Selesai</dt>
+                                <dd className="text-sm font-medium text-neutral-900 dark:text-white">{data.end_date ? data.end_date.substring(0, 10) : '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Siklus Berjalan</dt>
+                                <dd className="text-sm font-medium text-neutral-900 dark:text-white">{data.is_current ? 'Ya (Periode Utama Saat Ini)' : 'Bukan Periode Aktif'}</dd>
+                            </div>
+                            {data.description && (
+                                <div className="md:col-span-2 lg:col-span-3">
+                                    <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Deskripsi & Pedoman</dt>
+                                    <dd className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-900 p-3 border border-neutral-200 dark:border-neutral-800 rounded-none whitespace-pre-wrap">{data.description}</dd>
+                                </div>
+                            )}
+                        </dl>
                     </div>
                 </div>
-            </div>
+            </DetailCard>
         </HrLayout>
     );
 }

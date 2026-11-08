@@ -232,10 +232,38 @@ func (r *PerformanceRepository) GetReviewByID(id int) (*models.PerformanceReview
 	if err != nil {
 		return nil, err
 	}
+
+	itemsQuery := `
+		SELECT 
+			pri.id, pri.review_id, pri.template_id, pri.category_id,
+			COALESCE(kc.name, '') AS category_name,
+			pri.name, pri.description, pri.measurement_type, pri.unit,
+			pri.target, pri.actual, pri.weight,
+			pri.self_score, pri.manager_score, pri.final_score,
+			pri.self_comment, pri.manager_comment,
+			pri.created_at, pri.updated_at
+		FROM performance_review_items pri
+		LEFT JOIN kpi_categories kc ON kc.id = pri.category_id
+		WHERE pri.review_id = $1
+		ORDER BY pri.id ASC
+	`
+	var items []models.PerformanceReviewItem
+	if err := r.db.Select(&items, itemsQuery, id); err == nil {
+		pr.Items = items
+	} else {
+		pr.Items = []models.PerformanceReviewItem{}
+	}
+
 	return &pr, nil
 }
 
 func (r *PerformanceRepository) CreateReview(pr *models.PerformanceReview) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	query := `
 		INSERT INTO performance_reviews (
 			employee_id, period_id, reviewer_id, status, self_score, manager_score,
@@ -244,14 +272,57 @@ func (r *PerformanceRepository) CreateReview(pr *models.PerformanceReview) error
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
-	return r.db.QueryRow(query,
+	err = tx.QueryRow(query,
 		pr.EmployeeID, pr.PeriodID, pr.ReviewerID, pr.Status, pr.SelfScore,
 		pr.ManagerScore, pr.FinalScore, pr.FinalGrade, pr.EmployeeNotes,
 		pr.ManagerNotes, pr.Strengths, pr.Improvements, pr.DevelopmentPlan,
 	).Scan(&pr.ID, &pr.CreatedAt, &pr.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	for i := range pr.Items {
+		item := &pr.Items[i]
+		item.ReviewID = pr.ID
+		if item.Weight <= 0 {
+			item.Weight = 1
+		}
+		if item.MeasurementType == "" {
+			item.MeasurementType = "numeric"
+		}
+		itemQuery := `
+			INSERT INTO performance_review_items (
+				review_id, template_id, category_id, name, description,
+				measurement_type, unit, target, actual, weight,
+				self_score, manager_score, final_score, self_comment, manager_comment,
+				created_at, updated_at
+			) VALUES (
+				$1, $2, $3, $4, $5,
+				$6, $7, $8, $9, $10,
+				$11, $12, $13, $14, $15,
+				NOW(), NOW()
+			) RETURNING id, created_at, updated_at
+		`
+		err = tx.QueryRow(itemQuery,
+			item.ReviewID, item.TemplateID, item.CategoryID, item.Name, item.Description,
+			item.MeasurementType, item.Unit, item.Target, item.Actual, item.Weight,
+			item.SelfScore, item.ManagerScore, item.FinalScore, item.SelfComment, item.ManagerComment,
+		).Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (r *PerformanceRepository) UpdateReview(id int, pr *models.PerformanceReview) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	query := `
 		UPDATE performance_reviews SET
 			employee_id = $1, period_id = $2, reviewer_id = $3, status = $4,
@@ -260,12 +331,171 @@ func (r *PerformanceRepository) UpdateReview(id int, pr *models.PerformanceRevie
 			improvements = $12, development_plan = $13, updated_at = NOW()
 		WHERE id = $14
 	`
-	_, err := r.db.Exec(query,
+	_, err = tx.Exec(query,
 		pr.EmployeeID, pr.PeriodID, pr.ReviewerID, pr.Status,
 		pr.SelfScore, pr.ManagerScore, pr.FinalScore, pr.FinalGrade,
 		pr.EmployeeNotes, pr.ManagerNotes, pr.Strengths,
 		pr.Improvements, pr.DevelopmentPlan, id,
 	)
+	if err != nil {
+		return err
+	}
+
+	if len(pr.Items) > 0 {
+		_, err = tx.Exec("DELETE FROM performance_review_items WHERE review_id = $1", id)
+		if err != nil {
+			return err
+		}
+
+		for i := range pr.Items {
+			item := &pr.Items[i]
+			item.ReviewID = id
+			if item.Weight <= 0 {
+				item.Weight = 1
+			}
+			if item.MeasurementType == "" {
+				item.MeasurementType = "numeric"
+			}
+			itemQuery := `
+				INSERT INTO performance_review_items (
+					review_id, template_id, category_id, name, description,
+					measurement_type, unit, target, actual, weight,
+					self_score, manager_score, final_score, self_comment, manager_comment,
+					created_at, updated_at
+				) VALUES (
+					$1, $2, $3, $4, $5,
+					$6, $7, $8, $9, $10,
+					$11, $12, $13, $14, $15,
+					NOW(), NOW()
+				) RETURNING id, created_at, updated_at
+			`
+			err = tx.QueryRow(itemQuery,
+				item.ReviewID, item.TemplateID, item.CategoryID, item.Name, item.Description,
+				item.MeasurementType, item.Unit, item.Target, item.Actual, item.Weight,
+				item.SelfScore, item.ManagerScore, item.FinalScore, item.SelfComment, item.ManagerComment,
+			).Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *PerformanceRepository) SubmitSelfReview(reviewID int, items []models.PerformanceReviewItem, employeeNotes *string) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var totalWeight float64 = 0
+	var weightedSum float64 = 0
+
+	for _, item := range items {
+		_, err = tx.Exec(`
+			UPDATE performance_review_items SET
+				actual = $1, self_score = $2, self_comment = $3, updated_at = NOW()
+			WHERE id = $4 AND review_id = $5
+		`, item.Actual, item.SelfScore, item.SelfComment, item.ID, reviewID)
+		if err != nil {
+			return err
+		}
+
+		if item.SelfScore != nil && item.Weight > 0 {
+			totalWeight += float64(item.Weight)
+			weightedSum += (*item.SelfScore) * float64(item.Weight)
+		}
+	}
+
+	var calculatedSelfScore *float64
+	if totalWeight > 0 {
+		score := weightedSum / totalWeight
+		calculatedSelfScore = &score
+	}
+
+	_, err = tx.Exec(`
+		UPDATE performance_reviews SET
+			self_score = $1, employee_notes = $2, self_reviewed_at = NOW(),
+			status = 'self_review', updated_at = NOW()
+		WHERE id = $3
+	`, calculatedSelfScore, employeeNotes, reviewID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *PerformanceRepository) SubmitManagerReview(reviewID int, reviewerID *int, items []models.PerformanceReviewItem, managerNotes, strengths, improvements, devPlan *string) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var totalWeight float64 = 0
+	var weightedSum float64 = 0
+
+	for _, item := range items {
+		_, err = tx.Exec(`
+			UPDATE performance_review_items SET
+				manager_score = $1, final_score = $1, manager_comment = $2, updated_at = NOW()
+			WHERE id = $3 AND review_id = $4
+		`, item.ManagerScore, item.ManagerComment, item.ID, reviewID)
+		if err != nil {
+			return err
+		}
+
+		if item.ManagerScore != nil && item.Weight > 0 {
+			totalWeight += float64(item.Weight)
+			weightedSum += (*item.ManagerScore) * float64(item.Weight)
+		}
+	}
+
+	var calculatedManagerScore *float64
+	var finalGrade *string
+	if totalWeight > 0 {
+		score := weightedSum / totalWeight
+		calculatedManagerScore = &score
+
+		var grade string
+		if score >= 90 {
+			grade = "A"
+		} else if score >= 80 {
+			grade = "B"
+		} else if score >= 70 {
+			grade = "C"
+		} else if score >= 60 {
+			grade = "D"
+		} else {
+			grade = "E"
+		}
+		finalGrade = &grade
+	}
+
+	_, err = tx.Exec(`
+		UPDATE performance_reviews SET
+			manager_score = $1, final_score = $1, final_grade = $2,
+			reviewer_id = $3, manager_notes = $4, strengths = $5,
+			improvements = $6, development_plan = $7, manager_reviewed_at = NOW(),
+			status = 'manager_review', updated_at = NOW()
+		WHERE id = $8
+	`, calculatedManagerScore, finalGrade, reviewerID, managerNotes, strengths, improvements, devPlan, reviewID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *PerformanceRepository) CompleteReview(reviewID int) error {
+	_, err := r.db.Exec(`
+		UPDATE performance_reviews SET
+			status = 'completed', completed_at = NOW(), updated_at = NOW()
+		WHERE id = $1
+	`, reviewID)
 	return err
 }
 

@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Save, Loader2, Database } from 'lucide-react';
+import { CalendarHeart } from 'lucide-react';
 import api from '@/lib/api';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 
 export default function LeaveTypeCreate() {
     const navigate = useNavigate();
@@ -39,92 +38,147 @@ export default function LeaveTypeCreate() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate(-1)}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Tambah Jenis Cuti</h2>
-                        <p className="text-sm text-muted-foreground">Isi formulir di bawah ini untuk menambahkan data baru.</p>
+            <FormCard
+                title="Tambah Jenis Cuti"
+                subtitle="Definisikan skema kuota cuti, ketentuan akumulasi, dan aturan pengajuan izin pegawai"
+                icon={CalendarHeart}
+                onBack={() => navigate('/hr/master-data/leavetype')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Jenis Cuti"
+                onCancel={() => navigate('/hr/master-data/leavetype')}
+            >
+                <FormSection title="1. Informasi Dasar Cuti" description="Kode unik, nama skema cuti, dan alokasi kuota tahunan">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kode Cuti <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="code" 
+                                name="code" 
+                                type="text" 
+                                value={formData.code} 
+                                onChange={handleChange} 
+                                required 
+                                placeholder="Contoh: CT-01, CS-01" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nama Cuti <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="name" 
+                                name="name" 
+                                type="text" 
+                                value={formData.name} 
+                                onChange={handleChange} 
+                                required 
+                                placeholder="Contoh: Cuti Tahunan, Cuti Melahirkan, Cuti Sakit" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                            <Label htmlFor="description" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Deskripsi Ketentuan
+                            </Label>
+                            <Textarea 
+                                id="description" 
+                                name="description" 
+                                value={formData.description} 
+                                onChange={handleChange} 
+                                rows={2}
+                                className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="default_quota" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kuota Default (Hari) <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="default_quota" 
+                                name="default_quota" 
+                                type="number" 
+                                value={formData.default_quota} 
+                                onChange={handleChange} 
+                                required 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="min_advance_days" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Min. Pengajuan Awal (Hari Sebelumnya)
+                            </Label>
+                            <Input 
+                                id="min_advance_days" 
+                                name="min_advance_days" 
+                                type="number" 
+                                value={formData.min_advance_days} 
+                                onChange={handleChange} 
+                                placeholder="0" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="max_carry_over_days" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Maks. Akumulasi Cuti (Hari)
+                            </Label>
+                            <Input 
+                                id="max_carry_over_days" 
+                                name="max_carry_over_days" 
+                                type="number" 
+                                value={formData.max_carry_over_days} 
+                                onChange={handleChange} 
+                                placeholder="0" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
                     </div>
-                </div>
+                </FormSection>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                                
-                                <div>
-                                    <CardTitle>Data Master</CardTitle>
-                                    <CardDescription>Informasi detail data</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="code">Kode *</Label>
-                                    <Input id="code" name="code" type="text" value={(formData as any).code} onChange={handleChange} required={true} placeholder="C01" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Nama Cuti *</Label>
-                                    <Input id="name" name="name" type="text" value={(formData as any).name} onChange={handleChange} required={true} placeholder="Cuti Tahunan" />
-                                </div>
-                                <div className="space-y-2 md:col-span-2">
-                                    <Label htmlFor="description">Deskripsi</Label>
-                                    <Textarea id="description" name="description" value={(formData as any).description} onChange={handleChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="default_quota">Kuota Default *</Label>
-                                    <Input id="default_quota" name="default_quota" type="number" value={(formData as any).default_quota} onChange={handleChange} required={true} placeholder="12" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="max_carry_over_days">Maks. Akumulasi (Hari)</Label>
-                                    <Input id="max_carry_over_days" name="max_carry_over_days" type="number" value={(formData as any).max_carry_over_days} onChange={handleChange} required={false} placeholder="0" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="min_advance_days">Min. Pengajuan (Hari)</Label>
-                                    <Input id="min_advance_days" name="min_advance_days" type="number" value={(formData as any).min_advance_days} onChange={handleChange} required={false} placeholder="0" />
-                                </div>
-                            </div>
-                            
-                            {/* Checkboxes Group */}
-                            
-                            <div className="flex flex-col gap-3 pt-4 border-t mt-4">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="is_paid" checked={(formData as any).is_paid} onCheckedChange={(val) => handleCheckedChange('is_paid', !!val)} />
-                                    <Label htmlFor="is_paid" className="font-normal cursor-pointer">Dibayar</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="requires_approval" checked={(formData as any).requires_approval} onCheckedChange={(val) => handleCheckedChange('requires_approval', !!val)} />
-                                    <Label htmlFor="requires_approval" className="font-normal cursor-pointer">Wajib Approval</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="allow_carry_over" checked={(formData as any).allow_carry_over} onCheckedChange={(val) => handleCheckedChange('allow_carry_over', !!val)} />
-                                    <Label htmlFor="allow_carry_over" className="font-normal cursor-pointer">Bisa Diakumulasi</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="is_active" checked={(formData as any).is_active} onCheckedChange={(val) => handleCheckedChange('is_active', !!val)} />
-                                    <Label htmlFor="is_active" className="font-normal cursor-pointer">Aktif</Label>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="mt-auto sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={loading}>Batal</Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                                <Save className="h-4 w-4 mr-2" />
-                            )}
-                            {loading ? 'Menyimpan...' : 'Simpan'}
-                        </Button>
+                <FormSection title="2. Kebijakan & Aturan Approval" description="Parameter pemotongan gaji, alur persetujuan, dan akumulasi">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <label className="flex items-center gap-2.5 p-3 border border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-50/50 dark:bg-neutral-900/50 cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors">
+                            <Checkbox 
+                                id="is_paid" 
+                                checked={formData.is_paid} 
+                                onCheckedChange={(val) => handleCheckedChange('is_paid', !!val)} 
+                                className="rounded-none"
+                            />
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Dibayar (Paid Leave)</span>
+                        </label>
+                        <label className="flex items-center gap-2.5 p-3 border border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-50/50 dark:bg-neutral-900/50 cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors">
+                            <Checkbox 
+                                id="requires_approval" 
+                                checked={formData.requires_approval} 
+                                onCheckedChange={(val) => handleCheckedChange('requires_approval', !!val)} 
+                                className="rounded-none"
+                            />
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Wajib Approval</span>
+                        </label>
+                        <label className="flex items-center gap-2.5 p-3 border border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-50/50 dark:bg-neutral-900/50 cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors">
+                            <Checkbox 
+                                id="allow_carry_over" 
+                                checked={formData.allow_carry_over} 
+                                onCheckedChange={(val) => handleCheckedChange('allow_carry_over', !!val)} 
+                                className="rounded-none"
+                            />
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Bisa Akumulasi</span>
+                        </label>
+                        <label className="flex items-center gap-2.5 p-3 border border-neutral-200 dark:border-neutral-800 rounded-none bg-neutral-50/50 dark:bg-neutral-900/50 cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors">
+                            <Checkbox 
+                                id="is_active" 
+                                checked={formData.is_active} 
+                                onCheckedChange={(val) => handleCheckedChange('is_active', !!val)} 
+                                className="rounded-none"
+                            />
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Status Aktif</span>
+                        </label>
                     </div>
-                </form>
-            </div>
+                </FormSection>
+            </FormCard>
         </HrLayout>
     );
 }

@@ -623,209 +623,213 @@ export default function EmployeeShow() {
 
   return (
     <HrLayout>
-      <div className="w-full space-y-2 pb-16 print:p-0 print:m-0 font-sans">
+      <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col font-sans print:border-none print:shadow-none mb-12">
         {/* =========================================================
-            COMPACT HEADER: Proporsional & Rapi
+            UNIFIED HEADER: Kawan-Dolan Standard
         ========================================================= */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 print:hidden border-b border-border/80 pb-2">
-          <div>
-            <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
-              Profil &amp; Data Karyawan
-            </h1>
+        <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 print:hidden">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 shrink-0"
+              type="button"
+              onClick={() => navigate('/hr/employees')}
+              title="Kembali"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+              <User className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                  {fullName || 'Profil & Data Karyawan'}
+                </h1>
+                <Badge className="bg-emerald-600 text-white font-bold text-[9px] px-1.5 py-0 rounded-none uppercase tracking-wide">
+                  {data.status ? String(data.status).toUpperCase() : 'ACTIVE'}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-neutral-500 font-mono truncate">
+                {data.employee_id || `EMP-${data.id}`} • {data.position || 'STAF'} {unitName !== '-' ? `• ${unitName}` : ''}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
-              className="h-7 gap-1 text-xs rounded-none border-border px-2.5"
-              onClick={() => navigate('/hr/employees')}
-            >
-              <ArrowLeft className="h-3 w-3" />
-              <span>Kembali</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1 text-xs rounded-none border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 px-2.5"
+              className="h-8 gap-1.5 text-xs rounded-none border-neutral-200 dark:border-neutral-800 shadow-none px-3 font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900"
               onClick={() => navigate(`/hr/employees/${id}/edit`)}
             >
-              <Edit className="h-3 w-3" />
+              <Edit className="h-3.5 w-3.5" />
               <span>Edit</span>
             </Button>
             <Button
               size="sm"
-              className="h-7 gap-1 text-xs rounded-none bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 px-2.5"
+              className="h-8 gap-1.5 text-xs rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 shadow-none px-3 font-semibold"
               onClick={() => window.print()}
             >
-              <Printer className="h-3 w-3" />
+              <Printer className="h-3.5 w-3.5" />
               <span>Cetak / PDF</span>
             </Button>
           </div>
         </div>
 
         {/* =========================================================
-            MAIN GRID: Kolom Kiri & Kolom Kanan
+            MAIN GRID: Kolom Kiri & Kolom Kanan Tanpa Celah (Merged)
         ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 items-stretch">
           {/* -------------------------------------------------------
-              KOLOM KIRI: Identitas Profil (Kompak, Proporsional)
+              KOLOM KIRI: Identitas Profil (Menyatu dengan Border Kanan)
           ------------------------------------------------------- */}
-          <div className="lg:col-span-4 xl:col-span-4">
-            <div className="border border-border bg-card px-3 py-2.5 space-y-2.5">
-              {/* Status Badge & Foto */}
-              <div className="relative">
-                <div className="flex justify-end">
-                  <Badge className="bg-emerald-600 text-white font-bold text-[9px] px-1.5 py-0 rounded-none uppercase tracking-wide">
-                    {data.status ? String(data.status).toUpperCase() : 'ACTIVE'}
-                  </Badge>
-                </div>
-
-                <div className="flex flex-col items-center text-center mt-0.5">
-                  <div className="h-20 w-20 overflow-hidden border border-border bg-muted/40 flex items-center justify-center rounded-none shadow-2xs">
-                    {data.photo && !photoError ? (
-                      <img
-                        src={data.photo.startsWith('http') || data.photo.startsWith('data:') ? data.photo : getApiUrl(data.photo)}
-                        alt={fullName}
-                        className="h-full w-full object-cover"
-                        onError={() => setPhotoError(true)}
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-muted/60 text-foreground font-extrabold text-xl select-none tracking-wider">
-                        <span>
-                          {((data.first_name?.[0] || '') + (data.last_name?.[0] || '')).toUpperCase() || (fullName?.[0]?.toUpperCase() || 'K')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <h2 className="text-sm font-extrabold uppercase tracking-tight text-foreground mt-2 leading-tight">
-                    {fullName || 'KARYAWAN'}
-                  </h2>
-                  <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                    {data.employee_id || `EMP-${data.id}`}
-                    {data.nik ? ` • ${data.nik}` : ''}
-                  </p>
-                  <div className="mt-1">
-                    <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 border border-border bg-muted/30 text-foreground inline-block">
-                      {data.position || 'STAF'}
+          <div className="lg:col-span-4 xl:col-span-4 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800 p-4 space-y-4 bg-white dark:bg-neutral-950">
+            {/* Foto & Identitas */}
+            <div className="flex flex-col items-center text-center">
+              <div className="h-24 w-24 overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center rounded-none shadow-none">
+                {data.photo && !photoError ? (
+                  <img
+                    src={data.photo.startsWith('http') || data.photo.startsWith('data:') ? data.photo : getApiUrl(data.photo)}
+                    alt={fullName}
+                    className="h-full w-full object-cover"
+                    onError={() => setPhotoError(true)}
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 font-extrabold text-2xl select-none tracking-wider">
+                    <span>
+                      {((data.first_name?.[0] || '') + (data.last_name?.[0] || '')).toUpperCase() || (fullName?.[0]?.toUpperCase() || 'K')}
                     </span>
                   </div>
+                )}
+              </div>
+
+              <h2 className="text-sm font-extrabold uppercase tracking-tight text-neutral-900 dark:text-white mt-3 leading-tight">
+                {fullName || 'KARYAWAN'}
+              </h2>
+              <p className="text-[11px] text-neutral-500 font-mono mt-0.5">
+                {data.employee_id || `EMP-${data.id}`}
+                {data.nik ? ` • ${data.nik}` : ''}
+              </p>
+              <div className="mt-2">
+                <span className="text-[10px] font-semibold tracking-wide uppercase px-2.5 py-0.5 border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 inline-block">
+                  {data.position || 'STAF'}
+                </span>
+              </div>
+            </div>
+
+            {/* List Informasi Identitas */}
+            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 space-y-3 text-xs">
+              {/* Gender / Umur */}
+              <div className="flex items-start gap-2.5">
+                <User className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider">
+                    GENDER / UMUR
+                  </p>
+                  <p className="font-semibold text-neutral-900 dark:text-white text-xs mt-0.5">
+                    {genderLabel}
+                    {age !== null ? ` • ${age} tahun` : ''}
+                  </p>
                 </div>
               </div>
 
-              {/* List Informasi Identitas */}
-              <div className="border-t border-border pt-2 space-y-2 text-xs">
-                {/* Gender / Umur */}
-                <div className="flex items-start gap-2">
-                  <User className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">
-                      GENDER / UMUR
-                    </p>
-                    <p className="font-semibold text-foreground text-xs mt-0.5">
-                      {genderLabel}
-                      {age !== null ? ` • ${age} tahun` : ''}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Kontak */}
-                <div className="flex items-start gap-2">
-                  <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">
-                      KONTAK
-                    </p>
-                    <p className="font-semibold text-foreground text-xs mt-0.5 truncate">
-                      {data.phone || '-'}
-                      {data.email ? ` • ${data.email}` : ''}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Domisili (Data Asli dari Database) */}
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">
-                      DOMISILI
-                    </p>
-                    <p className="font-semibold text-foreground text-xs mt-0.5 leading-snug">
-                      {fullAddress || data.address || '-'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Unit Kerja / Jabatan */}
-                <div className="flex items-start gap-2">
-                  <Briefcase className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">
-                      UNIT / JABATAN
-                    </p>
-                    <p className="font-semibold text-foreground text-xs mt-0.5 truncate">
-                      {data.position || 'STAF'} • {unitName !== '-' ? unitName : 'Administrasi'}
-                    </p>
-                  </div>
+              {/* Kontak */}
+              <div className="flex items-start gap-2.5">
+                <Phone className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider">
+                    KONTAK
+                  </p>
+                  <p className="font-semibold text-neutral-900 dark:text-white text-xs mt-0.5 truncate">
+                    {data.phone || '-'}
+                    {data.email ? ` • ${data.email}` : ''}
+                  </p>
                 </div>
               </div>
 
-              {/* Peringatan Kepegawaian */}
-              <div className="space-y-1 pt-0.5">
-                <p className="text-[9px] uppercase font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1 tracking-wider">
-                  <span>♥</span> STATUS KEPEGAWAIAN
-                </p>
-
-                <div className="p-2 border border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/20 text-xs space-y-1 rounded-none">
-                  <div>
-                    <p className="text-[9px] uppercase font-bold text-rose-700 dark:text-rose-400">
-                      STATUS &amp; KATEGORI
-                    </p>
-                    <p className="font-medium text-foreground text-[11px]">
-                      {statusEmpName} • {categoryName}
-                    </p>
-                  </div>
-
-                  <div className="border-t border-rose-200/60 dark:border-rose-900/60 pt-1">
-                    <p className="text-[9px] uppercase font-bold text-rose-700 dark:text-rose-400">
-                      MASA KERJA
-                    </p>
-                    <p className="font-medium text-foreground text-[11px]">
-                      {tenure || '-'} (Masuk: {formatIndonesianDate(data.join_date)})
-                    </p>
-                  </div>
+              {/* Domisili (Data Asli dari Database) */}
+              <div className="flex items-start gap-2.5">
+                <MapPin className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider">
+                    DOMISILI
+                  </p>
+                  <p className="font-semibold text-neutral-900 dark:text-white text-xs mt-0.5 leading-snug">
+                    {fullAddress || data.address || '-'}
+                  </p>
                 </div>
               </div>
 
-              {/* Tombol Cetak Label */}
-              <div className="pt-0.5">
-                <Button
-                  variant="outline"
-                  className="w-full h-7 text-xs gap-1.5 rounded-none border-border"
-                  onClick={() => window.print()}
-                >
-                  <Printer className="h-3 w-3" />
-                  <span>Cetak Label Pegawai</span>
-                </Button>
+              {/* Unit Kerja / Jabatan */}
+              <div className="flex items-start gap-2.5">
+                <Briefcase className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider">
+                    UNIT / JABATAN
+                  </p>
+                  <p className="font-semibold text-neutral-900 dark:text-white text-xs mt-0.5 truncate">
+                    {data.position || 'STAF'} • {unitName !== '-' ? unitName : 'Administrasi'}
+                  </p>
+                </div>
               </div>
+            </div>
+
+            {/* Peringatan Kepegawaian */}
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[9px] uppercase font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-1 tracking-wider">
+                STATUS KEPEGAWAIAN
+              </p>
+
+              <div className="p-3 border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 text-xs space-y-1.5 rounded-none">
+                <div>
+                  <p className="text-[9px] uppercase font-bold text-neutral-500">
+                    STATUS &amp; KATEGORI
+                  </p>
+                  <p className="font-semibold text-neutral-900 dark:text-white text-xs">
+                    {statusEmpName} • {categoryName}
+                  </p>
+                </div>
+
+                <div className="border-t border-neutral-200 dark:border-neutral-800 pt-1.5">
+                  <p className="text-[9px] uppercase font-bold text-neutral-500">
+                    MASA KERJA
+                  </p>
+                  <p className="font-semibold text-neutral-900 dark:text-white text-xs">
+                    {tenure || '-'} (Masuk: {formatIndonesianDate(data.join_date)})
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tombol Cetak Label */}
+            <div className="pt-1">
+              <Button
+                variant="outline"
+                className="w-full h-8 text-xs gap-1.5 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                onClick={() => window.print()}
+              >
+                <Printer className="h-3.5 w-3.5" />
+                <span>Cetak Label Pegawai</span>
+              </Button>
             </div>
           </div>
 
           {/* -------------------------------------------------------
-              KOLOM KANAN: TABULASI & SATU CARD TUNGGAL LENGKAP
+              KOLOM KANAN: TABULASI & KONTEN MENYATU
           ------------------------------------------------------- */}
-          <div className="lg:col-span-8 xl:col-span-8 space-y-2">
-            {/* Tab Navigation: Bersih & Rapi tanpa scrollbar */}
-            <div className="flex flex-wrap items-center gap-0 border-b border-border bg-transparent">
+          <div className="lg:col-span-8 xl:col-span-8 flex flex-col bg-white dark:bg-neutral-950">
+            {/* Tab Navigation: Kawan-Dolan Standard */}
+            <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 px-2 shrink-0 flex flex-wrap items-center no-scrollbar">
               <button
                 type="button"
                 onClick={() => setActiveTab('profile')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer rounded-none",
+                  "h-10 px-3.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors cursor-pointer rounded-none",
                   activeTab === 'profile'
-                    ? "border-primary text-primary font-bold -mb-px bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    ? "border-neutral-900 dark:border-white text-neutral-900 dark:text-white font-bold bg-white dark:bg-neutral-950 -mb-px"
+                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                 )}
               >
                 <User className="h-3.5 w-3.5" />
@@ -836,16 +840,16 @@ export default function EmployeeShow() {
                 type="button"
                 onClick={() => setActiveTab('attendance')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer rounded-none",
+                  "h-10 px-3.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors cursor-pointer rounded-none",
                   activeTab === 'attendance'
-                    ? "border-primary text-primary font-bold -mb-px bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    ? "border-neutral-900 dark:border-white text-neutral-900 dark:text-white font-bold bg-white dark:bg-neutral-950 -mb-px"
+                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                 )}
               >
                 <Clock className="h-3.5 w-3.5" />
                 <span>Rekap Absensi</span>
                 {attendanceStats.total > 0 && (
-                  <span className="text-[10px] px-1 py-0 bg-muted text-muted-foreground font-mono">
+                  <span className="text-[10px] px-1.5 py-0.2 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-mono">
                     {attendanceStats.total}
                   </span>
                 )}
@@ -855,16 +859,16 @@ export default function EmployeeShow() {
                 type="button"
                 onClick={() => setActiveTab('leave')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer rounded-none",
+                  "h-10 px-3.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors cursor-pointer rounded-none",
                   activeTab === 'leave'
-                    ? "border-primary text-primary font-bold -mb-px bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    ? "border-neutral-900 dark:border-white text-neutral-900 dark:text-white font-bold bg-white dark:bg-neutral-950 -mb-px"
+                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                 )}
               >
                 <CalendarDays className="h-3.5 w-3.5" />
                 <span>Cuti &amp; Izin</span>
                 {leaves.length > 0 && (
-                  <span className="text-[10px] px-1 py-0 bg-muted text-muted-foreground font-mono">
+                  <span className="text-[10px] px-1.5 py-0.2 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-mono">
                     {leaves.length}
                   </span>
                 )}
@@ -874,16 +878,16 @@ export default function EmployeeShow() {
                 type="button"
                 onClick={() => setActiveTab('roster')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer rounded-none",
+                  "h-10 px-3.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors cursor-pointer rounded-none",
                   activeTab === 'roster'
-                    ? "border-primary text-primary font-bold -mb-px bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    ? "border-neutral-900 dark:border-white text-neutral-900 dark:text-white font-bold bg-white dark:bg-neutral-950 -mb-px"
+                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                 )}
               >
                 <Timer className="h-3.5 w-3.5" />
                 <span>Jadwal &amp; Shift</span>
                 {rosters.length > 0 && (
-                  <span className="text-[10px] px-1 py-0 bg-muted text-muted-foreground font-mono">
+                  <span className="text-[10px] px-1.5 py-0.2 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-mono">
                     {rosters.length}
                   </span>
                 )}
@@ -893,10 +897,10 @@ export default function EmployeeShow() {
                 type="button"
                 onClick={() => setActiveTab('history')}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer rounded-none",
+                  "h-10 px-3.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors cursor-pointer rounded-none",
                   activeTab === 'history'
-                    ? "border-primary text-primary font-bold -mb-px bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    ? "border-neutral-900 dark:border-white text-neutral-900 dark:text-white font-bold bg-white dark:bg-neutral-950 -mb-px"
+                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
                 )}
               >
                 <History className="h-3.5 w-3.5" />
@@ -904,12 +908,13 @@ export default function EmployeeShow() {
               </button>
             </div>
 
-            {/* ===================================================
-                TAB 1: DETAIL PROFIL (SATU CARD TUNGGAL RINGKAS)
-                Padding atas disetel ketat & tanpa celah ganda
-            =================================================== */}
-            {activeTab === 'profile' && (
-              <div className="border border-border bg-card px-3.5 py-2.5 space-y-2.5 divide-y divide-border">
+            {/* Container Konten Tab */}
+            <div className="p-4 sm:p-5 flex-1">
+              {/* ===================================================
+                  TAB 1: DETAIL PROFIL
+              =================================================== */}
+              {activeTab === 'profile' && (
+                <div className="space-y-4 divide-y divide-neutral-200 dark:divide-neutral-800">
                 {/* 1. IDENTITAS LENGKAP */}
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1.5">
@@ -1163,10 +1168,10 @@ export default function EmployeeShow() {
                 TAB 2: REKAP ABSENSI (DENGAN DATATABLE LENGKAP)
             =================================================== */}
             {activeTab === 'attendance' && (
-              <div className="border border-border bg-card px-3.5 py-2.5 space-y-2.5">
+              <div className="space-y-4">
                 {/* Statistik KPI Absensi Ringkas */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="p-2 border border-border bg-card rounded-none space-y-0.5">
+                  <div className="p-2 border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 rounded-none space-y-0.5">
                     <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Tingkat Hadir</p>
                     <p className="text-base font-extrabold text-foreground">{attendanceStats.rate}%</p>
                     <p className="text-[9px] text-muted-foreground">
@@ -1376,10 +1381,10 @@ export default function EmployeeShow() {
                 TAB 3: REKAP CUTI & IZIN (DENGAN DATATABLE LENGKAP)
             =================================================== */}
             {activeTab === 'leave' && (
-              <div className="border border-border bg-card px-3.5 py-2.5 space-y-2.5">
+              <div className="space-y-4">
                 {/* Statistik Kuota Cuti Ringkas */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="p-2 border border-border bg-card rounded-none space-y-0.5">
+                  <div className="p-2 border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 rounded-none space-y-0.5">
                     <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Hak Cuti</p>
                     <p className="text-base font-extrabold text-foreground">{leaveStats.annualQuota} Hari</p>
                     <p className="text-[9px] text-muted-foreground">Kuota per tahun</p>
@@ -1549,7 +1554,7 @@ export default function EmployeeShow() {
                 TAB 4: JADWAL & SHIFT (DENGAN DATATABLE LENGKAP)
             =================================================== */}
             {activeTab === 'roster' && (
-              <div className="border border-border bg-card px-3.5 py-2.5 space-y-2.5">
+              <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
                     JADWAL SHIFT &amp; ROSTER PEGAWAI
@@ -1633,7 +1638,7 @@ export default function EmployeeShow() {
                 TAB 5: KELUARGA & RIWAYAT (SATU CARD RINGKAS)
             =================================================== */}
             {activeTab === 'history' && (
-              <div className="border border-border bg-card px-3.5 py-2.5 space-y-2.5 divide-y divide-border">
+              <div className="space-y-4 divide-y divide-neutral-200 dark:divide-neutral-800">
                 {/* 1. Keluarga */}
                 <div className="space-y-1.5">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -1741,6 +1746,7 @@ export default function EmployeeShow() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>

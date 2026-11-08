@@ -4,10 +4,10 @@ import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, CalendarClock, Loader2 } from 'lucide-react';
+import { CalendarClock, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
 
 export default function WorkScheduleEdit() {
@@ -27,7 +27,6 @@ export default function WorkScheduleEdit() {
             try {
                 const res = await api.get(`/work-schedules/${id}`);
                 const data = res.data;
-                // Parse time strings in case they contain full ISO dates
                 const extractTime = (t: string) => {
                     if (!t) return '00:00';
                     const match = t.match(/T(\d{2}:\d{2})/);
@@ -78,7 +77,7 @@ export default function WorkScheduleEdit() {
             navigate('/hr/work-schedules');
         } catch (error) {
             console.error(error);
-            alert('Gagal menyimpan shift.');
+            alert('Gagal memperbarui shift.');
         } finally {
             setLoading(false);
         }
@@ -87,8 +86,9 @@ export default function WorkScheduleEdit() {
     if (initialLoading) {
         return (
             <HrLayout>
-                <div className="flex items-center justify-center h-full">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 p-8 text-center text-xs text-neutral-500 font-mono">
+                    <Loader2 className="size-4 animate-spin inline-block mr-2 text-neutral-400" />
+                    Memuat data shift...
                 </div>
             </HrLayout>
         );
@@ -96,82 +96,164 @@ export default function WorkScheduleEdit() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/hr/work-schedules')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Edit Shift</h2>
-                        <p className="text-sm text-muted-foreground">Ubah master data shift</p>
+            <FormCard
+                title={`Edit Shift: ${formData.name || 'Shift'}`}
+                subtitle={`Kode: ${formData.code || '-'} • Perbarui jam operasional dan toleransi presensi`}
+                icon={CalendarClock}
+                onBack={() => navigate('/hr/work-schedules')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Perubahan"
+                onCancel={() => navigate('/hr/work-schedules')}
+            >
+                <div className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kode Shift <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="code" 
+                                name="code" 
+                                value={formData.code} 
+                                onChange={handleChange} 
+                                required 
+                                placeholder="SFT-PAGI" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nama Shift <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="name" 
+                                name="name" 
+                                value={formData.name} 
+                                onChange={handleChange} 
+                                required 
+                                placeholder="Shift Pagi" 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="clock_in_time" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Jam Masuk <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="clock_in_time" 
+                                name="clock_in_time" 
+                                type="text" 
+                                pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$" 
+                                placeholder="08:00" 
+                                value={formData.clock_in_time} 
+                                onChange={handleChange} 
+                                required 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                            <p className="text-[11px] text-neutral-500 font-mono">Format: HH:mm</p>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="clock_out_time" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Jam Pulang <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input 
+                                id="clock_out_time" 
+                                name="clock_out_time" 
+                                type="text" 
+                                pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$" 
+                                placeholder="16:00" 
+                                value={formData.clock_out_time} 
+                                onChange={handleChange} 
+                                required 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                            <p className="text-[11px] text-neutral-500 font-mono">Format: HH:mm</p>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="late_tolerance" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Toleransi Terlambat (Menit)
+                            </Label>
+                            <Input 
+                                id="late_tolerance" 
+                                name="late_tolerance" 
+                                type="number" 
+                                value={formData.late_tolerance} 
+                                onChange={handleChange} 
+                                required 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="early_leave_tolerance" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Toleransi Pulang Cepat
+                            </Label>
+                            <Input 
+                                id="early_leave_tolerance" 
+                                name="early_leave_tolerance" 
+                                type="number" 
+                                value={formData.early_leave_tolerance} 
+                                onChange={handleChange} 
+                                required 
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label htmlFor="description" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Keterangan Shift
+                        </Label>
+                        <Textarea 
+                            id="description" 
+                            name="description" 
+                            value={formData.description} 
+                            onChange={handleChange} 
+                            rows={3} 
+                            placeholder="Keterangan tambahan mengenai shift ini..."
+                            className="rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
+                    </div>
+
+                    <div className="border border-neutral-200 dark:border-neutral-800 p-4 bg-neutral-50/50 dark:bg-neutral-900/40 space-y-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 block">
+                            Pengaturan &amp; Status Shift
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <label className="flex items-center space-x-2.5 cursor-pointer">
+                                <Checkbox 
+                                    id="is_special" 
+                                    checked={formData.is_special} 
+                                    onCheckedChange={(c) => handleCheckedChange('is_special', c as boolean)} 
+                                    className="rounded-none"
+                                />
+                                <span className="text-xs text-neutral-700 dark:text-neutral-300 font-medium">Special Shift</span>
+                            </label>
+                            <label className="flex items-center space-x-2.5 cursor-pointer">
+                                <Checkbox 
+                                    id="is_flexible" 
+                                    checked={formData.is_flexible} 
+                                    onCheckedChange={(c) => handleCheckedChange('is_flexible', c as boolean)} 
+                                    className="rounded-none"
+                                />
+                                <span className="text-xs text-neutral-700 dark:text-neutral-300 font-medium">Shift Fleksibel</span>
+                            </label>
+                            <label className="flex items-center space-x-2.5 cursor-pointer">
+                                <Checkbox 
+                                    id="is_active" 
+                                    checked={formData.is_active} 
+                                    onCheckedChange={(c) => handleCheckedChange('is_active', c as boolean)} 
+                                    className="rounded-none"
+                                />
+                                <span className="text-xs text-neutral-700 dark:text-neutral-300 font-medium">Shift Aktif</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CalendarClock className="h-5 w-5 text-primary" />
-                                Informasi Shift
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="code">Kode Shift <span className="text-destructive">*</span></Label>
-                                <Input id="code" name="code" value={formData.code} onChange={handleChange} required placeholder="SFT-PAGI" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Nama Shift <span className="text-destructive">*</span></Label>
-                                <Input id="name" name="name" value={formData.name} onChange={handleChange} required placeholder="Shift Pagi" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="clock_in_time">Jam Masuk (24 Jam) <span className="text-destructive">*</span></Label>
-                                <Input id="clock_in_time" name="clock_in_time" type="text" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$" placeholder="08:00" value={formData.clock_in_time} onChange={handleChange} required />
-                                <p className="text-xs text-muted-foreground">Format: HH:mm (contoh: 08:00 atau 14:30)</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="clock_out_time">Jam Pulang (24 Jam) <span className="text-destructive">*</span></Label>
-                                <Input id="clock_out_time" name="clock_out_time" type="text" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$" placeholder="16:00" value={formData.clock_out_time} onChange={handleChange} required />
-                                <p className="text-xs text-muted-foreground">Format: HH:mm (contoh: 08:00 atau 14:30)</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="late_tolerance">Toleransi Terlambat (Menit)</Label>
-                                <Input id="late_tolerance" name="late_tolerance" type="number" value={formData.late_tolerance} onChange={handleChange} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="early_leave_tolerance">Toleransi Pulang Cepat (Menit)</Label>
-                                <Input id="early_leave_tolerance" name="early_leave_tolerance" type="number" value={formData.early_leave_tolerance} onChange={handleChange} required />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="description">Keterangan</Label>
-                                <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={3} />
-                            </div>
-                            <div className="flex flex-col gap-3 md:col-span-2 mt-2">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="is_special" checked={formData.is_special} onCheckedChange={(c) => handleCheckedChange('is_special', c as boolean)} />
-                                    <Label htmlFor="is_special" className="font-normal cursor-pointer">Tandai sebagai Special Shift (jam kerja lebih panjang/spesifik)</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="is_flexible" checked={formData.is_flexible} onCheckedChange={(c) => handleCheckedChange('is_flexible', c as boolean)} />
-                                    <Label htmlFor="is_flexible" className="font-normal cursor-pointer">Shift Fleksibel</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="is_active" checked={formData.is_active} onCheckedChange={(c) => handleCheckedChange('is_active', c as boolean)} />
-                                    <Label htmlFor="is_active" className="font-normal cursor-pointer">Aktif</Label>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="sticky bottom-0 z-40 mt-auto -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate('/hr/work-schedules')}>Batal</Button>
-                        <Button type="submit" size="sm" className="h-9 px-6" disabled={loading}>
-                            <Save className="mr-2 h-4 w-4" />
-                            {loading ? 'Menyimpan...' : 'Simpan Shift'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+            </FormCard>
         </HrLayout>
     );
 }

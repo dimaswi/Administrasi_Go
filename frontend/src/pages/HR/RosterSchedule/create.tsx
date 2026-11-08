@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, CalendarRange } from 'lucide-react';
+import { CalendarRange } from 'lucide-react';
+import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
 
 export default function RosterScheduleCreate() {
@@ -49,47 +48,72 @@ export default function RosterScheduleCreate() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" onClick={() => navigate('/hr/rosters')}><ArrowLeft className="h-4 w-4" /></Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Plot Roster Baru</h2>
+            <FormCard
+                title="Plot Roster Baru"
+                subtitle="Tetapkan penugasan jadwal shift kerja harian untuk staf"
+                icon={CalendarRange}
+                onBack={() => navigate('/hr/rosters')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Roster"
+                onCancel={() => navigate('/hr/rosters')}
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <Label htmlFor="user_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            ID Karyawan <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input 
+                            id="user_id"
+                            name="user_id" 
+                            type="number" 
+                            required 
+                            value={formData.user_id} 
+                            onChange={handleChange} 
+                            placeholder="Contoh: 101"
+                            className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="date" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Tanggal Pelaksanaan <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input 
+                            id="date"
+                            name="date" 
+                            type="date" 
+                            required 
+                            value={formData.date} 
+                            onChange={handleChange} 
+                            className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="work_schedule_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Pilih Shift <span className="text-rose-500">*</span>
+                        </Label>
+                        <SearchableSelect
+                            value={formData.work_schedule_id}
+                            onValueChange={(val) => setFormData(prev => ({ ...prev, work_schedule_id: val }))}
+                            placeholder="-- Pilih Shift --"
+                            options={shifts.map((s: any) => ({ value: s.id.toString(), label: `${s.name} (${s.clock_in_time?.substring(0,5)} - ${s.clock_out_time?.substring(0,5)})` }))}
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="notes" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Keterangan Tambahan
+                        </Label>
+                        <Input 
+                            id="notes"
+                            name="notes" 
+                            value={formData.notes} 
+                            onChange={handleChange} 
+                            placeholder="Misal: Ganti shift karena ada keperluan..." 
+                            className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
                     </div>
                 </div>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><CalendarRange className="h-5 w-5" /> Detail Roster Harian</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>ID Karyawan</Label>
-                                <Input name="user_id" type="number" required value={formData.user_id} onChange={handleChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Tanggal</Label>
-                                <Input name="date" type="date" required value={formData.date} onChange={handleChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Pilih Shift</Label>
-                                <SearchableSelect
-                                    value={formData.work_schedule_id}
-                                    onValueChange={(val) => setFormData(prev => ({ ...prev, work_schedule_id: val }))}
-                                    placeholder="-- Pilih Shift --"
-                                    options={shifts.map((s: any) => ({ value: s.id.toString(), label: `${s.name} (${s.clock_in_time.substring(0,5)} - ${s.clock_out_time.substring(0,5)})` }))}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Keterangan Tambahan</Label>
-                                <Input name="notes" value={formData.notes} onChange={handleChange} placeholder="Misal: Ganti shift..." />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="sticky bottom-0 z-40 mt-auto -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur border-t flex justify-end gap-3">
-                        <Button type="submit" disabled={loading}><Save className="mr-2 h-4 w-4" /> {loading ? 'Menyimpan...' : 'Simpan Roster'}</Button>
-                    </div>
-                </form>
-            </div>
+            </FormCard>
         </HrLayout>
     );
 }

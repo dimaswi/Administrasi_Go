@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
 
 function parseJwt(token: string) {
@@ -42,7 +41,7 @@ export default function ShiftExchangeCreate() {
         reason: ''
     });
 
-    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+    const [, setCurrentUserId] = useState<number | null>(null);
 
     // Initial fetch for all employees
     useEffect(() => {
@@ -101,7 +100,7 @@ export default function ShiftExchangeCreate() {
 
     // When target user changes, fetch their rosters
     useEffect(() => {
-        if (!formData.target_employee_id) {
+        if (!formData.target_employee_id || formData.exchange_type === 'cover') {
             setTargetRosters([]);
             setFormData(prev => ({ ...prev, target_roster_id: '' }));
             return;
@@ -121,7 +120,7 @@ export default function ShiftExchangeCreate() {
             }
         };
         fetchTargetRosters();
-    }, [formData.target_employee_id]);
+    }, [formData.target_employee_id, formData.exchange_type]);
 
     const handleSelectChange = (name: string, value: string) => {
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -153,118 +152,106 @@ export default function ShiftExchangeCreate() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                {/* Header Component */}
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/hr/shift-exchanges')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Ajukan Tukar Shift</h2>
-                        <p className="text-sm text-muted-foreground">Buat pengajuan pertukaran jadwal shift dengan karyawan lain</p>
+            <FormCard
+                title="Ajukan Tukar Shift"
+                subtitle="Buat pengajuan pertukaran jadwal shift dengan karyawan lain"
+                icon={ArrowLeftRight}
+                onBack={() => navigate('/hr/shift-exchanges')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Ajukan Sekarang"
+                onCancel={() => navigate('/hr/shift-exchanges')}
+            >
+                <div className="space-y-5">
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Jenis Pengajuan <span className="text-rose-500">*</span>
+                        </Label>
+                        <SearchableSelect
+                            options={[
+                                {value: 'swap', label: 'Tukar Shift (Swap) - Tukar jadwal Anda dengan orang lain'},
+                                {value: 'cover', label: 'Limpah Shift (Cover) - Berikan jadwal Anda tanpa mengambil jadwal pengganti'}
+                            ]}
+                            value={formData.exchange_type}
+                            onValueChange={(val) => handleSelectChange('exchange_type', val)}
+                            placeholder="Pilih Jenis Pengajuan"
+                        />
+                    </div>
+                    
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Karyawan Pengaju (Requesting Employee) <span className="text-rose-500">*</span>
+                            </Label>
+                            <SearchableSelect
+                                options={employees}
+                                value={formData.requesting_employee_id}
+                                onValueChange={(val) => handleSelectChange('requesting_employee_id', val)}
+                                placeholder="Pilih karyawan yang mengajukan..."
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Jadwal Pengaju (Original Roster) <span className="text-rose-500">*</span>
+                            </Label>
+                            <SearchableSelect
+                                options={myRosters}
+                                value={formData.original_roster_id}
+                                onValueChange={(val) => handleSelectChange('original_roster_id', val)}
+                                placeholder="Pilih jadwal yang akan ditukar..."
+                                disabled={!formData.requesting_employee_id}
+                            />
+                            <p className="text-[11px] text-neutral-500 font-mono">Pilih jadwal dari kalender pengaju.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Karyawan Tujuan (Target Employee) <span className="text-rose-500">*</span>
+                            </Label>
+                            <SearchableSelect
+                                options={employees.filter(e => e.value !== formData.requesting_employee_id)}
+                                value={formData.target_employee_id}
+                                onValueChange={(val) => handleSelectChange('target_employee_id', val)}
+                                placeholder="Pilih karyawan pengganti..."
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Jadwal Tujuan (Target Roster) {formData.exchange_type === 'swap' && <span className="text-rose-500">*</span>}
+                            </Label>
+                            <SearchableSelect
+                                options={targetRosters}
+                                value={formData.target_roster_id}
+                                onValueChange={(val) => handleSelectChange('target_roster_id', val)}
+                                placeholder="Pilih jadwal dari karyawan tujuan..."
+                                disabled={formData.exchange_type === 'cover' || !formData.target_employee_id}
+                            />
+                            <p className="text-[11px] text-neutral-500 font-mono">
+                                {formData.exchange_type === 'cover' 
+                                    ? 'Tidak perlu memilih jadwal untuk jenis Limpah Shift.'
+                                    : 'Pilih jadwal yang akan Anda ambil alih.'}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Alasan Penukaran <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input 
+                            placeholder="Tuliskan alasan mengapa Anda ingin menukar shift..." 
+                            value={formData.reason}
+                            onChange={(e) => handleSelectChange('reason', e.target.value)}
+                            required
+                            className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
                     </div>
                 </div>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-                    <Card>
-                        <CardHeader>
-                            <div>
-                                <CardTitle>Formulir Pengajuan</CardTitle>
-                                <CardDescription>Pilih jadwal Anda dan jadwal pengganti yang diinginkan</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-2">
-                                <Label>Jenis Pengajuan <span className="text-destructive">*</span></Label>
-                                <SearchableSelect
-                                    options={[
-                                        {value: 'swap', label: 'Tukar Shift (Swap) - Tukar jadwal Anda dengan orang lain'},
-                                        {value: 'cover', label: 'Limpah Shift (Cover) - Berikan jadwal Anda tanpa mengambil jadwal pengganti'}
-                                    ]}
-                                    value={formData.exchange_type}
-                                    onValueChange={(val) => handleSelectChange('exchange_type', val)}
-                                    placeholder="Pilih Jenis Pengajuan"
-                                />
-                            </div>
-                            
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label>Karyawan Pengaju (Requesting Employee) <span className="text-destructive">*</span></Label>
-                                    <SearchableSelect
-                                        options={employees}
-                                        value={formData.requesting_employee_id}
-                                        onValueChange={(val) => handleSelectChange('requesting_employee_id', val)}
-                                        placeholder="Pilih karyawan yang mengajukan..."
-                                    />
-                                </div>
-                                
-                                <div className="space-y-2">
-                                    <Label>Jadwal Pengaju (Original Roster) <span className="text-destructive">*</span></Label>
-                                    <SearchableSelect
-                                        options={myRosters}
-                                        value={formData.original_roster_id}
-                                        onValueChange={(val) => handleSelectChange('original_roster_id', val)}
-                                        placeholder="Pilih jadwal yang akan ditukar..."
-                                        disabled={!formData.requesting_employee_id}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Pilih jadwal dari kalender pengaju.</p>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label>Karyawan Tujuan (Target Employee) <span className="text-destructive">*</span></Label>
-                                    <SearchableSelect
-                                        options={employees.filter(e => e.value !== formData.requesting_employee_id)}
-                                        value={formData.target_employee_id}
-                                        onValueChange={(val) => handleSelectChange('target_employee_id', val)}
-                                        placeholder="Pilih karyawan pengganti..."
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Jadwal Tujuan (Target Roster) {formData.exchange_type === 'swap' && <span className="text-destructive">*</span>}</Label>
-                                    <SearchableSelect
-                                        options={targetRosters}
-                                        value={formData.target_roster_id}
-                                        onValueChange={(val) => handleSelectChange('target_roster_id', val)}
-                                        placeholder="Pilih jadwal dari karyawan tujuan..."
-                                        disabled={formData.exchange_type === 'cover' || !formData.target_employee_id}
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        {formData.exchange_type === 'cover' 
-                                            ? 'Tidak perlu memilih jadwal untuk jenis Limpah Shift.'
-                                            : 'Pilih jadwal yang akan Anda ambil alih.'}
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label>Alasan Penukaran <span className="text-destructive">*</span></Label>
-                                <Input 
-                                    placeholder="Tuliskan alasan mengapa Anda ingin menukar shift..." 
-                                    value={formData.reason}
-                                    onChange={(e) => handleSelectChange('reason', e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Form Actions */}
-                    <div className="mt-auto sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-4 md:-mx-4 md:-mb-2 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button type="button" variant="outline" size="sm" className="h-9 px-6" onClick={() => navigate('/hr/shift-exchanges')} disabled={loading}>Batal</Button>
-                        <Button type="submit" size="sm" className="h-9 px-6" disabled={loading}>
-                            {loading ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                                <Save className="h-4 w-4 mr-2" />
-                            )}
-                            {loading ? 'Mengajukan...' : 'Ajukan Sekarang'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+            </FormCard>
         </HrLayout>
     );
 }

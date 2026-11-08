@@ -79,88 +79,133 @@ export default function MeetingMemo() {
 
     return (
         <AdminLayout>
-            <div className="p-4 max-w-full pb-24">
-                <div className="flex items-center gap-2 mb-6">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate(`/admin/meetings/${id}`)}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Edit Memo</h2>
-                        <p className="text-sm text-muted-foreground">Edit konten memo untuk rapat ini.</p>
+            <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 shadow-none overflow-hidden flex flex-col font-sans mb-12">
+                {/* Header Toolbar */}
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300 shrink-0" 
+                            type="button" 
+                            onClick={() => navigate(`/admin/meetings/${id}`)}
+                            title="Kembali"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
+                            <FileDown className="size-4" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                            <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white truncate">
+                                Edit Memo Hasil Rapat
+                            </h1>
+                            <p className="text-[11px] text-neutral-500 font-mono truncate">
+                                {meeting.meeting_number} • {meeting.title}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {meeting.memo_content && (
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleDownloadMemo} 
+                                className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 text-xs shadow-none gap-1.5"
+                                disabled={meeting.status !== 'completed'}
+                            >
+                                <FileDown className="h-3.5 w-3.5" /> 
+                                <span>Download PDF</span>
+                            </Button>
+                        )}
+                        <Button 
+                            type="submit" 
+                            form="memo-form" 
+                            size="sm"
+                            disabled={processing} 
+                            className="h-8 px-4 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 shadow-none text-xs font-semibold gap-1.5"
+                        >
+                            <Save className="h-3.5 w-3.5" />
+                            {processing ? 'Menyimpan...' : 'Simpan Memo'}
+                        </Button>
                     </div>
                 </div>
 
-                <div className="pb-6">
-                    <Card className="shadow-none">
-                        <CardHeader>
-                            <CardTitle className="text-lg md:text-xl">Informasi Rapat</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <dl className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                <div>
-                                    <dt className="text-sm font-medium text-muted-foreground mb-1">No. Rapat</dt>
-                                    <dd className="font-medium">{meeting.meeting_number}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-sm font-medium text-muted-foreground mb-1">Judul</dt>
-                                    <dd className="font-medium">{meeting.title}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-sm font-medium text-muted-foreground mb-1">Tanggal</dt>
-                                    <dd className="font-medium">{formattedDate}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-sm font-medium text-muted-foreground mb-1">Waktu</dt>
-                                    <dd className="font-medium">
-                                        {meeting.start_time?.substring(0,5)} - {meeting.end_time?.substring(0,5)} WIB
-                                    </dd>
-                                </div>
-                            </dl>
-                        </CardContent>
-                    </Card>
+                {/* Informasi Rapat Bar */}
+                <div className="px-4 sm:px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40">
+                    <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                        <div>
+                            <dt className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">No. Rapat</dt>
+                            <dd className="font-mono font-medium text-neutral-900 dark:text-white">{meeting.meeting_number}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Judul</dt>
+                            <dd className="font-medium text-neutral-900 dark:text-white truncate">{meeting.title}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Tanggal</dt>
+                            <dd className="font-medium text-neutral-900 dark:text-white">{formattedDate}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Waktu</dt>
+                            <dd className="font-mono font-medium text-neutral-900 dark:text-white">
+                                {meeting.start_time?.substring(0,5)} - {meeting.end_time?.substring(0,5)} WIB
+                            </dd>
+                        </div>
+                    </dl>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                    <Card className="shadow-none">
-                        <CardHeader>
-                            <CardTitle className="text-lg md:text-xl">Konten Memo</CardTitle>
-                            <CardDescription>
-                                Gunakan editor di bawah untuk membuat konten memo rapat.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="bg-white">
-                                <ReactQuill
-                                    theme="snow"
-                                    value={memoContent}
-                                    onChange={handleContentChange}
-                                    className="h-[300px] mb-12"
-                                />
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-4">
-                                <div>
-                                    {meeting.memo_content && (
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
-                                            onClick={handleDownloadMemo} 
-                                            className="w-full sm:w-auto"
-                                            disabled={meeting.status !== 'completed'}
-                                        >
-                                            <FileDown className="mr-2 h-4 w-4" /> Download PDF
-                                            {meeting.status !== 'completed' && <span className="ml-2 text-xs">(Setelah Selesai)</span>}
-                                        </Button>
-                                    )}
-                                </div>
-                                <Button type="submit" disabled={processing} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
-                                    <Save className="mr-2 h-4 w-4" />
-                                    {processing ? 'Menyimpan...' : 'Simpan Memo'}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                {/* Konten Memo Editor */}
+                <form id="memo-form" onSubmit={handleSubmit} className="p-4 sm:p-5 flex-1 flex flex-col bg-white dark:bg-neutral-950">
+                    <div className="bg-white text-neutral-900">
+                        <ReactQuill
+                            theme="snow"
+                            value={memoContent}
+                            onChange={handleContentChange}
+                            className="h-[320px] mb-12"
+                        />
+                    </div>
                 </form>
+
+                {/* Footer Toolbar */}
+                <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40 flex items-center justify-between gap-3 shrink-0">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/admin/meetings/${id}`)}
+                        className="h-8 px-4 rounded-none border-neutral-200 dark:border-neutral-800 shadow-none text-xs font-semibold"
+                    >
+                        Kembali
+                    </Button>
+                    <div className="flex items-center gap-2">
+                        {meeting.memo_content && (
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleDownloadMemo} 
+                                className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 text-xs shadow-none gap-1.5"
+                                disabled={meeting.status !== 'completed'}
+                            >
+                                <FileDown className="h-3.5 w-3.5" /> 
+                                <span>Download PDF</span>
+                            </Button>
+                        )}
+                        <Button 
+                            type="submit" 
+                            form="memo-form" 
+                            size="sm"
+                            disabled={processing} 
+                            className="h-8 px-4 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 shadow-none text-xs font-semibold gap-1.5"
+                        >
+                            <Save className="h-3.5 w-3.5" />
+                            {processing ? 'Menyimpan...' : 'Simpan Memo'}
+                        </Button>
+                    </div>
+                </div>
             </div>
         </AdminLayout>
     );

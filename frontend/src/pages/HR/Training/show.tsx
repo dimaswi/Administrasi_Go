@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Loader2, GraduationCap } from 'lucide-react';
+import { Edit, Loader2, GraduationCap } from 'lucide-react';
 import api from '@/lib/api';
+import { DetailCard } from '@/components/ui/form-card';
 
 export default function TrainingShow() {
     const navigate = useNavigate();
@@ -52,123 +53,85 @@ export default function TrainingShow() {
 
     return (
         <HrLayout>
-            <div className="w-full max-w-full space-y-4">
-                {/* ─── Satu Kontainer Card Utuh (Single Unified Card Container) ──── */}
-                <div className="w-full border border-neutral-200 dark:border-neutral-800 rounded-none bg-white dark:bg-neutral-950 overflow-hidden shadow-none">
-                    {/* Card Header */}
-                    <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
-                        <div className="flex items-center gap-3">
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => navigate('/hr/trainings')}
-                                className="h-8 w-8 p-0 rounded-none border border-neutral-200 dark:border-neutral-800 shadow-none text-neutral-700 dark:text-neutral-300"
-                                title="Kembali"
-                            >
-                                <ArrowLeft className="size-4" />
-                            </Button>
-                            <div className="flex items-center gap-2.5">
-                                <div className="size-8 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-bold text-sm shrink-0">
-                                    <GraduationCap className="size-4" />
-                                </div>
-                                <div>
-                                    <h1 className="text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white">
-                                        Detail Program Training: {data.code}
-                                    </h1>
-                                    <p className="text-[11px] text-neutral-500 font-mono">
-                                        {data.name}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Action */}
-                        <div className="flex items-center gap-2">
-                            <Button 
-                                onClick={() => navigate(`/hr/trainings/${id}/edit`)}
-                                className="h-8 px-3 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 text-xs font-semibold gap-1.5 shadow-none"
-                            >
-                                <Edit className="size-3.5" /> Edit Program
-                            </Button>
-                        </div>
+            <DetailCard
+                title={`Program: ${data.name}`}
+                subtitle={`Kode: ${data.code} • ${data.provider || 'Internal'}`}
+                icon={GraduationCap}
+                onBack={() => navigate('/hr/trainings')}
+                statusBadge={
+                    <div className="flex items-center gap-1.5">
+                        <Badge variant={data.is_mandatory ? 'default' : 'secondary'} className="rounded-none text-xs">
+                            {data.is_mandatory ? 'Wajib' : 'Opsional'}
+                        </Badge>
+                        <Badge variant={data.is_active ? 'outline' : 'destructive'} className="rounded-none text-xs">
+                            {data.is_active ? 'Aktif' : 'Non-Aktif'}
+                        </Badge>
                     </div>
-
-                    {/* Card Body */}
-                    <div className="p-6 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Kode & Nama Program</div>
-                                    <div className="text-base font-bold text-neutral-900 dark:text-white mt-0.5">{data.code} - {data.name}</div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Tipe Pelatihan</div>
-                                        <div className="text-sm font-semibold capitalize mt-0.5">{data.type || '-'}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Kategori Skill</div>
-                                        <div className="text-sm font-semibold capitalize mt-0.5">{data.category || '-'}</div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Lembaga / Provider</div>
-                                    <div className="text-sm font-medium mt-0.5">{data.provider || '-'}</div>
-                                </div>
-
-                                <div>
-                                    <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Lokasi Pelaksanaan</div>
-                                    <div className="text-sm font-medium mt-0.5">{data.location || '-'}</div>
-                                </div>
+                }
+                actions={
+                    <Button 
+                        size="sm" 
+                        onClick={() => navigate(`/hr/trainings/${id}/edit`)}
+                        className="h-8 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs shadow-none font-semibold"
+                    >
+                        <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit Program
+                    </Button>
+                }
+            >
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider mb-4 border-b border-neutral-200 dark:border-neutral-800 pb-2">
+                            Informasi Program Pelatihan
+                        </h3>
+                        <dl className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Kode Program</dt>
+                                <dd className="text-sm font-mono font-semibold text-neutral-900 dark:text-white">{data.code}</dd>
                             </div>
-
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Durasi</div>
-                                        <div className="text-sm font-bold mt-0.5">{data.duration_hours ? `${data.duration_hours} Jam` : '-'}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Biaya per Orang</div>
-                                        <div className="text-sm font-bold mt-0.5">
-                                            {data.cost ? `Rp ${Number(data.cost).toLocaleString('id-ID')}` : 'Gratis / Rp 0'}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Kewajiban</div>
-                                        <div className="mt-1">
-                                            <Badge variant={data.is_mandatory ? 'default' : 'secondary'} className="rounded-none text-xs">
-                                                {data.is_mandatory ? 'Wajib' : 'Pilihan / Opsional'}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Status</div>
-                                        <div className="mt-1">
-                                            <Badge variant={data.is_active ? 'outline' : 'destructive'} className="rounded-none text-xs">
-                                                {data.is_active ? 'Aktif' : 'Non-Aktif'}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Deskripsi Lengkap</div>
-                                    <div className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 mt-1 whitespace-pre-wrap bg-neutral-50 dark:bg-neutral-900 p-3 border border-neutral-200 dark:border-neutral-800">
-                                        {data.description || 'Tidak ada deskripsi'}
-                                    </div>
-                                </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Nama Program</dt>
+                                <dd className="text-sm font-semibold text-neutral-900 dark:text-white">{data.name}</dd>
                             </div>
-                        </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Tipe Pelatihan</dt>
+                                <dd className="text-sm font-medium capitalize text-neutral-900 dark:text-white">{data.type || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Kategori Skill</dt>
+                                <dd className="text-sm font-medium capitalize text-neutral-900 dark:text-white">{data.category || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Lembaga / Provider</dt>
+                                <dd className="text-sm font-medium text-neutral-900 dark:text-white">{data.provider || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Lokasi Pelaksanaan</dt>
+                                <dd className="text-sm font-medium text-neutral-900 dark:text-white">{data.location || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Durasi Pelatihan</dt>
+                                <dd className="text-sm font-bold text-neutral-900 dark:text-white">{data.duration_hours ? `${data.duration_hours} Jam` : '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Biaya per Orang</dt>
+                                <dd className="text-sm font-bold text-neutral-900 dark:text-white">
+                                    {data.cost ? `Rp ${Number(data.cost).toLocaleString('id-ID')}` : 'Gratis / Rp 0'}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Status Keaktifan</dt>
+                                <dd className="text-sm font-medium text-neutral-900 dark:text-white">{data.is_active ? 'Aktif' : 'Non-Aktif'}</dd>
+                            </div>
+                            {data.description && (
+                                <div className="md:col-span-2 lg:col-span-3">
+                                    <dt className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Deskripsi Lengkap</dt>
+                                    <dd className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-900 p-3 border border-neutral-200 dark:border-neutral-800 rounded-none whitespace-pre-wrap">{data.description}</dd>
+                                </div>
+                            )}
+                        </dl>
                     </div>
                 </div>
-            </div>
+            </DetailCard>
         </HrLayout>
     );
 }

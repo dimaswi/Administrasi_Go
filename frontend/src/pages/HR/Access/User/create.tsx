@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HrLayout from '@/layouts/hr-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Users } from 'lucide-react';
 import api from '@/lib/api';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { FormCard, FormSection } from '@/components/ui/form-card';
 
 export default function UserCreate() {
     const navigate = useNavigate();
@@ -48,74 +47,72 @@ export default function UserCreate() {
 
     return (
         <HrLayout>
-            <div className="w-full flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" size="icon" className="rounded-full h-10 w-10 shrink-0" type="button" onClick={() => navigate('/hr/access/users')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="space-y-0.5">
-                        <h2 className="text-xl font-semibold">Tambah User</h2>
-                        <p className="text-sm text-muted-foreground">Isi formulir di bawah ini untuk menambahkan data baru.</p>
+            <FormCard
+                title="Tambah Pengguna Baru"
+                subtitle="Daftarkan akun user login dan atur hak akses role di sistem"
+                icon={Users}
+                onBack={() => navigate('/hr/access/users')}
+                onSubmit={handleSubmit}
+                loading={loading}
+                submitText="Simpan Pengguna"
+                onCancel={() => navigate('/hr/access/users')}
+            >
+                <FormSection title="1. Akun & Kredensial" description="Informasi identitas akun pegawai dan hak akses sistem">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Nama Lengkap <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input
+                                id="name"
+                                required
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Contoh: Budi Santoso, S.Kom"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="nip" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                NIP / NIK <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input
+                                id="nip"
+                                required
+                                value={formData.nip}
+                                onChange={e => setFormData({ ...formData, nip: e.target.value })}
+                                placeholder="Nomor Induk Pegawai"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="password" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Kata Sandi <span className="text-rose-500">*</span>
+                            </Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                required
+                                value={formData.password}
+                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                placeholder="Minimal 6 karakter"
+                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="role_id" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                                Role Hak Akses <span className="text-rose-500">*</span>
+                            </Label>
+                            <SearchableSelect
+                                options={roles.map(r => ({ value: String(r.id), label: r.name }))}
+                                value={formData.role_id ? String(formData.role_id) : ""}
+                                onValueChange={(val) => setFormData({ ...formData, role_id: Number(val) })}
+                                placeholder="Pilih Role Pengguna"
+                            />
+                        </div>
                     </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Informasi User</CardTitle>
-                            <CardDescription>Isi form dibawah ini untuk menambahkan data user baru</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label>Nama Lengkap</Label>
-                                    <Input
-                                        required
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>NIP / NIK</Label>
-                                    <Input
-                                        required
-                                        value={formData.nip}
-                                        onChange={e => setFormData({ ...formData, nip: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Password</Label>
-                                    <Input
-                                        type="password"
-                                        required
-                                        value={formData.password}
-                                        onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Role</Label>
-                                    <SearchableSelect
-                                        options={roles.map(r => ({ value: String(r.id), label: r.name }))}
-                                        value={formData.role_id ? String(formData.role_id) : ""}
-                                        onValueChange={(val) => setFormData({ ...formData, role_id: Number(val) })}
-                                        placeholder="-- Pilih Role --"
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="mt-auto sticky bottom-0 z-40 -mx-4 -mb-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t flex items-center justify-end gap-3">
-                        <Button variant="outline" type="button" onClick={() => navigate('/hr/access/users')}>
-                            Batal
-                        </Button>
-                        <Button type="submit" disabled={loading}>
-                            <Save className="h-4 w-4 mr-2" />
-                            {loading ? 'Menyimpan...' : 'Simpan'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+                </FormSection>
+            </FormCard>
         </HrLayout>
     );
 }
