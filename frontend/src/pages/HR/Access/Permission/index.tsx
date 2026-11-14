@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Plus, MoreHorizontal, Edit, Trash2, Key } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Permission {
     id: number;
@@ -66,14 +67,24 @@ export default function PermissionIndex() {
         to: Math.min(page * perPage, total)
     };
 
-    const handleDelete = async (id: number) => {
-        if (confirm('Yakin ingin menghapus permission ini?')) {
-            try {
-                await api.delete(`/permissions/${id}`);
-                fetchData();
-            } catch (error) {
-                console.error(error);
-            }
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteId === null) return;
+        setDeleting(true);
+        try {
+            await api.delete(`/permissions/${deleteId}`);
+            fetchData();
+            setDeleteId(null);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -153,6 +164,17 @@ export default function PermissionIndex() {
                 emptyMessage="Belum ada data permission"
                 emptyIcon={Key}
                 isLoading={loading}
+            />
+
+            <ConfirmDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+                title="Hapus Permission"
+                description="Yakin ingin menghapus permission ini?"
+                variant="destructive"
+                confirmText="Hapus"
+                loading={deleting}
+                onConfirm={confirmDelete}
             />
         </HrLayout>
     );

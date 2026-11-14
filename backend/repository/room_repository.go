@@ -2,6 +2,7 @@ package repository
 
 import (
 	"backend/models"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -27,6 +28,13 @@ func (r *RoomRepository) GetByID(id int) (*models.Room, error) {
 }
 
 func (r *RoomRepository) Create(room *models.Room) error {
+	if strings.TrimSpace(room.Code) == "" {
+		code, err := generateAutoCode(r.db, "rooms", "ROOM")
+		if err != nil {
+			return err
+		}
+		room.Code = code
+	}
 	query := `
 		INSERT INTO rooms (code, name, building, floor, capacity, facilities, description, is_active, created_at, updated_at)
 		VALUES (:code, :name, :building, :floor, :capacity, :facilities, :description, :is_active, :created_at, :updated_at)

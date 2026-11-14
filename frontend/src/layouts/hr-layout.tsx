@@ -397,23 +397,21 @@ function NavUser() {
   const canAccessSettings = isAdmin || hasPermission('settings.view') || hasPermission('settings.edit');
 
   return (
-    <SidebarMenu className="px-2">
+    <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent rounded-none">
-            <div className="flex items-center gap-2 flex-1 text-left text-sm leading-tight min-w-0">
-              <div className="h-8 w-8 rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-semibold text-xs shrink-0">{initials}</div>
-              <div className="grid flex-1 min-w-0">
-                <span className="truncate font-semibold text-neutral-900 dark:text-neutral-100">{name}</span>
-                <span className="truncate text-xs text-neutral-500 font-normal">{nipOrEmail}</span>
-              </div>
+          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent rounded-none group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center">
+            <div className="h-8 w-8 rounded-none bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-semibold text-xs shrink-0">{initials}</div>
+            <div className="grid flex-1 text-left text-sm leading-tight min-w-0 group-data-[collapsible=icon]:hidden">
+              <span className="truncate font-semibold text-neutral-900 dark:text-neutral-100">{name}</span>
+              <span className="truncate text-xs text-neutral-500 font-normal">{nipOrEmail}</span>
             </div>
-            <ChevronsUpDown className="ml-auto size-4 text-neutral-400 shrink-0" />
+            <ChevronsUpDown className="ml-auto size-4 text-neutral-400 shrink-0 group-data-[collapsible=icon]:hidden" />
           </SidebarMenuButton>} />
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none"
             align="end"
-            side={isCollapsed ? 'left' : 'bottom'}
+            side={isCollapsed ? 'right' : 'top'}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">

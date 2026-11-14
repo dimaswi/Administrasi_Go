@@ -9,9 +9,11 @@ import { Building2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function OrganizationEdit() {
     const { id } = useParams();
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     React.useEffect(() => {
         if (id) {
@@ -101,7 +103,7 @@ export default function OrganizationEdit() {
             navigate('/hr/organizations');
         } catch (error) {
             console.error(error);
-            alert('Gagal menyimpan Unit Organisasi.');
+            setAlertMessage('Gagal menyimpan Unit Organisasi.');
         } finally {
             setLoading(false);
         }
@@ -223,6 +225,14 @@ export default function OrganizationEdit() {
                     </div>
                 </div>
             </FormCard>
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }

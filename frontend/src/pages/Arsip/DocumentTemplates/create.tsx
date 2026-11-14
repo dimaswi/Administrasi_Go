@@ -102,9 +102,6 @@ export default function DocumentTemplateCreate({ categories = [] }: Props) {
         if (!template.name?.trim()) {
             newErrors.name = 'Nama template wajib diisi';
         }
-        if (!template.code?.trim()) {
-            newErrors.code = 'Kode template wajib diisi';
-        }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -243,34 +240,18 @@ export default function DocumentTemplateCreate({ categories = [] }: Props) {
                                                 {errors.name && <p className="text-xs text-rose-500 font-mono">{errors.name}</p>}
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1.5">
-                                                    <Label htmlFor="code" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">
-                                                        Kode Template <span className="text-rose-500">*</span>
-                                                    </Label>
-                                                    <Input
-                                                        id="code"
-                                                        value={template.code}
-                                                        onChange={(e) => updateTemplate({ code: e.target.value.toUpperCase() })}
-                                                        placeholder="SK"
-                                                        className="h-9 uppercase font-mono rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
-                                                    />
-                                                    {errors.code && <p className="text-xs text-rose-500 font-mono">{errors.code}</p>}
-                                                </div>
-
-                                                <div className="space-y-1.5">
-                                                    <Label htmlFor="category" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Kategori</Label>
-                                                    <SearchableSelect
-                                                        value={template.category || '__none__'}
-                                                        onValueChange={(value) => updateTemplate({ category: value === '__none__' ? null : value })}
-                                                        options={[
-                                                            { value: '__none__', label: 'Tanpa Kategori' },
-                                                            ...availableCategories.map(cat => ({ value: cat, label: cat }))
-                                                        ]}
-                                                        placeholder="Pilih Kategori"
-                                                        className="h-9 rounded-none border-neutral-200 dark:border-neutral-800"
-                                                    />
-                                                </div>
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="category" className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Kategori</Label>
+                                                <SearchableSelect
+                                                    value={template.category || '__none__'}
+                                                    onValueChange={(value) => updateTemplate({ category: value === '__none__' ? null : value })}
+                                                    options={[
+                                                        { value: '__none__', label: 'Tanpa Kategori' },
+                                                        ...availableCategories.map(cat => ({ value: cat, label: cat }))
+                                                    ]}
+                                                    placeholder="Pilih Kategori"
+                                                    className="h-9 rounded-none border-neutral-200 dark:border-neutral-800"
+                                                />
                                             </div>
 
                                             <div className="space-y-1.5">

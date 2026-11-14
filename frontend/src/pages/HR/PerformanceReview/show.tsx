@@ -13,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
     Award,
     Edit,
@@ -89,6 +90,8 @@ export default function PerformanceReviewShow() {
     const [isSelfReviewOpen, setIsSelfReviewOpen] = useState(false);
     const [isManagerReviewOpen, setIsManagerReviewOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     // Self Review Form State
     const [selfItems, setSelfItems] = useState<
@@ -172,7 +175,7 @@ export default function PerformanceReviewShow() {
             fetchReview();
         } catch (error: any) {
             console.error('Error submitting self review:', error);
-            alert(error?.response?.data?.error || 'Gagal menyimpan penilaian mandiri');
+            setAlertMessage(error?.response?.data?.error || 'Gagal menyimpan penilaian mandiri');
         } finally {
             setSubmitting(false);
         }
@@ -244,24 +247,29 @@ export default function PerformanceReviewShow() {
             fetchReview();
         } catch (error: any) {
             console.error('Error submitting manager review:', error);
-            alert(error?.response?.data?.error || 'Gagal menyimpan review atasan');
+            setAlertMessage(error?.response?.data?.error || 'Gagal menyimpan review atasan');
         } finally {
             setSubmitting(false);
         }
     };
 
     // Complete Review Action
-    const handleCompleteReview = async () => {
-        if (!confirm('Apakah Anda yakin ingin menyelesaikan dan mengunci sesi penilaian ini? Setelah selesai, nilai tidak dapat diubah lagi.')) {
-            return;
-        }
+    const handleCompleteReview = () => {
+        setCompleteConfirmOpen(true);
+    };
 
+    const confirmCompleteReview = async () => {
+        setSubmitting(true);
         try {
             await api.post(`/performance-reviews/${id}/complete`);
+            setCompleteConfirmOpen(false);
             fetchReview();
         } catch (error: any) {
             console.error('Error completing review:', error);
-            alert(error?.response?.data?.error || 'Gagal menyelesaikan penilaian');
+            setCompleteConfirmOpen(false);
+            setAlertMessage(error?.response?.data?.error || 'Gagal menyelesaikan penilaian');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -931,6 +939,24 @@ export default function PerformanceReviewShow() {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={completeConfirmOpen}
+                onOpenChange={setCompleteConfirmOpen}
+                title="Selesaikan Penilaian"
+                description="Apakah Anda yakin ingin menyelesaikan dan mengunci sesi penilaian ini? Setelah selesai, nilai tidak dapat diubah lagi."
+                confirmText="Selesaikan & Kunci"
+                loading={submitting}
+                onConfirm={confirmCompleteReview}
+            />
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }

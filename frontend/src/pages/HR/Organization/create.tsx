@@ -9,10 +9,12 @@ import { Building2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function OrganizationCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     // For a real app, you would fetch the list of existing units and users to populate parent_id and head_id
     // But for now we just use simple input or static options.
@@ -81,7 +83,7 @@ export default function OrganizationCreate() {
             navigate('/hr/organizations');
         } catch (error) {
             console.error(error);
-            alert('Gagal menyimpan Unit Organisasi.');
+            setAlertMessage('Gagal menyimpan Unit Organisasi.');
         } finally {
             setLoading(false);
         }
@@ -100,35 +102,19 @@ export default function OrganizationCreate() {
                 onCancel={() => navigate('/hr/organizations')}
             >
                 <div className="space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
-                                Kode Unit <span className="text-rose-500">*</span>
-                            </Label>
-                            <Input 
-                                id="code" 
-                                name="code" 
-                                value={formData.code} 
-                                onChange={handleChange} 
-                                required 
-                                placeholder="Contoh: DIR, HRD, IT" 
-                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono" 
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
-                                Nama Unit <span className="text-rose-500">*</span>
-                            </Label>
-                            <Input 
-                                id="name" 
-                                name="name" 
-                                value={formData.name} 
-                                onChange={handleChange} 
-                                required 
-                                placeholder="Contoh: Divisi Keuangan" 
-                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" 
-                            />
-                        </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Nama Unit <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input 
+                            id="name" 
+                            name="name" 
+                            value={formData.name} 
+                            onChange={handleChange} 
+                            required 
+                            placeholder="Contoh: Divisi Keuangan" 
+                            className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm" 
+                        />
                     </div>
 
                     <div className="space-y-1.5">
@@ -203,6 +189,14 @@ export default function OrganizationCreate() {
                     </div>
                 </div>
             </FormCard>
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }

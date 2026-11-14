@@ -48,24 +48,9 @@ export default function LeaveTypeCreate() {
                 submitText="Simpan Jenis Cuti"
                 onCancel={() => navigate('/hr/master-data/leavetype')}
             >
-                <FormSection title="1. Informasi Dasar Cuti" description="Kode unik, nama skema cuti, dan alokasi kuota tahunan">
+                <FormSection title="1. Informasi Dasar Cuti" description="Nama skema cuti dan alokasi kuota tahunan (kode dibuat otomatis)">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
-                                Kode Cuti <span className="text-rose-500">*</span>
-                            </Label>
-                            <Input 
-                                id="code" 
-                                name="code" 
-                                type="text" 
-                                value={formData.code} 
-                                onChange={handleChange} 
-                                required 
-                                placeholder="Contoh: CT-01, CS-01" 
-                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 md:col-span-2">
                             <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
                                 Nama Cuti <span className="text-rose-500">*</span>
                             </Label>

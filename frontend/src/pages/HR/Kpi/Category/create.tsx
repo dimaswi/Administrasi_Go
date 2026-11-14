@@ -60,39 +60,22 @@ export default function KpiCategoryCreate() {
             >
                 <FormSection
                     title="Informasi Kategori"
-                    description="Tentukan kode pengenal, nama kategori KPI, dan bobot evaluasi"
+                    description="Tentukan nama kategori KPI dan bobot evaluasi (kode dibuat otomatis)"
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-1.5">
-                            <label htmlFor="code" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                Kode Kategori <span className="text-rose-500">*</span>
-                            </label>
-                            <Input
-                                id="code"
-                                name="code"
-                                type="text"
-                                value={formData.code}
-                                onChange={handleChange}
-                                required
-                                placeholder="Misal: KPI-MED, KPI-ADM"
-                                className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label htmlFor="name" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                Nama Kategori <span className="text-rose-500">*</span>
-                            </label>
-                            <Input
-                                id="name"
-                                name="name"
-                                type="text"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                placeholder="Misal: Pelayanan Medis / Operasional"
-                                className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                            />
-                        </div>
+                    <div className="space-y-1.5">
+                        <label htmlFor="name" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                            Nama Kategori <span className="text-rose-500">*</span>
+                        </label>
+                        <Input
+                            id="name"
+                            name="name"
+                            type="text"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                            placeholder="Misal: Pelayanan Medis / Operasional"
+                            className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

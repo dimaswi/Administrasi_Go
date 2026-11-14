@@ -3,6 +3,7 @@ package repository
 import (
 	"backend/models"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -89,6 +90,13 @@ func (r *DocumentTemplateRepository) GetByID(id int) (*models.DocumentTemplate, 
 }
 
 func (r *DocumentTemplateRepository) Create(t *models.DocumentTemplate) error {
+	if strings.TrimSpace(t.Code) == "" {
+		code, err := generateAutoCode(r.DB, "document_templates", "TPL")
+		if err != nil {
+			return err
+		}
+		t.Code = code
+	}
 	query := `
 		INSERT INTO document_templates (
 			name, code, category, template_type, organization_unit_id, description,

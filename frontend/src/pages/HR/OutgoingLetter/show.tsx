@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function OutgoingLetterShow() {
     const { id } = useParams();
@@ -28,6 +29,8 @@ export default function OutgoingLetterShow() {
     const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -165,9 +168,12 @@ export default function OutgoingLetterShow() {
         });
     }
 
-    const handleSubmitDraft = async () => {
-        if (!confirm('Apakah Anda yakin ingin mengajukan surat ini? Setelah diajukan, surat tidak dapat diedit lagi.')) return;
+    const handleSubmitDraft = () => {
+        setSubmitConfirmOpen(true);
+    };
 
+    const confirmSubmitDraft = async () => {
+        setProcessing(true);
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(getApiUrl(`/api/outgoing-letters/${id}/submit`), {
@@ -175,15 +181,18 @@ export default function OutgoingLetterShow() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                // Reload data
                 window.location.reload();
             } else {
                 const data = await res.json();
-                alert(data.error || 'Gagal mengajukan surat');
+                setSubmitConfirmOpen(false);
+                setAlertMessage(data.error || 'Gagal mengajukan surat');
             }
         } catch (err) {
             console.error(err);
-            alert('Terjadi kesalahan jaringan');
+            setSubmitConfirmOpen(false);
+            setAlertMessage('Terjadi kesalahan jaringan');
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -199,12 +208,12 @@ export default function OutgoingLetterShow() {
                 window.location.reload();
             } else {
                 const data = await res.json();
-                alert(data.error || 'Gagal menandatangani surat');
+                setAlertMessage(data.error || 'Gagal menandatangani surat');
                 setProcessing(false);
             }
         } catch (err) {
             console.error(err);
-            alert('Terjadi kesalahan jaringan');
+            setAlertMessage('Terjadi kesalahan jaringan');
             setProcessing(false);
         }
     };
@@ -226,12 +235,12 @@ export default function OutgoingLetterShow() {
                 window.location.reload();
             } else {
                 const data = await res.json();
-                alert(data.error || 'Gagal menolak surat');
+                setAlertMessage(data.error || 'Gagal menolak surat');
                 setProcessing(false);
             }
         } catch (err) {
             console.error(err);
-            alert('Terjadi kesalahan jaringan');
+            setAlertMessage('Terjadi kesalahan jaringan');
             setProcessing(false);
         }
     };
@@ -522,6 +531,24 @@ export default function OutgoingLetterShow() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={submitConfirmOpen}
+                onOpenChange={setSubmitConfirmOpen}
+                title="Ajukan Surat"
+                description="Apakah Anda yakin ingin mengajukan surat ini? Setelah diajukan, surat tidak dapat diedit lagi."
+                confirmText="Ajukan Surat"
+                loading={processing}
+                onConfirm={confirmSubmitDraft}
+            />
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </AdminLayout>
     );
 }

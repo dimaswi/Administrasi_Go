@@ -4,7 +4,7 @@ import HrLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Loader2, X, Check, ChevronsUpDown, Building2, Users, Sparkles, ShieldCheck, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, X, Check, ChevronsUpDown, Building2, Users, Sparkles, ShieldCheck, Lock, Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -588,16 +588,21 @@ export default function RosterPlanner() {
 
     return (
         <HrLayout>
-            <div className="flex flex-col h-[calc(100vh-8rem)] w-full overflow-hidden">
-                {/* Header & Controls */}
-                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-4 gap-4">
-                    <div className="flex items-center gap-3">
-                        <div>
+            <div className="flex flex-col h-[calc(100vh-8rem)] w-full rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
+                {/* Header */}
+                <div className="px-4 py-3.5 border-b border-neutral-200 dark:border-neutral-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="size-8 shrink-0 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center">
+                            <Calendar className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="text-xl font-bold">Timeline Roster</h1>
+                                <h1 className="text-sm font-semibold tracking-tight uppercase text-neutral-900 dark:text-neutral-100">
+                                    Timeline Roster
+                                </h1>
                                 {managedUnit && (isKepalaUnit || isKepalaBagian) && (
-                                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold px-2.5 py-0.5 flex items-center gap-1.5">
-                                        <Building2 className="h-3.5 w-3.5" />
+                                    <Badge variant="outline" className="rounded-none bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700 text-[11px] font-semibold px-2 py-0.5 flex items-center gap-1">
+                                        <Building2 className="h-3 w-3" />
                                         {managedUnit.name}
                                         <span className="text-[10px] text-muted-foreground font-normal">
                                             ({isKepalaBagian ? 'Kepala Bagian' : 'Kepala Unit'})
@@ -605,124 +610,83 @@ export default function RosterPlanner() {
                                     </Badge>
                                 )}
                             </div>
-                            <p className="text-sm text-muted-foreground">Mode Harian (Gantt Chart Jadwal Kerja)</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Mode Harian (Gantt Chart Jadwal Kerja)</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                        {/* Unit Selector: Searchable Combobox for Admin, Locked/Restricted for Non-Admin */}
-                        {isAdmin ? (
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                                    <Building2 className="h-3.5 w-3.5" /> Unit:
-                                </span>
-                                <Popover open={isUnitOpen} onOpenChange={setIsUnitOpen}>
-                                    <PopoverTrigger role="combobox" className="w-[230px] inline-flex items-center justify-between rounded-md border border-input bg-background h-9 px-3 text-xs font-normal ring-offset-background hover:bg-accent hover:text-accent-foreground">
-                                        <span className="truncate">
-                                            {orgUnits.find(u => u.id === selectedUnitId)?.name || "Pilih Unit Organisasi..."}
-                                        </span>
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[280px] p-0" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Cari unit organisasi..." className="h-9 text-xs" />
-                                            <CommandList>
-                                                <CommandEmpty>Unit tidak ditemukan.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {orgUnits.map((u: any) => (
-                                                        <CommandItem
-                                                            key={u.id}
-                                                            value={u.name}
-                                                            onSelect={() => {
-                                                                handleUnitChange(u.id);
-                                                                setIsUnitOpen(false);
-                                                            }}
-                                                            className="text-xs cursor-pointer"
-                                                        >
-                                                            <Check className={cn("mr-2 h-4 w-4", selectedUnitId === u.id ? "opacity-100" : "opacity-0")} />
-                                                            {u.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        ) : headedUnits.length > 1 ? (
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                                    <Building2 className="h-3.5 w-3.5" /> Unit:
-                                </span>
-                                <Popover open={isUnitOpen} onOpenChange={setIsUnitOpen}>
-                                    <PopoverTrigger role="combobox" className="w-[230px] inline-flex items-center justify-between rounded-md border border-input bg-background h-9 px-3 text-xs font-normal ring-offset-background hover:bg-accent hover:text-accent-foreground">
-                                        <span className="truncate">
-                                            {headedUnits.find(u => u.id === selectedUnitId)?.name || "Pilih Unit Anda..."}
-                                        </span>
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[280px] p-0" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Cari unit Anda..." className="h-9 text-xs" />
-                                            <CommandList>
-                                                <CommandEmpty>Unit tidak ditemukan.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {headedUnits.map((u: any) => (
-                                                        <CommandItem
-                                                            key={u.id}
-                                                            value={u.name}
-                                                            onSelect={() => {
-                                                                handleUnitChange(u.id);
-                                                                setIsUnitOpen(false);
-                                                            }}
-                                                            className="text-xs cursor-pointer"
-                                                        >
-                                                            <Check className={cn("mr-2 h-4 w-4", selectedUnitId === u.id ? "opacity-100" : "opacity-0")} />
-                                                            {u.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-md text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-2xs">
-                                <Building2 className="h-3.5 w-3.5 text-primary" />
-                                <span>Unit: <b>{headedUnits[0]?.name || managedUnit?.name || orgUnits.find(u => u.id === selectedUnitId)?.name || 'Unit Anda'}</b></span>
-                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium border border-primary/20 ml-1 flex items-center gap-1">
-                                    <Lock className="h-3 w-3" />
-                                    {isKepalaBagian ? 'Kepala Bagian' : isKepalaUnit ? 'Kepala Unit' : 'Unit'}
-                                </span>
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                                <Users className="h-3.5 w-3.5" /> Pegawai:
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 text-xs font-medium flex items-center gap-1.5"
+                            onClick={() => {
+                                setAutoGenForm(prev => ({
+                                    ...prev,
+                                    targetType: 'all_unit',
+                                    employeeId: selectedUserId || '0'
+                                }));
+                                setIsAutoGenOpen(true);
+                            }}
+                        >
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Buat Jadwal Otomatis
+                        </Button>
+                        <div className="flex items-center">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 rounded-none border-neutral-200 dark:border-neutral-800"
+                                onClick={prevMonth}
+                            >
+                                &lt;
+                            </Button>
+                            <span className="font-semibold text-xs uppercase tracking-wide w-[130px] text-center border-y border-neutral-200 dark:border-neutral-800 h-8 flex items-center justify-center bg-neutral-50/70 dark:bg-neutral-900/40">
+                                {currentDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
                             </span>
-                            <Popover open={isKaryawanOpen} onOpenChange={setIsKaryawanOpen}>
-                                <PopoverTrigger role="combobox" className="w-[240px] inline-flex items-center justify-between rounded-md border border-input bg-background h-9 px-3 text-sm font-normal ring-offset-background hover:bg-accent hover:text-accent-foreground">
-                                    <span className="truncate">{selectedUserId ? users.find(u => u.id.toString() === selectedUserId)?.name || "Pilih..." : "Pilih Karyawan..."}</span>
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 rounded-none border-neutral-200 dark:border-neutral-800"
+                                onClick={nextMonth}
+                            >
+                                &gt;
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Shaded Filter Strip */}
+                <div className="bg-neutral-50/70 dark:bg-neutral-900/40 border-b border-neutral-200 dark:border-neutral-800 px-4 py-2.5 flex items-center gap-3 flex-wrap shrink-0">
+                    {/* Unit Selector: Searchable Combobox for Admin, Locked/Restricted for Non-Admin */}
+                    {isAdmin ? (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                <Building2 className="h-3.5 w-3.5" /> Unit:
+                            </span>
+                            <Popover open={isUnitOpen} onOpenChange={setIsUnitOpen}>
+                                <PopoverTrigger role="combobox" className="w-[230px] inline-flex items-center justify-between rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 h-8 px-3 text-xs font-normal hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                                    <span className="truncate">
+                                        {orgUnits.find(u => u.id === selectedUnitId)?.name || "Pilih Unit Organisasi..."}
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[240px] p-0" align="start">
+                                <PopoverContent className="w-[280px] p-0 rounded-none border-neutral-200 dark:border-neutral-800" align="start">
                                     <Command>
-                                        <CommandInput placeholder="Cari karyawan..." />
+                                        <CommandInput placeholder="Cari unit organisasi..." className="h-9 text-xs" />
                                         <CommandList>
-                                            <CommandEmpty>Karyawan tidak ditemukan.</CommandEmpty>
+                                            <CommandEmpty>Unit tidak ditemukan.</CommandEmpty>
                                             <CommandGroup>
-                                                {users.map(u => (
+                                                {orgUnits.map((u: any) => (
                                                     <CommandItem
                                                         key={u.id}
                                                         value={u.name}
                                                         onSelect={() => {
-                                                            setSelectedUserId(u.id.toString());
-                                                            setIsKaryawanOpen(false);
+                                                            handleUnitChange(u.id);
+                                                            setIsUnitOpen(false);
                                                         }}
+                                                        className="text-xs cursor-pointer"
                                                     >
-                                                        <Check className={cn("mr-2 h-4 w-4", selectedUserId === u.id.toString() ? "opacity-100" : "opacity-0")} />
+                                                        <Check className={cn("mr-2 h-4 w-4", selectedUnitId === u.id ? "opacity-100" : "opacity-0")} />
                                                         {u.name}
                                                     </CommandItem>
                                                 ))}
@@ -732,40 +696,101 @@ export default function RosterPlanner() {
                                 </PopoverContent>
                             </Popover>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                            <Button 
-                                variant="default" 
-                                size="sm" 
-                                className="bg-primary shadow-sm hover:bg-primary/90 flex items-center gap-1.5"
-                                onClick={() => {
-                                    setAutoGenForm(prev => ({
-                                        ...prev,
-                                        targetType: 'all_unit',
-                                        employeeId: selectedUserId || '0'
-                                    }));
-                                    setIsAutoGenOpen(true);
-                                }}
-                            >
-                                <Sparkles className="h-3.5 w-3.5" />
-                                Buat Jadwal Otomatis
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={prevMonth}>&lt;</Button>
-                            <span className="font-semibold text-sm w-[130px] text-center">{currentDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
-                            <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={nextMonth}>&gt;</Button>
+                    ) : headedUnits.length > 1 ? (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                <Building2 className="h-3.5 w-3.5" /> Unit:
+                            </span>
+                            <Popover open={isUnitOpen} onOpenChange={setIsUnitOpen}>
+                                <PopoverTrigger role="combobox" className="w-[230px] inline-flex items-center justify-between rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 h-8 px-3 text-xs font-normal hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                                    <span className="truncate">
+                                        {headedUnits.find(u => u.id === selectedUnitId)?.name || "Pilih Unit Anda..."}
+                                    </span>
+                                    <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[280px] p-0 rounded-none border-neutral-200 dark:border-neutral-800" align="start">
+                                    <Command>
+                                        <CommandInput placeholder="Cari unit Anda..." className="h-9 text-xs" />
+                                        <CommandList>
+                                            <CommandEmpty>Unit tidak ditemukan.</CommandEmpty>
+                                            <CommandGroup>
+                                                {headedUnits.map((u: any) => (
+                                                    <CommandItem
+                                                        key={u.id}
+                                                        value={u.name}
+                                                        onSelect={() => {
+                                                            handleUnitChange(u.id);
+                                                            setIsUnitOpen(false);
+                                                        }}
+                                                        className="text-xs cursor-pointer"
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4", selectedUnitId === u.id ? "opacity-100" : "opacity-0")} />
+                                                        {u.name}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                         </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 px-3 h-8 rounded-none text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                            <Building2 className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
+                            <span>Unit: <b>{headedUnits[0]?.name || managedUnit?.name || orgUnits.find(u => u.id === selectedUnitId)?.name || 'Unit Anda'}</b></span>
+                            <span className="text-[10px] bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 px-1.5 py-0.5 rounded-none font-medium border border-neutral-200 dark:border-neutral-800 ml-1 flex items-center gap-1">
+                                <Lock className="h-3 w-3" />
+                                {isKepalaBagian ? 'Kepala Bagian' : isKepalaUnit ? 'Kepala Unit' : 'Unit'}
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            <Users className="h-3.5 w-3.5" /> Pegawai:
+                        </span>
+                        <Popover open={isKaryawanOpen} onOpenChange={setIsKaryawanOpen}>
+                            <PopoverTrigger role="combobox" className="w-[240px] inline-flex items-center justify-between rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 h-8 px-3 text-xs font-normal hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                                <span className="truncate">{selectedUserId ? users.find(u => u.id.toString() === selectedUserId)?.name || "Pilih..." : "Pilih Karyawan..."}</span>
+                                <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[240px] p-0 rounded-none border-neutral-200 dark:border-neutral-800" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Cari karyawan..." className="h-9 text-xs" />
+                                    <CommandList>
+                                        <CommandEmpty>Karyawan tidak ditemukan.</CommandEmpty>
+                                        <CommandGroup>
+                                            {users.map(u => (
+                                                <CommandItem
+                                                    key={u.id}
+                                                    value={u.name}
+                                                    onSelect={() => {
+                                                        setSelectedUserId(u.id.toString());
+                                                        setIsKaryawanOpen(false);
+                                                    }}
+                                                    className="text-xs cursor-pointer"
+                                                >
+                                                    <Check className={cn("mr-2 h-4 w-4", selectedUserId === u.id.toString() ? "opacity-100" : "opacity-0")} />
+                                                    {u.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
 
-                <div className="flex gap-4 flex-1 min-h-0 min-w-0">
+                <div className="flex flex-1 min-h-0 min-w-0">
                     {/* Sidebar Palette */}
-                    <div className="w-56 bg-white border rounded-lg p-3 flex flex-col gap-3 shadow-sm shrink-0 overflow-y-auto custom-scrollbar">
-                        <div className="sticky top-0 bg-white z-10 pb-2 border-b">
-                            <h3 className="font-semibold text-sm">Palette Shift</h3>
-                            <p className="text-[11px] text-muted-foreground leading-tight mt-1">Tarik (drag) ke baris tanggal di sebelah kanan.</p>
+                    <div className="w-56 bg-white dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+                        <div className="sticky top-0 bg-neutral-100/70 dark:bg-neutral-900/80 z-10 px-3 py-2.5 border-b border-neutral-200 dark:border-neutral-800">
+                            <h3 className="font-semibold text-xs uppercase tracking-wider text-neutral-700 dark:text-neutral-200">Palette Shift</h3>
+                            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">Tarik (drag) ke baris tanggal di sebelah kanan.</p>
                         </div>
 
-                        <div className="flex flex-col gap-2">
+                        <div className="p-3 flex flex-col gap-2">
                             {shifts.map(shift => {
                                 const colorClass = getShiftColor(shift.id);
                                 return (
@@ -773,9 +798,9 @@ export default function RosterPlanner() {
                                         key={shift.id}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, shift.id)}
-                                        className={`p-2.5 rounded-md border cursor-grab active:cursor-grabbing hover:opacity-90 shadow-sm transition-opacity ${colorClass}`}
+                                        className={`p-2.5 rounded-none border cursor-grab active:cursor-grabbing hover:opacity-90 transition-opacity ${colorClass}`}
                                     >
-                                        <div className="font-bold text-sm tracking-tight">{shift.name}</div>
+                                        <div className="font-bold text-xs tracking-tight">{shift.name}</div>
                                         <div className="text-[11px] opacity-90 font-mono mt-0.5">
                                             {formatTime(shift.clock_in_time)} - {formatTime(shift.clock_out_time)}
                                         </div>
@@ -786,9 +811,9 @@ export default function RosterPlanner() {
                     </div>
 
                     {/* Gantt Timeline */}
-                    <div className="flex-1 bg-white border rounded-lg shadow-sm flex flex-col min-w-0 overflow-hidden">
+                    <div className="flex-1 bg-white dark:bg-neutral-950 flex flex-col min-w-0 overflow-hidden">
                         {!selectedUserId ? (
-                            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                            <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground">
                                 Pilih Karyawan terlebih dahulu.
                             </div>
                         ) : loading ? (
@@ -798,13 +823,13 @@ export default function RosterPlanner() {
                         ) : (
                             <div className="overflow-auto flex-1 custom-scrollbar flex flex-col relative">
                                 {/* Header Jam */}
-                                <div className="sticky top-0 z-30 bg-slate-100 flex min-w-max border-b shadow-sm">
-                                    <div className="w-24 shrink-0 border-r p-2 font-semibold text-xs text-center flex items-center justify-center bg-slate-100 sticky left-0 z-40">
+                                <div className="sticky top-0 z-30 bg-neutral-100/70 dark:bg-neutral-900/80 flex min-w-max border-b border-neutral-200 dark:border-neutral-800">
+                                    <div className="w-24 shrink-0 border-r border-neutral-200 dark:border-neutral-800 p-2 font-semibold text-[11px] uppercase tracking-wider text-neutral-600 dark:text-neutral-300 text-center flex items-center justify-center bg-neutral-100/90 dark:bg-neutral-900/95 sticky left-0 z-40">
                                         Tanggal
                                     </div>
                                     <div className="flex-1 grid" style={{ gridTemplateColumns: 'repeat(24, minmax(45px, 1fr))' }}>
                                         {hours.map(h => (
-                                            <div key={h} className="border-r p-1 text-center font-medium text-[10px] text-slate-500">
+                                            <div key={h} className="border-r border-neutral-200 dark:border-neutral-800 p-1 text-center font-medium text-[10px] text-neutral-500 dark:text-neutral-400">
                                                 {String(h).padStart(2, '0')}:00
                                             </div>
                                         ))}
@@ -824,17 +849,17 @@ export default function RosterPlanner() {
                                         return (
                                             <div
                                                 key={dateStr}
-                                                className={`flex border-b min-h-[44px] transition-colors ${leaveOnDate ? 'bg-amber-50/40 dark:bg-amber-950/20' : isWeekend ? 'bg-slate-50/50' : 'bg-white'} hover:bg-slate-50 ${isDragOver ? 'bg-indigo-50' : ''}`}
+                                                className={`flex border-b border-neutral-200 dark:border-neutral-800 min-h-[44px] transition-colors ${leaveOnDate ? 'bg-amber-50/40 dark:bg-amber-950/20' : isWeekend ? 'bg-neutral-50/70 dark:bg-neutral-900/30' : 'bg-white dark:bg-neutral-950'} hover:bg-neutral-50 dark:hover:bg-neutral-900/50 ${isDragOver ? 'bg-indigo-50/70 dark:bg-indigo-950/30' : ''}`}
                                                 onDragOver={(e) => handleDragOver(e, dateStr)}
                                                 onDragLeave={handleDragLeave}
                                                 onDrop={(e) => handleDrop(e, d)}
                                             >
                                                 {/* Kolom Tanggal Sticky */}
-                                                <div className="w-24 shrink-0 border-r p-2 flex flex-col items-center justify-center bg-inherit sticky left-0 z-20">
+                                                <div className="w-24 shrink-0 border-r border-neutral-200 dark:border-neutral-800 p-2 flex flex-col items-center justify-center bg-inherit sticky left-0 z-20">
                                                     <span className="font-bold text-sm leading-none">{d.getDate()}</span>
                                                     <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">{d.toLocaleDateString('id-ID', { weekday: 'short' })}</span>
                                                     {leaveOnDate && (
-                                                        <span className="text-[9px] font-extrabold text-amber-800 bg-amber-100 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded mt-1 border border-amber-300 dark:border-amber-800 shadow-2xs">
+                                                        <span className="text-[9px] font-extrabold text-amber-800 bg-amber-100 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded-none mt-1 border border-amber-300 dark:border-amber-800">
                                                             CUTI
                                                         </span>
                                                     )}
@@ -844,14 +869,14 @@ export default function RosterPlanner() {
                                                 <div className="flex-1 grid relative group" style={{ gridTemplateColumns: 'repeat(24, minmax(45px, 1fr))' }}>
                                                     {/* Garis Grid Background */}
                                                     {hours.map(h => (
-                                                        <div key={h} className="border-r border-slate-100/50 h-full w-full pointer-events-none" />
+                                                        <div key={h} className="border-r border-neutral-100 dark:border-neutral-800/50 h-full w-full pointer-events-none" />
                                                     ))}
 
                                                     {/* Render Cuti / Shift Blocks */}
                                                     {leaveOnDate ? (
-                                                        <div className="absolute inset-y-1.5 left-2 right-2 rounded-lg shadow-xs border border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-100/95 via-amber-50 to-orange-50 dark:from-amber-950/70 dark:via-amber-900/40 dark:to-orange-950/30 text-amber-950 dark:text-amber-100 px-3 py-1 flex items-center justify-between z-20 overflow-hidden">
+                                                        <div className="absolute inset-y-1.5 left-2 right-2 rounded-none border border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-100/95 via-amber-50 to-orange-50 dark:from-amber-950/70 dark:via-amber-900/40 dark:to-orange-950/30 text-amber-950 dark:text-amber-100 px-3 py-1 flex items-center justify-between z-20 overflow-hidden">
                                                             <div className="flex items-center gap-2 truncate">
-                                                                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-600 text-white shadow-xs shrink-0 tracking-wider">
+                                                                <span className="px-2 py-0.5 rounded-none text-[10px] font-extrabold bg-amber-600 text-white shrink-0 tracking-wider">
                                                                     CUTI
                                                                 </span>
                                                                 <span className="font-bold text-xs truncate">
@@ -864,17 +889,17 @@ export default function RosterPlanner() {
                                                                 )}
                                                             </div>
                                                             <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                                                                <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+                                                                <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-none border border-emerald-300 dark:border-emerald-800">
                                                                     Disetujui (ACC)
                                                                 </span>
                                                             </div>
                                                         </div>
                                                     ) : blocks.length === 0 ? (
                                                         <div className="absolute inset-y-0 left-3 flex items-center gap-2 pointer-events-none text-xs font-semibold select-none z-10">
-                                                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+                                                            <span className="px-2 py-0.5 rounded-none text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
                                                                 LIBUR
                                                             </span>
-                                                            <span className="text-slate-400 font-medium text-[11px]">Hari Libur / Off</span>
+                                                            <span className="text-neutral-400 font-medium text-[11px]">Hari Libur / Off</span>
                                                         </div>
                                                     ) : (
                                                         blocks.map((block, idx) => {
@@ -888,7 +913,7 @@ export default function RosterPlanner() {
                                                             return (
                                                                 <div
                                                                     key={idx}
-                                                                    className={`absolute top-1 bottom-1 rounded-md shadow-sm border px-2 py-1 flex items-center overflow-hidden group/block ${getShiftColor(block.shift.id)} ${block.isContinuation ? 'opacity-80 border-dashed rounded-l-none border-l-0' : ''}`}
+                                                                    className={`absolute top-1 bottom-1 rounded-none border px-2 py-1 flex items-center overflow-hidden group/block ${getShiftColor(block.shift.id)} ${block.isContinuation ? 'opacity-80 border-dashed border-l-0' : ''}`}
                                                                     style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
                                                                     title={`${block.shift.name} (${formatTime(block.shift.clock_in_time)} - ${formatTime(block.shift.clock_out_time)})`}
                                                                 >
@@ -928,75 +953,69 @@ export default function RosterPlanner() {
 
             {/* Modal Auto Generate */}
             <Dialog open={isAutoGenOpen} onOpenChange={setIsAutoGenOpen}>
-                <DialogContent className="sm:max-w-[540px]">
+                <DialogContent className="sm:max-w-[780px] rounded-none border-neutral-200 dark:border-neutral-800">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-primary" />
+                        <DialogTitle className="flex items-center gap-2 text-sm font-semibold uppercase tracking-tight">
+                            <Sparkles className="h-4 w-4 text-neutral-900 dark:text-neutral-100" />
                             Buat Jadwal Otomatis {orgUnits.find(u => u.id === selectedUnitId) ? `(${orgUnits.find(u => u.id === selectedUnitId)?.name})` : ''}
                         </DialogTitle>
-                        <DialogDescription>
-                            Generate jadwal shift secara otomatis dan merata tanpa bentrok antar anggota unit.
+                        <DialogDescription className="sr-only">
+                            Pengaturan pembuatan jadwal shift otomatis untuk unit atau pegawai tertentu.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="grid gap-4 py-3">
+                    <div className="grid gap-5 py-2">
                         {/* Target Penjadwalan */}
-                        <div className="bg-slate-50 p-3 rounded-lg border flex flex-col gap-2">
-                            <Label className="text-xs font-semibold text-slate-700">Target Penjadwalan</Label>
-                            <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
+                                Target Penjadwalan
+                            </Label>
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setAutoGenForm(prev => ({ ...prev, targetType: 'all_unit' }))}
-                                    className={`p-2.5 rounded-md border text-left flex flex-col transition-all ${
+                                    className={`px-3 py-2.5 rounded-none border text-left flex items-center justify-between transition-all ${
                                         autoGenForm.targetType === 'all_unit'
-                                            ? 'bg-primary/10 border-primary text-primary font-medium ring-1 ring-primary'
-                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                            ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white font-medium'
+                                            : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold">
+                                    <span className="flex items-center gap-2 text-xs font-semibold">
                                         <Users className="h-3.5 w-3.5" /> Seluruh Anggota Unit
-                                    </div>
-                                    <span className="text-[11px] text-muted-foreground mt-0.5">
-                                        {users.length} Pegawai di unit ini
+                                    </span>
+                                    <span className={`text-xs font-mono ${autoGenForm.targetType === 'all_unit' ? 'text-neutral-300 dark:text-neutral-600' : 'text-muted-foreground'}`}>
+                                        {users.length} Pegawai
                                     </span>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => setAutoGenForm(prev => ({ ...prev, targetType: 'single', employeeId: selectedUserId || users[0]?.id || '0' }))}
-                                    className={`p-2.5 rounded-md border text-left flex flex-col transition-all ${
+                                    className={`px-3 py-2.5 rounded-none border text-left flex items-center justify-between transition-all ${
                                         autoGenForm.targetType === 'single'
-                                            ? 'bg-primary/10 border-primary text-primary font-medium ring-1 ring-primary'
-                                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                            ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white font-medium'
+                                            : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold">
+                                    <span className="flex items-center gap-2 text-xs font-semibold">
                                         <Check className="h-3.5 w-3.5" /> Pegawai Tertentu
-                                    </div>
-                                    <span className="text-[11px] text-muted-foreground mt-0.5">
-                                        Pilih 1 orang saja
+                                    </span>
+                                    <span className={`text-xs font-mono ${autoGenForm.targetType === 'single' ? 'text-neutral-300 dark:text-neutral-600' : 'text-muted-foreground'}`}>
+                                        1 Orang
                                     </span>
                                 </button>
                             </div>
 
-                            {autoGenForm.targetType === 'all_unit' ? (
-                                <p className="text-[11px] text-primary/80 bg-primary/5 p-2 rounded border border-primary/10 flex items-start gap-1.5 mt-1">
-                                    <Sparkles className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-                                    <span>
-                                        Sistem akan mendistribusikan rotasi shift bergilir (Pagi, Siang, Malam, Libur) secara otomatis dan merata ke seluruh anggota agar tidak terjadi bentrok dan seluruh shift unit terisi. Pegawai yang sedang cuti resmi tidak akan diberi jadwal.
-                                    </span>
-                                </p>
-                            ) : (
-                                <div className="mt-2 flex flex-col gap-1.5">
-                                    <Label className="text-xs text-muted-foreground">Pilih Pegawai:</Label>
+                            {autoGenForm.targetType === 'single' && (
+                                <div className="pt-1">
                                     <Popover open={isModalKaryawanOpen} onOpenChange={setIsModalKaryawanOpen}>
-                                        <PopoverTrigger role="combobox" className="w-full flex h-9 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs font-normal ring-offset-background hover:bg-accent hover:text-accent-foreground">
-                                            <span className="truncate font-medium text-slate-900 dark:text-slate-100">
+                                        <PopoverTrigger role="combobox" className="w-full flex h-9 items-center justify-between rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-3 py-2 text-xs font-normal hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                                            <span className="truncate font-medium text-neutral-900 dark:text-neutral-100">
                                                 {users.find(u => u.id.toString() === (autoGenForm.employeeId || selectedUserId))?.name || "Pilih Pegawai..."}
                                             </span>
                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-[450px] p-0" align="start">
+                                        <PopoverContent className="w-[450px] p-0 rounded-none border-neutral-200 dark:border-neutral-800" align="start">
                                             <Command>
                                                 <CommandInput placeholder="Cari nama pegawai..." className="h-9 text-xs" />
                                                 <CommandList>
@@ -1025,39 +1044,49 @@ export default function RosterPlanner() {
                             )}
                         </div>
 
-                        <div className="grid grid-cols-4 items-center gap-3">
-                            <Label className="text-right text-xs">Isi Cepat</Label>
-                            <div className="col-span-3 flex gap-2">
-                                <Button variant="outline" size="sm" className="text-xs h-8" onClick={setThisWeek}>1 Minggu Ini</Button>
-                                <Button variant="outline" size="sm" className="text-xs h-8" onClick={setThisMonth}>1 Bulan Ini</Button>
+                        {/* Periode Tanggal */}
+                        <div className="space-y-2 border-t border-neutral-200 dark:border-neutral-800 pt-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
+                                    Periode Jadwal
+                                </Label>
+                                <div className="flex items-center gap-1.5">
+                                    <Button type="button" variant="outline" size="sm" className="text-xs h-7 px-2.5 rounded-none border-neutral-200 dark:border-neutral-800" onClick={setThisWeek}>
+                                        1 Minggu Ini
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" className="text-xs h-7 px-2.5 rounded-none border-neutral-200 dark:border-neutral-800" onClick={setThisMonth}>
+                                        1 Bulan Ini
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs text-neutral-700 dark:text-neutral-300">Tanggal Mulai</Label>
+                                    <Input
+                                        type="date"
+                                        className="h-9 text-xs rounded-none border-neutral-200 dark:border-neutral-800"
+                                        value={autoGenForm.startDate}
+                                        onChange={(e) => setAutoGenForm(prev => ({ ...prev, startDate: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs text-neutral-700 dark:text-neutral-300">Tanggal Selesai</Label>
+                                    <Input
+                                        type="date"
+                                        className="h-9 text-xs rounded-none border-neutral-200 dark:border-neutral-800"
+                                        value={autoGenForm.endDate}
+                                        onChange={(e) => setAutoGenForm(prev => ({ ...prev, endDate: e.target.value }))}
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-4 items-center gap-3">
-                            <Label className="text-right text-xs">Mulai</Label>
-                            <Input
-                                type="date"
-                                className="col-span-3 h-9 text-xs"
-                                value={autoGenForm.startDate}
-                                onChange={(e) => setAutoGenForm(prev => ({ ...prev, startDate: e.target.value }))}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-4 items-center gap-3">
-                            <Label className="text-right text-xs">Selesai</Label>
-                            <Input
-                                type="date"
-                                className="col-span-3 h-9 text-xs"
-                                value={autoGenForm.endDate}
-                                onChange={(e) => setAutoGenForm(prev => ({ ...prev, endDate: e.target.value }))}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-4 items-center gap-3">
-                            <Label className="text-right text-xs">Pola Hari</Label>
-                            <div className="col-span-3">
+                        {/* Pola & Shift */}
+                        <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 dark:border-neutral-800 pt-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-neutral-700 dark:text-neutral-300">Pola Hari Kerja</Label>
                                 <Popover open={isPolaOpen} onOpenChange={setIsPolaOpen}>
-                                    <PopoverTrigger className="w-full flex h-9 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs font-normal ring-offset-background hover:bg-accent hover:text-accent-foreground">
+                                    <PopoverTrigger className="w-full flex h-9 items-center justify-between rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-3 py-2 text-xs font-normal hover:bg-neutral-50 dark:hover:bg-neutral-900">
                                         <span className="truncate">
                                             {autoGenForm.workDaysPattern === 'all' ? 'Semua Hari (Shift Bergilir 24/7)' :
                                                 autoGenForm.workDaysPattern === 'mon-fri' ? 'Senin - Jumat' :
@@ -1066,7 +1095,7 @@ export default function RosterPlanner() {
                                         </span>
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[280px] p-0" align="start">
+                                    <PopoverContent className="w-[300px] p-0 rounded-none border-neutral-200 dark:border-neutral-800" align="start">
                                         <Command>
                                             <CommandInput placeholder="Cari pola..." />
                                             <CommandList>
@@ -1095,41 +1124,35 @@ export default function RosterPlanner() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                        </div>
 
-                        {autoGenForm.workDaysPattern === 'all' && (
-                            <div className="grid grid-cols-4 items-center gap-3">
-                                <Label className="text-right text-xs">Jml Libur</Label>
-                                <div className="col-span-3 flex items-center gap-2">
+                            {autoGenForm.workDaysPattern === 'all' ? (
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs text-neutral-700 dark:text-neutral-300">Jatah Libur (Hari / Minggu)</Label>
                                     <Input
                                         type="number"
                                         min={0}
                                         max={6}
-                                        className="w-20 h-9 text-xs"
+                                        className="h-9 text-xs rounded-none border-neutral-200 dark:border-neutral-800"
                                         value={autoGenForm.offDaysCount}
                                         onChange={(e) => setAutoGenForm(prev => ({ ...prev, offDaysCount: e.target.value }))}
                                     />
-                                    <span className="text-xs text-muted-foreground">Hari Libur / Minggu per Anggota (Digilir)</span>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div />
+                            )}
 
-                        <div className="grid grid-cols-4 items-center gap-3">
-                            <Label className="text-right text-xs">Pilihan Shift</Label>
-                            <div className="col-span-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-neutral-700 dark:text-neutral-300">Pilihan Shift</Label>
                                 <Popover open={isShiftOpen} onOpenChange={setIsShiftOpen}>
-                                    <PopoverTrigger className="w-full flex h-9 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs font-normal ring-offset-background hover:bg-accent hover:text-accent-foreground">
+                                    <PopoverTrigger className="w-full flex h-9 items-center justify-between rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-3 py-2 text-xs font-normal hover:bg-neutral-50 dark:hover:bg-neutral-900">
                                         <span className="truncate">
                                             {autoGenForm.workScheduleIds.length > 0
-                                                ? `${autoGenForm.workScheduleIds.length} Shift Terpilih untuk Rotasi`
+                                                ? `${autoGenForm.workScheduleIds.length} Shift Terpilih`
                                                 : 'Pilih Shift...'}
                                         </span>
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[300px] p-0" align="start">
-                                        <div className="p-2 border-b text-[11px] text-muted-foreground text-center">
-                                            Centang shift yang diikutsertakan dalam rotasi
-                                        </div>
+                                    <PopoverContent className="w-[320px] p-0 rounded-none border-neutral-200 dark:border-neutral-800" align="start">
                                         <Command>
                                             <CommandInput placeholder="Cari shift..." />
                                             <CommandList>
@@ -1162,68 +1185,53 @@ export default function RosterPlanner() {
                                         </Command>
                                     </PopoverContent>
                                 </Popover>
-                                <p className="text-[11px] text-muted-foreground mt-1.5">
-                                    Sistem akan merotasikan shift terpilih secara seimbang antar anggota unit.
-                                </p>
                             </div>
-                        </div>
 
-                        {/* Petugas per Shift (Hanya untuk All Unit) */}
-                        {autoGenForm.targetType === 'all_unit' && (
-                            <div className="grid grid-cols-4 items-center gap-3">
-                                <Label className="text-right text-xs">Petugas/Shift</Label>
-                                <div className="col-span-3 flex flex-col gap-2">
+                            {autoGenForm.targetType === 'all_unit' && (
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs text-neutral-700 dark:text-neutral-300">Petugas per Shift</Label>
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setAutoGenForm(prev => ({ ...prev, staffingMode: 'auto' }))}
-                                            className={`px-2.5 py-1 rounded text-xs border font-medium transition-all ${
+                                            className={`h-9 px-3 rounded-none text-xs border font-medium transition-all flex-1 ${
                                                 autoGenForm.staffingMode === 'auto'
-                                                    ? 'bg-primary text-white border-primary shadow-xs'
-                                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                                    ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white'
+                                                    : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900'
                                             }`}
                                         >
-                                            Bagi Rata Otomatis
+                                            Bagi Rata
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setAutoGenForm(prev => ({ ...prev, staffingMode: 'custom' }))}
-                                            className={`px-2.5 py-1 rounded text-xs border font-medium transition-all ${
+                                            className={`h-9 px-3 rounded-none text-xs border font-medium transition-all flex-1 ${
                                                 autoGenForm.staffingMode === 'custom'
-                                                    ? 'bg-primary text-white border-primary shadow-xs'
-                                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                                    ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white'
+                                                    : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-900'
                                             }`}
                                         >
-                                            Tentukan Kuota
+                                            Kuota
                                         </button>
-                                    </div>
-                                    {autoGenForm.staffingMode === 'custom' ? (
-                                        <div className="flex items-center gap-2">
+                                        {autoGenForm.staffingMode === 'custom' && (
                                             <Input
                                                 type="number"
                                                 min={1}
                                                 max={50}
-                                                className="w-20 h-9 text-xs"
+                                                className="w-20 h-9 text-xs rounded-none border-neutral-200 dark:border-neutral-800"
                                                 value={autoGenForm.staffPerShift}
                                                 onChange={(e) => setAutoGenForm(prev => ({ ...prev, staffPerShift: e.target.value }))}
                                             />
-                                            <span className="text-xs text-muted-foreground">orang per shift per hari (bisa &gt; 1 orang)</span>
-                                        </div>
-                                    ) : (
-                                        <p className="text-[11px] text-muted-foreground">
-                                            {autoGenForm.workScheduleIds.length <= 1
-                                                ? `Seluruh anggota (${users.length} orang) akan ditugaskan bersamaan pada shift yang dipilih.`
-                                                : `Setiap shift akan diisi oleh ${Math.max(1, Math.floor(users.length / Math.max(1, autoGenForm.workScheduleIds.length)))} - ${Math.ceil(users.length / Math.max(1, autoGenForm.workScheduleIds.length))} orang secara berimbang.`}
-                                        </p>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAutoGenOpen(false)}>Batal</Button>
-                        <Button onClick={handleCheckConflicts} disabled={loading} className="bg-primary hover:bg-primary/90">
+                        <Button variant="outline" className="rounded-none border-neutral-200 dark:border-neutral-800" onClick={() => setIsAutoGenOpen(false)}>Batal</Button>
+                        <Button onClick={handleCheckConflicts} disabled={loading} className="rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
                             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             Generate Jadwal
                         </Button>
@@ -1233,20 +1241,20 @@ export default function RosterPlanner() {
 
             {/* Modal Confirmation */}
             <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                <DialogContent>
+                <DialogContent className="rounded-none border-neutral-200 dark:border-neutral-800">
                     <DialogHeader>
-                        <DialogTitle>Konflik Jadwal Ditemukan</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-sm font-semibold uppercase tracking-tight">Konflik Jadwal Ditemukan</DialogTitle>
+                        <DialogDescription className="text-xs">
                             Terdapat {conflictCount} hari yang sudah memiliki jadwal (shift) pada rentang waktu yang Anda pilih.
                             Apa yang ingin Anda lakukan?
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-2 mt-4">
-                        <Button variant="destructive" onClick={() => handleAutoGenerate(true)} disabled={loading}>
+                        <Button variant="destructive" className="rounded-none" onClick={() => handleAutoGenerate(true)} disabled={loading}>
                             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             Timpa Semua Jadwal (Overwrite)
                         </Button>
-                        <Button variant="outline" onClick={() => handleAutoGenerate(false)} disabled={loading}>
+                        <Button variant="outline" className="rounded-none border-neutral-200 dark:border-neutral-800" onClick={() => handleAutoGenerate(false)} disabled={loading}>
                             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             Hanya Isi Hari Kosong (Skip)
                         </Button>

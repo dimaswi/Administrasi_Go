@@ -2,6 +2,7 @@ package repository
 
 import (
 	"backend/models"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -27,6 +28,13 @@ func (r *LeaveTypeRepository) GetByID(id int) (*models.LeaveType, error) {
 }
 
 func (r *LeaveTypeRepository) Create(leaveType *models.LeaveType) error {
+	if strings.TrimSpace(leaveType.Code) == "" {
+		code, err := generateAutoCode(r.db, "leave_types", "CUTI")
+		if err != nil {
+			return err
+		}
+		leaveType.Code = code
+	}
 	query := `
 		INSERT INTO leave_types (code, name, description, default_quota, is_paid, requires_approval, allow_carry_over, max_carry_over_days, min_advance_days, max_consecutive_days, is_active, sort_order, color, created_at, updated_at)
 		VALUES (:code, :name, :description, :default_quota, :is_paid, :requires_approval, :allow_carry_over, :max_carry_over_days, :min_advance_days, :max_consecutive_days, :is_active, :sort_order, :color, :created_at, :updated_at)

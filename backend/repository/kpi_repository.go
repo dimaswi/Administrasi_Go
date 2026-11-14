@@ -3,6 +3,7 @@ package repository
 import (
 	"backend/models"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -48,6 +49,13 @@ func (r *KpiRepository) GetCategoryByID(id int) (*models.KpiCategory, error) {
 }
 
 func (r *KpiRepository) CreateCategory(category *models.KpiCategory) error {
+	if strings.TrimSpace(category.Code) == "" {
+		code, err := generateAutoCode(r.db, "kpi_categories", "KPI-CAT")
+		if err != nil {
+			return err
+		}
+		category.Code = code
+	}
 	query := `
 		INSERT INTO kpi_categories (name, code, description, weight, sort_order, is_active, created_at, updated_at)
 		VALUES (:name, :code, :description, :weight, :sort_order, :is_active, :created_at, :updated_at)
@@ -129,6 +137,13 @@ func (r *KpiRepository) GetTemplateByID(id int) (*models.KpiTemplate, error) {
 }
 
 func (r *KpiRepository) CreateTemplate(template *models.KpiTemplate) error {
+	if strings.TrimSpace(template.Code) == "" {
+		code, err := generateAutoCode(r.db, "kpi_templates", "KPI")
+		if err != nil {
+			return err
+		}
+		template.Code = code
+	}
 	query := `
 		INSERT INTO kpi_templates (
 			category_id, name, code, description, measurement_type, unit,

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface EmployeeWorkHistoryTabProps {
     employeeId: string | number;
@@ -98,14 +99,25 @@ export default function EmployeeWorkHistoryTab({ employeeId }: EmployeeWorkHisto
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteId === null) return;
+        setDeleting(true);
         try {
-            await api.delete(`/employees/${employeeId}/work-histories/${id}`);
+            await api.delete(`/employees/${employeeId}/work-histories/${deleteId}`);
             toast.success('Riwayat pekerjaan berhasil dihapus');
             fetchWorkHistories();
+            setDeleteId(null);
         } catch (error) {
             toast.error('Gagal menghapus data');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -215,6 +227,17 @@ export default function EmployeeWorkHistoryTab({ employeeId }: EmployeeWorkHisto
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+                title="Hapus Riwayat Pekerjaan"
+                description="Apakah Anda yakin ingin menghapus data ini?"
+                variant="destructive"
+                confirmText="Hapus"
+                loading={deleting}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

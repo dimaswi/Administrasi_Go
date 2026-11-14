@@ -957,7 +957,8 @@ export default function AttendanceReport() {
   const handleExportExcel = () => {
     try {
       let dataToExport: any[] = [];
-      let filename = `Rekap_Absensi_${currentTab}_${selectedDate}.xlsx`;
+      const periodLabel = ['daily', 'shift'].includes(currentTab) ? selectedDate : selectedMonth;
+      let filename = `Rekap_Absensi_${currentTab}_${periodLabel}.xlsx`;
 
       if (currentTab === 'daily') {
         dataToExport = dailyRows.map((r, idx) => ({
@@ -974,6 +975,58 @@ export default function AttendanceReport() {
           Status: r.status,
           Keterangan: r.notes || '-',
         }));
+      } else if (currentTab === 'monthly') {
+        dataToExport = monthlySummaries.map((m, idx) => ({
+          No: idx + 1,
+          NIP: m.employee_code,
+          'Nama Pegawai': m.employee_name,
+          'Unit Kerja': m.unit_name,
+          'Hadir (H)': m.presentDays,
+          'Terlambat (T)': m.lateDays,
+          'Cuti (C)': m.leaveDays,
+          'Sakit (S)': m.sickDays,
+          'Izin (I)': m.permitDays,
+          'Alpa (A)': m.absentDays,
+          'Total Jam': m.totalHoursFormatted,
+          '% Hadir': `${m.attendanceRate}%`,
+        }));
+      } else if (currentTab === 'employee') {
+        dataToExport = employeeSpecificLogs.map((log, idx) => {
+          const dur = calculateDurationMinutes(log.clock_in, log.clock_out);
+          return {
+            No: idx + 1,
+            Tanggal: log.date,
+            'Shift / Jadwal': log.work_schedule_name || 'Reguler',
+            'Jam Masuk': log.clock_in ? log.clock_in.substring(0, 5) : '-',
+            'Jam Pulang': log.clock_out ? log.clock_out.substring(0, 5) : '-',
+            Keterlambatan: log.late_minutes > 0 ? `+${log.late_minutes}m` : 'Tepat Waktu',
+            'Durasi Kerja': formatMinutesToHours(dur),
+            Status: log.status,
+            Catatan: log.notes || '-',
+          };
+        });
+      } else if (currentTab === 'unit') {
+        let rowNo = 1;
+        unitMatrixData.forEach((unit) => {
+          unit.rows.forEach((row) => {
+            const entry: Record<string, any> = {
+              No: rowNo++,
+              'Unit Kerja': unit.unit_name,
+              NIP: row.employee_code,
+              'Nama Pegawai': row.employee_name,
+              Jabatan: row.position || '-',
+            };
+            row.dayCells.forEach((cell) => {
+              entry[`Tgl ${cell.dayNum}`] = cell.label;
+            });
+            entry['Hadir (H)'] = row.presentDays;
+            entry['Terlambat (T)'] = row.lateDays;
+            entry['Libur (L)'] = row.offDays;
+            entry['Cuti (C)'] = row.leaveDays;
+            entry['Alpa (A)'] = row.absentDays;
+            dataToExport.push(entry);
+          });
+        });
       } else if (currentTab === 'shift') {
         dataToExport = shiftSummaries.map((s, idx) => ({
           No: idx + 1,
@@ -983,6 +1036,69 @@ export default function AttendanceReport() {
           'Tepat Waktu': s.onTimeCount,
           Terlambat: s.lateCount,
           'Tingkat Kepatuhan': `${s.rate}%`,
+        }));
+      } else if (currentTab === 'late') {
+        dataToExport = lateAudits.map((item, idx) => ({
+          No: idx + 1,
+          Tanggal: item.date,
+          NIP: item.employee_code,
+          'Nama Pegawai': item.employee_name,
+          'Unit Kerja': item.unit_name,
+          Shift: item.work_schedule_name || 'Reguler',
+          'Jadwal Masuk': item.schedule_clock_in || '08:00',
+          'Aktual Masuk': item.clock_in ? item.clock_in.substring(0, 5) : '-',
+          'Keterlambatan (Menit)': item.late_minutes,
+          Keterangan: item.notes || '-',
+        }));
+      } else if (currentTab === 'early') {
+        dataToExport = earlyAudits.map((item, idx) => ({
+          No: idx + 1,
+          Tanggal: item.date,
+          NIP: item.employee_code,
+          'Nama Pegawai': item.employee_name,
+          'Unit Kerja': item.unit_name,
+          'Jadwal Pulang': item.schedule_clock_out || '16:00',
+          'Aktual Pulang': item.clock_out ? item.clock_out.substring(0, 5) : '-',
+          'Selisih Pulang Awal (Menit)': item.earlyMinutes,
+          Keterangan: item.notes || '-',
+        }));
+      } else if (currentTab === 'absence') {
+        dataToExport = absenceRows.map((item, idx) => ({
+          No: idx + 1,
+          Periode: item.period,
+          NIP: item.employee_code,
+          'Nama Pegawai': item.employee_name,
+          'Unit Kerja': item.unit_name,
+          Kategori: item.category,
+          'Durasi (Hari)': item.duration,
+          Alasan: item.reason,
+          Status: item.status,
+        }));
+      } else if (currentTab === 'overtime') {
+        dataToExport = overtimeAudits.map((item, idx) => ({
+          No: idx + 1,
+          Tanggal: item.date,
+          NIP: item.employee_code,
+          'Nama Pegawai': item.employee_name,
+          'Unit Kerja': item.unit_name,
+          Shift: item.work_schedule_name || 'Reguler',
+          'Jam Masuk': item.clock_in ? item.clock_in.substring(0, 5) : '-',
+          'Jam Pulang': item.clock_out ? item.clock_out.substring(0, 5) : '-',
+          'Total Jam Kerja': item.workDuration,
+          'Estimasi Lembur': item.overtimeFormatted,
+        }));
+      } else if (currentTab === 'workhours') {
+        dataToExport = workHourSummaries.map((w, idx) => ({
+          No: idx + 1,
+          NIP: w.employee_code,
+          'Nama Pegawai': w.employee_name,
+          'Unit Kerja': w.unit_name,
+          'Hari Hadir': w.presentDays,
+          'Total Jam Kerja': w.totalWorkHoursFormatted,
+          'Rata-rata / Hari': w.avgHoursPerDay,
+          Target: '160 Jam',
+          Deviasi: w.deviationFormatted,
+          'Status Beban': w.workloadStatus,
         }));
       } else {
         dataToExport = filteredAttendances.map((a, idx) => ({
@@ -998,6 +1114,11 @@ export default function AttendanceReport() {
         }));
       }
 
+      if (dataToExport.length === 0) {
+        toast.error('Tidak ada data untuk diexport pada tab ini');
+        return;
+      }
+
       const worksheet = XLSX.utils.json_to_sheet(dataToExport);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Rekap Absensi');
@@ -1011,46 +1132,7 @@ export default function AttendanceReport() {
 
   return (
     <HrLayout>
-      <div className="w-full space-y-4 print:m-0 print:p-0">
-        {/* Standard Page Header */}
-        <div className="flex items-start justify-between gap-4 print:hidden">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold leading-tight">Rekap Absensi</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Laporan rekapitulasi kehadiran, ketidakhadiran, jadwal shift, dan jam kerja pegawai
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              onClick={() => fetchAttendanceData()}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Segarkan
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-              onClick={handleExportExcel}
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5" />
-              Export Excel
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              onClick={handlePrint}
-            >
-              <Printer className="h-3.5 w-3.5" />
-              Cetak / PDF
-            </Button>
-          </div>
-        </div>
-
+      <div className="w-full max-w-full space-y-4 print:m-0 print:p-0">
         {/* Printable Letterhead (Only visible when printing) */}
         <div className="hidden print:block border-b-2 border-black pb-4 mb-6">
           <div className="flex items-center justify-between">
@@ -1076,197 +1158,256 @@ export default function AttendanceReport() {
           </div>
         </div>
 
-        {/* Report Selector Segmented Bar (Screen only) */}
-        <div className="print:hidden border-b border-border pb-1 overflow-x-auto">
-          <div className="flex items-center gap-1 min-w-max">
-            {REPORT_TYPES.map((type) => {
-              const isActive = currentTab === type.id;
-              return (
-                <button
-                  key={type.id}
-                  onClick={() => setTab(type.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Standard Filter Toolbar (Screen only) */}
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
-          {/* Search bar */}
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari NIP, nama..."
-              className="h-8 pl-8 pr-8 text-xs"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Date Controls */}
-          {currentTab === 'daily' && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Tanggal:</span>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="h-8 text-xs w-36"
-              />
-            </div>
-          )}
-
-          {currentTab === 'monthly' && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Bulan:</span>
-              <Input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="h-8 text-xs w-36"
-              />
-              <div className="flex items-center rounded-md border border-input p-0.5 bg-muted/40">
-                <button
-                  type="button"
-                  onClick={() => setMonthlyViewMode('summary')}
-                  className={`px-2 py-1 text-[11px] rounded ${
-                    monthlyViewMode === 'summary' ? 'bg-background font-semibold shadow-xs' : 'text-muted-foreground'
-                  }`}
-                >
-                  Tabel Kumulatif
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMonthlyViewMode('matrix')}
-                  className={`px-2 py-1 text-[11px] rounded ${
-                    monthlyViewMode === 'matrix' ? 'bg-background font-semibold shadow-xs' : 'text-muted-foreground'
-                  }`}
-                >
-                  Matriks (1-31)
-                </button>
+        {/* ─── Unified Card Container: Kawan-Dolan Sharp Frame ─── */}
+        <div className="w-full rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none overflow-hidden print:border-none print:bg-transparent">
+          {/* 1. Header Bar */}
+          <div className="px-4 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 print:hidden">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="size-8 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center font-bold text-xs shrink-0">
+                <FileText className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100 uppercase truncate">
+                    Rekap Absensi
+                  </h1>
+                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 shrink-0">
+                    {kpiStats.totalStaff} Pegawai
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+                  Laporan rekapitulasi kehadiran, ketidakhadiran, jadwal shift, dan jam kerja pegawai
+                </p>
               </div>
             </div>
-          )}
 
-          {currentTab === 'employee' && (
-            <div className="w-64">
-              <SearchableSelect
-                options={employeeOptions}
-                value={selectedEmployeeId}
-                onValueChange={setSelectedEmployeeId}
-                placeholder="-- Pilih Pegawai --"
-                searchPlaceholder="Cari NIP / nama..."
-                className="h-8 text-xs"
-              />
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs rounded-none border-neutral-200 dark:border-neutral-800 shadow-none"
+                onClick={() => fetchAttendanceData()}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                Segarkan
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs rounded-none text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 shadow-none"
+                onClick={handleExportExcel}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Export Excel
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 gap-1.5 text-xs rounded-none bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 shadow-none font-semibold"
+                onClick={handlePrint}
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Cetak / PDF
+              </Button>
             </div>
-          )}
-
-          {currentTab === 'unit' && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Bulan:</span>
-              <Input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="h-8 text-xs w-36"
-              />
-            </div>
-          )}
-
-          {['shift', 'late', 'early', 'absence', 'overtime', 'workhours'].includes(currentTab) && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Periode:</span>
-              <Input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
-                className="h-8 text-xs w-32"
-              />
-              <span className="text-xs text-muted-foreground">-</span>
-              <Input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
-                className="h-8 text-xs w-32"
-              />
-            </div>
-          )}
-
-          {/* Unit Filter */}
-          <div className="w-52">
-            <SearchableSelect
-              options={unitOptions}
-              value={selectedUnit}
-              onValueChange={setSelectedUnit}
-              placeholder="Pilih Unit Kerja"
-              searchPlaceholder="Cari unit kerja..."
-              className="h-8 text-xs"
-            />
           </div>
 
-          {/* Shift Filter */}
-          <div className="w-48">
-            <SearchableSelect
-              options={shiftOptions}
-              value={selectedShift}
-              onValueChange={setSelectedShift}
-              placeholder="Pilih Shift"
-              searchPlaceholder="Cari shift..."
-              className="h-8 text-xs"
-            />
+          {/* 2. Report Selector Tab Strip (Screen only) */}
+          <div className="print:hidden border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center gap-1 min-w-max py-2">
+              {REPORT_TYPES.map((type) => {
+                const isActive = currentTab === type.id;
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setTab(type.id)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-none transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-100'
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* KPI Summary Chips */}
-          <div className="ml-auto flex items-center gap-1.5 text-xs">
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-muted/60 text-muted-foreground font-medium">
-              Pegawai: <strong className="text-foreground">{kpiStats.totalStaff}</strong>
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-medium">
-              Hadir: <strong>{kpiStats.totalPresent}</strong>
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-medium">
-              Terlambat: <strong>{kpiStats.totalLate}</strong>
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 font-medium">
-              Pulang Awal: <strong>{kpiStats.totalEarly}</strong>
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium">
-              Cuti/Izin: <strong>{kpiStats.totalLeaves}</strong>
-            </span>
+          {/* 3. Shaded Filter & KPI Strip (Screen only) */}
+          <div className="print:hidden bg-neutral-50/70 dark:bg-neutral-900/40 border-b border-neutral-200 dark:border-neutral-800 px-4 py-3 flex flex-wrap items-center gap-2">
+            {/* Search bar */}
+            <div className="relative flex-1 min-w-[200px] max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari NIP, nama..."
+                className="h-8 pl-8 pr-8 text-xs rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Date Controls */}
             {currentTab === 'daily' && (
-              <>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
-                  Libur: <strong>{kpiStats.totalOff}</strong>
-                </span>
-                {kpiStats.totalPending > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-medium">
-                    Belum Hadir: <strong>{kpiStats.totalPending}</strong>
-                  </span>
-                )}
-              </>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-neutral-500 font-mono uppercase">Tanggal:</span>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="h-8 text-xs w-36 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none font-mono"
+                />
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* --- MAIN REPORT TABLE --- */}
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+            {currentTab === 'monthly' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-500 font-mono uppercase">Bulan:</span>
+                <Input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="h-8 text-xs w-36 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none font-mono"
+                />
+                <div className="flex items-center rounded-none border border-neutral-200 dark:border-neutral-800 p-0.5 bg-white dark:bg-neutral-950">
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyViewMode('summary')}
+                    className={`px-2.5 py-1 text-[11px] rounded-none transition-colors cursor-pointer ${
+                      monthlyViewMode === 'summary'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100'
+                    }`}
+                  >
+                    Tabel Kumulatif
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyViewMode('matrix')}
+                    className={`px-2.5 py-1 text-[11px] rounded-none transition-colors cursor-pointer ${
+                      monthlyViewMode === 'matrix'
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold'
+                        : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100'
+                    }`}
+                  >
+                    Matriks (1-31)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {currentTab === 'employee' && (
+              <div className="w-64">
+                <SearchableSelect
+                  options={employeeOptions}
+                  value={selectedEmployeeId}
+                  onValueChange={setSelectedEmployeeId}
+                  placeholder="-- Pilih Pegawai --"
+                  searchPlaceholder="Cari NIP / nama..."
+                  className="h-8 text-xs rounded-none"
+                />
+              </div>
+            )}
+
+            {currentTab === 'unit' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-neutral-500 font-mono uppercase">Bulan:</span>
+                <Input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="h-8 text-xs w-36 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none font-mono"
+                />
+              </div>
+            )}
+
+            {['shift', 'late', 'early', 'absence', 'overtime', 'workhours'].includes(currentTab) && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-neutral-500 font-mono uppercase">Periode:</span>
+                <Input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
+                  className="h-8 text-xs w-32 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none font-mono"
+                />
+                <span className="text-xs text-neutral-400">-</span>
+                <Input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
+                  className="h-8 text-xs w-32 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none font-mono"
+                />
+              </div>
+            )}
+
+            {/* Unit Filter */}
+            <div className="w-52">
+              <SearchableSelect
+                options={unitOptions}
+                value={selectedUnit}
+                onValueChange={setSelectedUnit}
+                placeholder="Pilih Unit Kerja"
+                searchPlaceholder="Cari unit kerja..."
+                className="h-8 text-xs rounded-none"
+              />
+            </div>
+
+            {/* Shift Filter */}
+            <div className="w-48">
+              <SearchableSelect
+                options={shiftOptions}
+                value={selectedShift}
+                onValueChange={setSelectedShift}
+                placeholder="Pilih Shift"
+                searchPlaceholder="Cari shift..."
+                className="h-8 text-xs rounded-none"
+              />
+            </div>
+
+            {/* KPI Summary Chips */}
+            <div className="ml-auto flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400">
+                Pegawai: <strong className="text-neutral-900 dark:text-neutral-100">{kpiStats.totalStaff}</strong>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-none border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                Hadir: <strong>{kpiStats.totalPresent}</strong>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-none border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
+                Terlambat: <strong>{kpiStats.totalLate}</strong>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-none border border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300">
+                Pulang Awal: <strong>{kpiStats.totalEarly}</strong>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-none border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
+                Cuti/Izin: <strong>{kpiStats.totalLeaves}</strong>
+              </span>
+              {currentTab === 'daily' && (
+                <>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-none border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                    Libur: <strong>{kpiStats.totalOff}</strong>
+                  </span>
+                  {kpiStats.totalPending > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-none border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300">
+                      Belum Hadir: <strong>{kpiStats.totalPending}</strong>
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* 4. Main Report Table Content */}
+          <div className="overflow-x-auto">
           {/* 1. REKAP HARIAN */}
           {currentTab === 'daily' && (
             <Table>
@@ -1547,43 +1688,43 @@ export default function AttendanceReport() {
           {currentTab === 'unit' && (
             <div className="space-y-4">
               {/* Legend Bar */}
-              <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 bg-muted/40 border-b border-border text-xs">
-                <span className="font-semibold text-foreground">Keterangan:</span>
+              <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 bg-neutral-50/70 dark:bg-neutral-900/40 border-b border-neutral-200 dark:border-neutral-800 text-xs">
+                <span className="font-semibold text-neutral-800 dark:text-neutral-200 uppercase text-[11px] tracking-wider">Keterangan:</span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded bg-emerald-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs">H</span>
-                  <span className="text-muted-foreground">Hadir Tepat Waktu (Hijau)</span>
+                  <span className="w-5 h-5 rounded-none bg-emerald-500 text-white flex items-center justify-center font-bold text-[11px]">H</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Hadir Tepat Waktu (Hijau)</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded bg-amber-400 text-amber-950 flex items-center justify-center font-bold text-[11px] shadow-xs">T</span>
-                  <span className="text-muted-foreground">Terlambat (Kuning)</span>
+                  <span className="w-5 h-5 rounded-none bg-amber-400 text-amber-950 flex items-center justify-center font-bold text-[11px]">T</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Terlambat (Kuning)</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center font-semibold text-[11px] border border-border/50">L</span>
-                  <span className="text-muted-foreground">Libur (Abu-abu)</span>
+                  <span className="w-5 h-5 rounded-none bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 flex items-center justify-center font-semibold text-[11px] border border-neutral-300 dark:border-neutral-700">L</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Libur (Abu-abu)</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded bg-blue-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs">C</span>
-                  <span className="text-muted-foreground">Cuti / Izin (Biru)</span>
+                  <span className="w-5 h-5 rounded-none bg-blue-500 text-white flex items-center justify-center font-bold text-[11px]">C</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Cuti / Izin (Biru)</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded bg-rose-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs">A</span>
-                  <span className="text-muted-foreground">Jadwal Shift / Belum Hadir (Merah)</span>
+                  <span className="w-5 h-5 rounded-none bg-rose-500 text-white flex items-center justify-center font-bold text-[11px]">A</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Jadwal Shift / Belum Hadir (Merah)</span>
                 </span>
               </div>
 
               {unitMatrixData.length === 0 ? (
-                <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">
+                <div className="h-32 flex items-center justify-center text-xs text-neutral-500">
                   Tidak ada data unit kerja.
                 </div>
               ) : (
                 unitMatrixData.map((unit) => (
-                  <div key={unit.unit_id} className="border-b last:border-b-0 border-border">
+                  <div key={unit.unit_id} className="border-b last:border-b-0 border-neutral-200 dark:border-neutral-800">
                     {/* Unit Header */}
-                    <div className="px-4 py-2.5 bg-muted/60 border-y border-border flex items-center justify-between">
+                    <div className="px-4 py-2.5 bg-neutral-100/70 dark:bg-neutral-900/60 border-y border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-primary" />
-                        <span className="font-bold text-sm text-foreground">{unit.unit_name}</span>
-                        <Badge variant="outline" className="text-[11px] font-normal bg-background">
+                        <Building2 className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
+                        <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">{unit.unit_name}</span>
+                        <Badge variant="outline" className="rounded-none text-[10px] font-mono font-normal bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800">
                           {unit.staffCount} Pegawai
                         </Badge>
                       </div>
@@ -1935,6 +2076,7 @@ export default function AttendanceReport() {
               </TableBody>
             </Table>
           )}
+          </div>
         </div>
 
         {/* Printable Signature Block */}

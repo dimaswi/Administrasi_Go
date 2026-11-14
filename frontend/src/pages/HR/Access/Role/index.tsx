@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Plus, MoreHorizontal, Edit, Trash2, Shield, ShieldCheck } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Role {
     id: number;
@@ -62,14 +63,24 @@ export default function RoleIndex() {
         to: Math.min(page * perPage, total)
     };
 
-    const handleDelete = async (id: number) => {
-        if (confirm('Yakin ingin menghapus role ini?')) {
-            try {
-                await api.delete(`/roles/${id}`);
-                fetchData();
-            } catch (error) {
-                console.error(error);
-            }
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteId === null) return;
+        setDeleting(true);
+        try {
+            await api.delete(`/roles/${deleteId}`);
+            fetchData();
+            setDeleteId(null);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -146,6 +157,17 @@ export default function RoleIndex() {
                 emptyMessage="Belum ada data role"
                 emptyIcon={Shield}
                 isLoading={loading}
+            />
+
+            <ConfirmDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+                title="Hapus Role"
+                description="Yakin ingin menghapus role ini?"
+                variant="destructive"
+                confirmText="Hapus"
+                loading={deleting}
+                onConfirm={confirmDelete}
             />
         </HrLayout>
     );

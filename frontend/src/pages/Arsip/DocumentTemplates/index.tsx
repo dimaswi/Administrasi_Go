@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiUrl } from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Template {
     id: number;
@@ -128,24 +129,32 @@ export default function DocumentTemplatesIndex() {
         setSearchParams(newParams);
     };
 
-    const handleDelete = async (id: number) => {
-        if (window.confirm('Hapus template ini? Template yang sudah digunakan tidak dapat dihapus.')) {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await fetch(getApiUrl(`/api/document-templates/${id}`), {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    toast.success('Template berhasil dihapus');
-                    // refresh
-                    setSearchParams(new URLSearchParams(searchParams));
-                } else {
-                    toast.error('Gagal menghapus template');
-                }
-            } catch (err) {
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteId === null) return;
+        setDeleting(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(getApiUrl(`/api/document-templates/${deleteId}`), {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                toast.success('Template berhasil dihapus');
+                setSearchParams(new URLSearchParams(searchParams));
+                setDeleteId(null);
+            } else {
                 toast.error('Gagal menghapus template');
             }
+        } catch (err) {
+            toast.error('Gagal menghapus template');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -343,6 +352,16 @@ export default function DocumentTemplatesIndex() {
                 emptyIcon={FileText}
             />
 
+            <ConfirmDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+                title="Hapus Template"
+                description="Hapus template ini? Template yang sudah digunakan tidak dapat dihapus."
+                variant="destructive"
+                confirmText="Hapus"
+                loading={deleting}
+                onConfirm={confirmDelete}
+            />
         </AdminLayout>
     );
 }

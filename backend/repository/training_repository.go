@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"strings"
 
 	"backend/models"
 	"github.com/jmoiron/sqlx"
@@ -121,6 +122,13 @@ func (r *TrainingRepository) GetTrainingByID(id int) (*models.Training, error) {
 }
 
 func (r *TrainingRepository) CreateTraining(t *models.Training) error {
+	if strings.TrimSpace(t.Code) == "" {
+		code, err := generateAutoCode(r.db, "trainings", "TRN")
+		if err != nil {
+			return err
+		}
+		t.Code = code
+	}
 	query := `
 		INSERT INTO trainings (
 			code, name, description, type, category, provider, duration_hours,

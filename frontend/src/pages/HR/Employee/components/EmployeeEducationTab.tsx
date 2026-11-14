@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Plus, Pencil, Trash2, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface EmployeeEducationTabProps {
     employeeId: string | number;
@@ -113,14 +114,25 @@ export default function EmployeeEducationTab({ employeeId }: EmployeeEducationTa
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteId === null) return;
+        setDeleting(true);
         try {
-            await api.delete(`/employees/${employeeId}/educations/${id}`);
+            await api.delete(`/employees/${employeeId}/educations/${deleteId}`);
             toast.success('Data pendidikan berhasil dihapus');
             fetchEducations();
+            setDeleteId(null);
         } catch (error) {
             toast.error('Gagal menghapus data');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -234,6 +246,17 @@ export default function EmployeeEducationTab({ employeeId }: EmployeeEducationTa
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+                title="Hapus Riwayat Pendidikan"
+                description="Apakah Anda yakin ingin menghapus data ini?"
+                variant="destructive"
+                confirmText="Hapus"
+                loading={deleting}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

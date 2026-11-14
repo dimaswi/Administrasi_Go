@@ -2,6 +2,7 @@ package repository
 
 import (
 	"backend/models"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -27,6 +28,13 @@ func (r *WorkScheduleRepository) GetByID(id int) (*models.WorkSchedule, error) {
 }
 
 func (r *WorkScheduleRepository) Create(schedule *models.WorkSchedule) error {
+	if strings.TrimSpace(schedule.Code) == "" {
+		code, err := generateAutoCode(r.db, "work_schedules", "SHF")
+		if err != nil {
+			return err
+		}
+		schedule.Code = code
+	}
 	query := `
 		INSERT INTO work_schedules (
 			code, name, description, clock_in_time, clock_out_time, break_start, break_end, is_special,

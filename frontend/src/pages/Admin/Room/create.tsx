@@ -63,35 +63,19 @@ export default function RoomCreate() {
                 onCancel={() => navigate('/admin/rooms')}
             >
                 <div className="space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
-                                Kode Ruangan <span className="text-rose-500">*</span>
-                            </Label>
-                            <Input 
-                                id="code" 
-                                name="code" 
-                                required 
-                                value={formData.code} 
-                                onChange={handleChange} 
-                                placeholder="Contoh: R-01"
-                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
-                                Nama Ruangan <span className="text-rose-500">*</span>
-                            </Label>
-                            <Input 
-                                id="name" 
-                                name="name" 
-                                required 
-                                value={formData.name} 
-                                onChange={handleChange} 
-                                placeholder="Contoh: Ruang Rapat Utama"
-                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
-                            />
-                        </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Nama Ruangan <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input 
+                            id="name" 
+                            name="name" 
+                            required 
+                            value={formData.name} 
+                            onChange={handleChange} 
+                            placeholder="Contoh: Ruang Rapat Utama"
+                            className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

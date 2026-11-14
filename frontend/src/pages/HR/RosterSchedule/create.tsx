@@ -7,10 +7,12 @@ import { SearchableSelect } from '@/components/SearchableSelect';
 import { CalendarRange } from 'lucide-react';
 import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function RosterScheduleCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [shifts, setShifts] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         user_id: '',
@@ -40,7 +42,7 @@ export default function RosterScheduleCreate() {
             navigate('/hr/rosters');
         } catch (error) {
             console.error(error);
-            alert('Gagal menyimpan roster.');
+            setAlertMessage('Gagal menyimpan roster.');
         } finally {
             setLoading(false);
         }
@@ -114,6 +116,14 @@ export default function RosterScheduleCreate() {
                     </div>
                 </div>
             </FormCard>
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }

@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Plus, MoreHorizontal, Edit, Trash2, Eye, Users, Key } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Employee {
     id: number;
@@ -253,17 +254,20 @@ export default function EmployeeIndex() {
         }
     };
 
-    const handleUnlinkAccount = async () => {
-        if (!selectedEmployeeForAccount) return;
-        
-        if (!confirm("Apakah Anda yakin ingin melepaskan tautan akun ini dari karyawan? Karyawan ini tidak akan bisa login lagi sebelum ditautkan kembali.")) {
-            return;
-        }
+    const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
 
+    const handleUnlinkAccount = () => {
+        if (!selectedEmployeeForAccount) return;
+        setUnlinkConfirmOpen(true);
+    };
+
+    const confirmUnlinkAccount = async () => {
+        if (!selectedEmployeeForAccount) return;
         setAccountSubmitting(true);
         try {
             await api.post(`/employees/${selectedEmployeeForAccount.id}/account`, { action: "unlink" });
             toast.success("Tautan akun berhasil dilepaskan!");
+            setUnlinkConfirmOpen(false);
             setAccountModalOpen(false);
             fetchData();
         } catch (error: any) {
@@ -602,6 +606,17 @@ export default function EmployeeIndex() {
                     )}
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={unlinkConfirmOpen}
+                onOpenChange={setUnlinkConfirmOpen}
+                title="Lepaskan Tautan Akun"
+                description="Apakah Anda yakin ingin melepaskan tautan akun ini dari karyawan? Karyawan ini tidak akan bisa login lagi sebelum ditautkan kembali."
+                variant="destructive"
+                confirmText="Lepaskan Tautan"
+                loading={accountSubmitting}
+                onConfirm={confirmUnlinkAccount}
+            />
         </HrLayout>
     );
 }

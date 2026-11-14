@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface EmployeeFamilyTabProps {
     employeeId: string | number;
@@ -93,14 +94,25 @@ export default function EmployeeFamilyTab({ employeeId }: EmployeeFamilyTabProps
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteId === null) return;
+        setDeleting(true);
         try {
-            await api.delete(`/employees/${employeeId}/families/${id}`);
+            await api.delete(`/employees/${employeeId}/families/${deleteId}`);
             toast.success('Data keluarga berhasil dihapus');
             fetchFamilies();
+            setDeleteId(null);
         } catch (error) {
             toast.error('Gagal menghapus data');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -221,6 +233,17 @@ export default function EmployeeFamilyTab({ employeeId }: EmployeeFamilyTabProps
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+                title="Hapus Data Keluarga"
+                description="Apakah Anda yakin ingin menghapus data ini?"
+                variant="destructive"
+                confirmText="Hapus"
+                loading={deleting}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }

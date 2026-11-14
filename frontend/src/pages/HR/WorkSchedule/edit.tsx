@@ -9,12 +9,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function WorkScheduleEdit() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [redirectAfterAlert, setRedirectAfterAlert] = useState(false);
     const [formData, setFormData] = useState({
         code: '', name: '', description: '',
         clock_in_time: '08:00:00', clock_out_time: '16:00:00',
@@ -48,8 +51,8 @@ export default function WorkScheduleEdit() {
                 });
             } catch (error) {
                 console.error(error);
-                alert('Gagal mengambil data shift.');
-                navigate('/hr/work-schedules');
+                setRedirectAfterAlert(true);
+                setAlertMessage('Gagal mengambil data shift.');
             } finally {
                 setInitialLoading(false);
             }
@@ -77,7 +80,7 @@ export default function WorkScheduleEdit() {
             navigate('/hr/work-schedules');
         } catch (error) {
             console.error(error);
-            alert('Gagal memperbarui shift.');
+            setAlertMessage('Gagal memperbarui shift.');
         } finally {
             setLoading(false);
         }
@@ -254,6 +257,21 @@ export default function WorkScheduleEdit() {
                     </div>
                 </div>
             </FormCard>
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setAlertMessage(null);
+                        if (redirectAfterAlert) {
+                            navigate('/hr/work-schedules');
+                        }
+                    }
+                }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }

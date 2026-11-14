@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { FormCard, FormSection } from '@/components/ui/form-card';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const MEASUREMENT_TYPES = [
     { value: 'numeric', label: 'Angka (Numeric)' },
@@ -72,6 +73,7 @@ export interface ReviewItemForm {
 export default function PerformanceReviewCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
     const [periods, setPeriods] = useState<{ id: number; name: string }[]>([]);
     const [categories, setCategories] = useState<KpiCategory[]>([]);
@@ -220,19 +222,19 @@ export default function PerformanceReviewCreate() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!employeeId || !periodId) {
-            alert('Silakan pilih pegawai dan periode penilaian');
+            setAlertMessage('Silakan pilih pegawai dan periode penilaian');
             return;
         }
 
         if (items.length === 0) {
-            alert('Harap tambahkan minimal 1 indikator KPI untuk penilaian');
+            setAlertMessage('Harap tambahkan minimal 1 indikator KPI untuk penilaian');
             return;
         }
 
         // Validate items name
         const hasEmptyName = items.some(item => !item.name.trim());
         if (hasEmptyName) {
-            alert('Setiap indikator KPI wajib memiliki nama/indikator');
+            setAlertMessage('Setiap indikator KPI wajib memiliki nama/indikator');
             return;
         }
 
@@ -260,7 +262,7 @@ export default function PerformanceReviewCreate() {
             navigate('/hr/performance-reviews');
         } catch (error: any) {
             console.error('Error creating performance review:', error);
-            alert(error?.response?.data?.error || 'Gagal menyimpan sesi penilaian kinerja');
+            setAlertMessage(error?.response?.data?.error || 'Gagal menyimpan sesi penilaian kinerja');
         } finally {
             setLoading(false);
         }
@@ -635,6 +637,14 @@ export default function PerformanceReviewCreate() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"backend/models"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -27,6 +28,13 @@ func (r *JobCategoryRepository) GetByID(id int) (*models.JobCategory, error) {
 }
 
 func (r *JobCategoryRepository) Create(category *models.JobCategory) error {
+	if strings.TrimSpace(category.Code) == "" {
+		code, err := generateAutoCode(r.db, "job_categories", "JOB")
+		if err != nil {
+			return err
+		}
+		category.Code = code
+	}
 	query := `
 		INSERT INTO job_categories (code, name, description, is_medical, requires_str, requires_sip, is_active, created_at, updated_at)
 		VALUES (:code, :name, :description, :is_medical, :requires_str, :requires_sip, :is_active, :created_at, :updated_at)

@@ -4,6 +4,7 @@ import (
 	"backend/models"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -92,6 +93,13 @@ func (r *OrgUnitRepository) GetByID(id int) (*models.OrganizationUnit, error) {
 }
 
 func (r *OrgUnitRepository) Create(unit *models.OrganizationUnit) error {
+	if strings.TrimSpace(unit.Code) == "" {
+		code, err := generateAutoCode(r.db, "organization_units", "UNIT")
+		if err != nil {
+			return err
+		}
+		unit.Code = code
+	}
 	query := `
 		INSERT INTO organization_units (code, name, description, parent_id, level, head_id, is_active, created_at, updated_at)
 		VALUES (:code, :name, :description, :parent_id, :level, :head_id, :is_active, :created_at, :updated_at)

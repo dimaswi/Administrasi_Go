@@ -104,7 +104,7 @@ export default function KpiTemplateCreate() {
             >
                 <FormSection
                     title="Informasi Dasar Indikator"
-                    description="Pilih kategori kelompok KPI, kode unik, dan nama indikator kerja"
+                    description="Pilih kategori kelompok KPI dan nama indikator kerja (kode dibuat otomatis)"
                 >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-1.5">
@@ -119,36 +119,20 @@ export default function KpiTemplateCreate() {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label htmlFor="code" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                Kode Indikator <span className="text-rose-500">*</span>
+                            <label htmlFor="name" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                                Nama Indikator KPI <span className="text-rose-500">*</span>
                             </label>
                             <Input
-                                id="code"
-                                name="code"
+                                id="name"
+                                name="name"
                                 type="text"
-                                value={formData.code}
+                                value={formData.name}
                                 onChange={handleChange}
                                 required
-                                placeholder="Misal: IND-BOR, IND-WTR"
+                                placeholder="Misal: Waktu Tanggap Pelayanan Pasien IGD"
                                 className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
                             />
                         </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label htmlFor="name" className="text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                            Nama Indikator KPI <span className="text-rose-500">*</span>
-                        </label>
-                        <Input
-                            id="name"
-                            name="name"
-                            type="text"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required
-                            placeholder="Misal: Waktu Tanggap Pelayanan Pasien IGD"
-                            className="h-9 rounded-none border border-neutral-200 text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 shadow-none focus-visible:ring-1 focus-visible:ring-neutral-400"
-                        />
                     </div>
                 </FormSection>
 

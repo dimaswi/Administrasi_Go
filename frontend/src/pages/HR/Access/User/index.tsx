@@ -9,6 +9,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Role {
     id: number;
@@ -75,14 +76,24 @@ export default function UserIndex() {
         to: Math.min(page * perPage, total)
     };
 
-    const handleDelete = async (id: number) => {
-        if (confirm('Yakin ingin menghapus user ini?')) {
-            try {
-                await api.delete(`/users/${id}`);
-                fetchData();
-            } catch (error) {
-                console.error(error);
-            }
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteId === null) return;
+        setDeleting(true);
+        try {
+            await api.delete(`/users/${deleteId}`);
+            fetchData();
+            setDeleteId(null);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -188,6 +199,17 @@ export default function UserIndex() {
                 emptyMessage="Belum ada data user"
                 emptyIcon={Users}
                 isLoading={loading}
+            />
+
+            <ConfirmDialog
+                open={deleteId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+                title="Hapus User"
+                description="Yakin ingin menghapus user ini?"
+                variant="destructive"
+                confirmText="Hapus"
+                loading={deleting}
+                onConfirm={confirmDelete}
             />
         </HrLayout>
     );

@@ -8,10 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormCard } from '@/components/ui/form-card';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function WorkScheduleCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         code: '', name: '', description: '',
         clock_in_time: '08:00', clock_out_time: '16:00',
@@ -39,7 +41,7 @@ export default function WorkScheduleCreate() {
             navigate('/hr/work-schedules');
         } catch (error) {
             console.error(error);
-            alert('Gagal menyimpan shift.');
+            setAlertMessage('Gagal menyimpan shift.');
         } finally {
             setLoading(false);
         }
@@ -58,35 +60,19 @@ export default function WorkScheduleCreate() {
                 onCancel={() => navigate('/hr/work-schedules')}
             >
                 <div className="space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="code" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
-                                Kode Shift <span className="text-rose-500">*</span>
-                            </Label>
-                            <Input
-                                id="code"
-                                name="code"
-                                value={formData.code}
-                                onChange={handleChange}
-                                required
-                                placeholder="SFT-PAGI"
-                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm font-mono"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
-                                Nama Shift <span className="text-rose-500">*</span>
-                            </Label>
-                            <Input
-                                id="name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                placeholder="Shift Pagi"
-                                className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
-                            />
-                        </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider block">
+                            Nama Shift <span className="text-rose-500">*</span>
+                        </Label>
+                        <Input
+                            id="name"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                            placeholder="Shift Pagi"
+                            className="h-9 rounded-none border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm"
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -205,6 +191,14 @@ export default function WorkScheduleCreate() {
                     </div>
                 </div>
             </FormCard>
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }

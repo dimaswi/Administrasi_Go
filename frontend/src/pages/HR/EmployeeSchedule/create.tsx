@@ -11,6 +11,7 @@ import { SearchableSelect } from '@/components/SearchableSelect';
 import { FormCard } from '@/components/ui/form-card';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function EmployeeScheduleCreate() {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function EmployeeScheduleCreate() {
     const [shifts, setShifts] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [openUserSelect, setOpenUserSelect] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         user_id: '',
         start_date: '',
@@ -47,7 +49,7 @@ export default function EmployeeScheduleCreate() {
         e.preventDefault();
         setLoading(true);
         if (!formData.user_id) {
-            alert('Silakan pilih karyawan terlebih dahulu.');
+            setAlertMessage('Silakan pilih karyawan terlebih dahulu.');
             setLoading(false);
             return;
         }
@@ -61,7 +63,7 @@ export default function EmployeeScheduleCreate() {
             navigate('/hr/employee-schedules');
         } catch (error) {
             console.error(error);
-            alert('Gagal menyimpan jadwal mingguan.');
+            setAlertMessage('Gagal menyimpan jadwal mingguan.');
         } finally {
             setLoading(false);
         }
@@ -165,6 +167,14 @@ export default function EmployeeScheduleCreate() {
                     </div>
                 </div>
             </FormCard>
+
+            <ConfirmDialog
+                open={alertMessage !== null}
+                onOpenChange={(open) => { if (!open) setAlertMessage(null); }}
+                title="Pemberitahuan"
+                description={alertMessage || ''}
+                hideCancel
+            />
         </HrLayout>
     );
 }
